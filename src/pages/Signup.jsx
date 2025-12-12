@@ -1,0 +1,365 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Mail, Lock, User } from 'lucide-react'
+import { AuthInput, GoogleIcon } from '../features/auth'
+import { apiPost } from '../services/apiClient'
+import { authStorage } from '../utils/auth'
+import { useAuth } from '../context/AuthContext'
+
+export default function Signup() {
+  const navigate = useNavigate()
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    gender: '',
+    dob: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+    profileImage: null,
+    agreeToTerms: false
+  })
+  const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
+  // OTP/signup: removed phone/SMS flow; use email verification separately if needed
+  const { fetchMe } = useAuth()
+
+  const handleFileChange = (e) => {
+    const file = e.target.files && e.target.files[0]
+    setFormData(prev => ({ ...prev, profileImage: file }))
+  }
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors = {}
+    // Full Name validation
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Full name is required'
+    } else if (formData.fullName.trim().length < 3) {
+      newErrors.fullName = 'Full name must be at least 3 characters'
+    }
+
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required'
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) newErrors.email = 'Please enter a valid email address'
+    }
+
+    // Phone removed from UI; no phone validation required here.
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required'
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters'
+    } else if (!/(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least 1 uppercase letter and 1 number'
+    }
+    
+    // Confirm Password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password'
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match'
+    }
+    
+    // Terms agreement validation
+    if (!formData.agreeToTerms) {
+      newErrors.agreeToTerms = 'You must agree to the terms and conditions'
+    }
+    
+    return newErrors
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    const newErrors = validateForm()
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    
+    setIsLoading(true)
+    setErrors({})
+
+    try {
+      const payload = {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        gender: formData.gender || undefined,
+        dob: formData.dob || undefined,
+        address: formData.address ? { street: formData.address, city: formData.city, state: formData.state, zip: formData.zip } : undefined,
+        termsAccepted: formData.agreeToTerms
+      }
+      // include verification token if available (stored by earlier verification step)
+      const storedVerificationToken = (typeof window !== 'undefined') ? localStorage.getItem('verification_token') : null
+      if (storedVerificationToken) payload.verificationToken = storedVerificationToken
+      console.log('Submitting register payload', payload)
+      const data = await apiPost('/auth/register', payload)
+      // store token and user (local cache)
+      if (data.token) authStorage.setToken(data.token)
+      const user = data.user || data
+      authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, role: user.roles || user.role })
+      // populate global auth state from backend cookies (avatar upload and final redirect happen below)
+      try { await fetchMe() } catch (e) { /* ignore */ }
+      // If user selected a profile image, upload it now
+      if (formData.profileImage) {
+        try {
+          const reader = new FileReader()
+          const base64 = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result)
+            reader.onerror = reject
+            reader.readAsDataURL(formData.profileImage)
+          })
+          await apiPost('/auth/avatar', { avatar: base64 })
+          await fetchMe()
+        } catch (e) {
+          console.warn('Profile image upload failed', e)
+        }
+      }
+      // On success, redirect based on role (admin -> /admin)
+      let me2 = null
+      try { me2 = await fetchMe() } catch (e) { /* ignore */ }
+      const current2 = me2 || authStorage.getUser() || {}
+      const roles2 = current2?.roles || current2?.role || []
+      const roleArray2 = Array.isArray(roles2) ? roles2 : [roles2]
+      if (roleArray2.includes('ADMIN') || roleArray2.includes('SUPER_ADMIN')) {
+        navigate('/admin')
+      } else {
+        navigate('/')
+      }
+    } catch (error) {
+      const msg = error?.error || error?.message || (typeof error === 'string' ? error : JSON.stringify(error))
+      // If backend requires email verification, redirect user to the Verify Email flow
+      if (String(msg).toLowerCase().includes('email verification required')) {
+        try {
+          // attempt to send an OTP for this email, ignore errors
+          await apiPost('/auth/send-otp', { email: formData.email })
+        } catch (e) {
+          // ignore
+        }
+        // navigate to Verify Email page with the email prefilled
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`)
+        return
+      }
+      setErrors({ submit: msg || 'Registration failed. Please try again.' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSignup = () => {
+    // Use relative /api so Vite dev proxy forwards to backend and
+    // the browser remains same-origin for cookies.
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '/api'
+    // Redirect browser to backend Google OAuth endpoint
+    window.location.href = `${apiBase}/auth/google`
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Link to="/" className="text-3xl font-extrabold text-black tracking-wide">
+            DOORDRIPP
+          </Link>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            Create your account
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Join DOORDRIPP and start shopping today
+          </p>
+        </div>
+
+        {/* Signup Form */}
+        <div className="bg-white py-8 px-6 shadow-lg rounded-2xl border border-gray-100">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Full Name Input */}
+            <AuthInput
+              type="text"
+              name="fullName"
+              placeholder="Full Name"
+              value={formData.fullName}
+              onChange={handleChange}
+              icon={User}
+              error={errors.fullName}
+              required
+            />
+
+            {/* Email Input */}
+            <AuthInput
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={handleChange}
+              icon={Mail}
+              error={errors.email}
+              required
+            />
+
+            {/* Phone input kept optional; OTP via email is handled on login flow. */}
+            {/* Phone input removed while phone OTP is disabled */}
+
+            {/* Profile Image (optional) */}
+            <div>
+              <label className="text-sm font-medium text-gray-700">Profile Photo (optional)</label>
+              <input type="file" accept="image/*" onChange={handleFileChange} className="mt-2" />
+            </div>
+
+            {/* Optional: Gender / DOB */}
+            <div className="grid grid-cols-2 gap-3">
+              <select name="gender" value={formData.gender} onChange={handleChange} className="p-3 border rounded">
+                <option value="">Gender (optional)</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="p-3 border rounded" />
+            </div>
+
+            {/* Address (optional) */}
+            <div>
+              <textarea name="address" value={formData.address} onChange={handleChange} placeholder="Street address (optional)" className="w-full p-3 border rounded" />
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="City" className="p-2 border rounded" />
+                <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" className="p-2 border rounded" />
+                <input type="text" name="zip" value={formData.zip} onChange={handleChange} placeholder="Zip" className="p-2 border rounded" />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <AuthInput
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              icon={Lock}
+              error={errors.password}
+              required
+            />
+
+            {/* Confirm Password Input */}
+            <AuthInput
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              icon={Lock}
+              error={errors.confirmPassword}
+              required
+            />
+
+            {/* Terms and Conditions */}
+            <div className="space-y-2">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agreeToTerms"
+                  name="agreeToTerms"
+                  checked={formData.agreeToTerms}
+                  onChange={handleChange}
+                  className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black focus:ring-2 accent-black"
+                />
+                <label htmlFor="agreeToTerms" className="text-sm text-gray-600 leading-5">
+                  I agree to DOORDRIPP's{' '}
+                  <Link to="/terms" className="text-black hover:text-gray-700 font-medium">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy" className="text-black hover:text-gray-700 font-medium">
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+              {errors.agreeToTerms && (
+                <p className="text-sm text-red-500 flex items-center gap-1">
+                  <span className="w-1 h-1 rounded-full bg-red-500"></span>
+                  {errors.agreeToTerms}
+                </p>
+              )}
+            </div>
+
+            {/* Submit Error */}
+            {errors.submit && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{errors.submit}</p>
+              </div>
+            )}
+
+            {/* Create Account Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-black text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Creating account...
+                </div>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">or</span>
+              </div>
+            </div>
+
+            {/* Google Signup */}
+            <button
+              type="button"
+              onClick={handleGoogleSignup}
+              className="w-full bg-white border border-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-3"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+          </form>
+        </div>
+
+        {/* Sign In Link */}
+        <div className="mt-6 text-center">
+          <p className="text-gray-600">
+            Already have an account?{' '}
+            <Link 
+              to="/login" 
+              className="text-black font-semibold hover:text-gray-700 transition-colors duration-200"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
