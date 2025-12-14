@@ -63,7 +63,7 @@ export const getFeaturedProducts = () => {
 
 // Format price with currency
 export const formatPrice = (price) => {
-  return `$${price}`
+  return `₹${price}`
 }
 
 // Calculate discount amount

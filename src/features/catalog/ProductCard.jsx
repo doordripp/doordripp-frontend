@@ -130,7 +130,9 @@ export default function ProductCard({
   showDiscount = true,
   onClick,
   viewMode = 'grid',
-  showAddToCart = true
+  showAddToCart = true,
+  // When provided, this index will be forwarded to the product detail page
+  initialImageIndex = 0,
 }) {
   const id = product.id || product._id || product.slug
   const name = product.name
@@ -148,7 +150,7 @@ export default function ProductCard({
     return (
       <div className="group">
         <div className="flex bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow relative">
-          <Link to={`/product/${id}`} className="flex flex-1">
+          <Link to={`/product/${id}`} state={{ imageIndex: initialImageIndex }} className="flex flex-1" onClick={scrollToTop}>
             <div className="w-32 h-32 flex-shrink-0 mr-6">
               <img 
                 src={image} 
@@ -220,21 +222,21 @@ export default function ProductCard({
   }
 
   return (
-    <div className={`group cursor-pointer transition-all duration-300 hover:scale-[1.02] ${className}`}>
+    <div className={`group cursor-pointer transition-all duration-300 ${className}`}>
       {/* Product Image */}
-      <div className="relative overflow-hidden rounded-3xl bg-gray-100">
-        <Link to={`/product/${id}`}>
+      <div className="relative overflow-hidden rounded-2xl bg-gray-100 aspect-square">
+        <Link to={`/product/${id}`} state={{ imageIndex: initialImageIndex }} onClick={scrollToTop}>
           <img
             src={image}
             alt={name}
-            className="h-[298px] w-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
         </Link>
         
         {/* Discount Badge */}
         {hasDiscount && showDiscount && (
-          <div className="absolute right-3 top-3 rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">
+          <div className="absolute left-3 top-3 rounded-lg bg-red-500 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
             -{discount}%
           </div>
         )}
@@ -251,10 +253,10 @@ export default function ProductCard({
       </div>
 
       {/* Product Info */}
-      <Link to={`/product/${id}`}>
-        <div className="mt-4 space-y-2">
+      <Link to={`/product/${id}`} state={{ imageIndex: initialImageIndex }} onClick={scrollToTop}>
+        <div className="mt-3 space-y-1.5">
           {/* Product Name */}
-          <h3 className="text-lg font-bold text-black line-clamp-2 group-hover:text-gray-700 transition-colors">
+          <h3 className="text-base font-semibold text-gray-900 line-clamp-1 group-hover:text-black transition-colors">
             {name}
           </h3>
 
@@ -262,59 +264,76 @@ export default function ProductCard({
           <StarRating 
             rating={rating.rating} 
             reviews={rating.reviews}
-            className="text-sm"
+            showReviews={false}
+            className="text-xs"
           />
 
           {/* Pricing */}
-          <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold text-black">
-              ${price}
+          <div className="flex items-center gap-2 pt-1">
+            <span className="text-xl font-bold text-black">
+              ₹{price}
             </span>
             
             {hasDiscount && (
               <>
-                <span className="text-xl font-bold text-gray-400 line-through">
-                  ${originalPrice}
-                </span>
-                <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-600">
-                  -{discount}%
+                <span className="text-base font-bold text-gray-400 line-through">
+                  ₹{originalPrice}
                 </span>
               </>
             )}
           </div>
-          
-          {/* Available Colors */}
-          {colors && colors.length > 0 && (
-            <div className="flex items-center space-x-2 mt-3">
-              <span className="text-xs text-gray-600">Available colors:</span>
-              <div className="flex space-x-1">
-                {colors.slice(0, 3).map((color, index) => (
-                  <div
-                    key={index}
-                    className="w-3 h-3 rounded-full border border-gray-300"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-                {colors.length > 3 && (
-                  <span className="text-xs text-gray-400">+{colors.length - 3}</span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Add to Cart Button - Mobile/Always visible option */}
-          {showAddToCart && (
-            <div className="pt-2 sm:hidden">
-              <AddToCartButton 
-                product={product} 
-                variant="default" 
-                className="w-full text-sm py-2"
-              />
-            </div>
-          )}
         </div>
       </Link>
     </div>
   )
+}
+
+// ULTRA-AGGRESSIVE FORCED scroll-to-top: GUARANTEES page starts at absolute top
+function scrollToTop(e) {
+  try {
+    if (e) e.stopPropagation()
+    
+    const forceScrollTop = () => {
+      // All scroll methods - FORCE to 0,0
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      window.scrollTo(0, 0)
+      window.scroll(0, 0)
+      
+      // Direct manipulation
+      document.documentElement.scrollTop = 0
+      document.documentElement.scrollLeft = 0
+      document.body.scrollTop = 0
+      document.body.scrollLeft = 0
+      
+      // Disable smooth scroll
+      document.documentElement.style.scrollBehavior = 'auto'
+      
+      // Force on root
+      const root = document.getElementById('root')
+      if (root) root.scrollTop = 0
+    }
+    
+    // Execute 10 times immediately
+    for (let i = 0; i < 10; i++) {
+      forceScrollTop()
+    }
+
+    // Multiple requestAnimationFrame passes
+    requestAnimationFrame(forceScrollTop)
+    requestAnimationFrame(() => requestAnimationFrame(forceScrollTop))
+    
+    // Aggressive timing
+    setTimeout(forceScrollTop, 1)
+    setTimeout(forceScrollTop, 5)
+    setTimeout(forceScrollTop, 10)
+    setTimeout(forceScrollTop, 20)
+    setTimeout(forceScrollTop, 50)
+    setTimeout(forceScrollTop, 100)
+  } catch (err) {
+    // Fallback - still force scroll
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }
 }

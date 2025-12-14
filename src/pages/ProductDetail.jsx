@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect, useLayoutEffect } from 'react'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { Star, StarHalf, Heart, Share2, ChevronLeft, ChevronRight, Plus, Minus, ShoppingCart, Check, User } from 'lucide-react'
 import { ALL_PRODUCTS } from '../constants/products'
 import { useCart } from '../context/CartContext'
 import { ProductCard } from '../features/catalog'
+import api from '../services/api'
 
 export default function ProductDetail() {
   const { id } = useParams()
   const { addToCart } = useCart()
   const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedColor, setSelectedColor] = useState('')
   const [selectedSize, setSelectedSize] = useState('')
@@ -16,6 +18,86 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState('details')
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [isAddedToCart, setIsAddedToCart] = useState(false)
+
+  // ULTRA-AGGRESSIVE FORCE SCROLL TO ABSOLUTE TOP - MAXIMUM PRIORITY
+  useLayoutEffect(() => {
+    const forceTop = () => {
+      // Every possible scroll method - FORCE to absolute top
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      window.scrollTo(0, 0)
+      window.scroll(0, 0)
+      
+      // Direct property manipulation
+      try { window.pageXOffset = 0 } catch(e) {}
+      try { window.pageYOffset = 0 } catch(e) {}
+      
+      document.documentElement.scrollTop = 0
+      document.documentElement.scrollLeft = 0
+      document.body.scrollTop = 0
+      document.body.scrollLeft = 0
+      
+      // Force on all scrollable elements
+      const scrollableElements = document.querySelectorAll('[style*="overflow"]')
+      scrollableElements.forEach(el => {
+        el.scrollTop = 0
+      })
+      
+      // Root element
+      const root = document.getElementById('root')
+      if (root) root.scrollTop = 0
+    }
+    
+    // Execute 20 times immediately to force override
+    for (let i = 0; i < 20; i++) {
+      forceTop()
+    }
+    
+    // Disable smooth scroll
+    document.documentElement.style.scrollBehavior = 'auto'
+  }, [id])
+  
+  // CONTINUOUS forced scroll attempts - catches all edge cases
+  useEffect(() => {
+    const forceTop = () => {
+      window.scrollTo(0, 0)
+      window.scroll(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }
+    
+    // Immediate repeated execution
+    for (let i = 0; i < 15; i++) {
+      forceTop()
+    }
+    
+    // RequestAnimationFrame - multiple passes
+    requestAnimationFrame(forceTop)
+    requestAnimationFrame(() => requestAnimationFrame(forceTop))
+    requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(forceTop)))
+    
+    // Aggressive timing - catch all layout changes
+    const timers = [
+      setTimeout(forceTop, 1),
+      setTimeout(forceTop, 2),
+      setTimeout(forceTop, 5),
+      setTimeout(forceTop, 10),
+      setTimeout(forceTop, 15),
+      setTimeout(forceTop, 20),
+      setTimeout(forceTop, 30),
+      setTimeout(forceTop, 50),
+      setTimeout(forceTop, 75),
+      setTimeout(forceTop, 100),
+      setTimeout(forceTop, 150),
+      setTimeout(forceTop, 200),
+      setTimeout(forceTop, 300),
+      setTimeout(forceTop, 400),
+      setTimeout(forceTop, 500)
+    ]
+    
+    return () => timers.forEach(clearTimeout)
+  }, [id])
+  
   const [reviews, setReviews] = useState([
     {
       id: 1,
@@ -57,22 +139,83 @@ export default function ProductDetail() {
     review: ''
   })
   
-  // Find product by ID
+  // Find product by ID - check static products first, then fetch from API
   useEffect(() => {
-    const foundProduct = ALL_PRODUCTS.find(p => p.id === id)
-    if (foundProduct) {
-      setProduct(foundProduct)
-      setSelectedColor(foundProduct.colors?.[0] || '')
-      setSelectedSize(foundProduct.sizes?.[0] || '')
+    const fetchProduct = async () => {
+      setLoading(true)
+      
+      // First, try to find in static products
+      const staticProduct = ALL_PRODUCTS.find(p => p.id === id)
+      if (staticProduct) {
+        setProduct(staticProduct)
+        setSelectedColor(staticProduct.colors?.[0] || '')
+        setSelectedSize(staticProduct.sizes?.[0] || '')
+        setLoading(false)
+        return
+      }
+      
+      // If not found in static products, fetch from database
+      try {
+        const response = await api.get(`/products/${id}`)
+        const dbProduct = response.data
+        
+        // Ensure product has all required fields with defaults
+        const formattedProduct = {
+          id: dbProduct._id || dbProduct.id,
+          _id: dbProduct._id || dbProduct.id,
+          name: dbProduct.name || 'Untitled Product',
+          image: dbProduct.image || (dbProduct.images && dbProduct.images[0]) || '',
+          images: dbProduct.images || [],
+          price: dbProduct.price || 0,
+          originalPrice: dbProduct.originalPrice || null,
+          discount: dbProduct.discount || null,
+          rating: dbProduct.rating || { rating: 4.5, reviews: 0 },
+          category: dbProduct.category || 'casual',
+          subcategory: dbProduct.subcategory || 'Other',
+          colors: dbProduct.colors || ['#000000'],
+          sizes: dbProduct.sizes || ['M', 'L', 'XL'],
+          description: dbProduct.description || 'No description available.',
+          stock: dbProduct.stock || 0
+        }
+        
+        setProduct(formattedProduct)
+        setSelectedColor(formattedProduct.colors[0])
+        setSelectedSize(formattedProduct.sizes[0])
+      } catch (error) {
+        console.error('Error fetching product:', error)
+        setProduct(null)
+      } finally {
+        setLoading(false)
+      }
     }
-    // Scroll to top when product detail page loads
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    
+    fetchProduct()
   }, [id])
+
+  // If navigation provided an initial image index (via Link state), set it
+  const location = useLocation()
+  useEffect(() => {
+    const idx = location.state?.imageIndex
+    if (typeof idx === 'number') {
+      setSelectedImage(idx)
+    }
+  }, [location.state])
   
   // Get recommended products (exclude current product)
   const recommendedProducts = ALL_PRODUCTS.filter(p => 
     p.id !== id && p.category === product?.category
   ).slice(0, 4)
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading product details...</p>
+        </div>
+      </div>
+    )
+  }
   
   if (!product) {
     return (
@@ -166,13 +309,10 @@ export default function ProductDetail() {
 
 
   
-  // Mock product images (using the same image for different angles)
-  const productImages = [
-    product.image,
-    product.image,
-    product.image,
-    product.image
-  ]
+  // Product images: prefer `product.images` array when available
+  const productImages = (product.images && product.images.length > 0)
+    ? product.images
+    : [product.image, product.image, product.image, product.image]
   
   return (
     <div className="min-h-screen bg-white">
@@ -240,10 +380,10 @@ export default function ProductDetail() {
             
             {/* Price */}
             <div className="flex items-center space-x-3">
-              <span className="text-3xl font-bold text-gray-900">${product.price}</span>
+              <span className="text-3xl font-bold text-gray-900">₹{product.price}</span>
               {product.originalPrice && (
                 <>
-                  <span className="text-2xl text-gray-500 line-through">${product.originalPrice}</span>
+                  <span className="text-2xl text-gray-500 line-through">₹{product.originalPrice}</span>
                   {product.discount && (
                     <span className="bg-red-100 text-red-600 text-sm font-medium px-3 py-1 rounded-full">
                       -{product.discount}%
@@ -533,12 +673,12 @@ export default function ProductDetail() {
             <h2 className="text-2xl font-bold text-center mb-12">You might also like</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {recommendedProducts.map((relatedProduct) => (
-                <Link key={relatedProduct.id} to={`/product/${relatedProduct.id}`}>
-                  <ProductCard 
-                    product={relatedProduct}
-                    className="hover:scale-105 transition-transform duration-300"
-                  />
-                </Link>
+                <ProductCard 
+                  key={relatedProduct.id}
+                  product={relatedProduct}
+                  className="hover:scale-105 transition-transform duration-300"
+                  initialImageIndex={1}
+                />
               ))}
             </div>
           </div>

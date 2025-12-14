@@ -20,3 +20,4 @@ const Input = forwardRef(function Input(
 })
 
 export { Input }
+export default Input

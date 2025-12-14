@@ -142,11 +142,11 @@ export default function Cart() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <span className="text-2xl font-bold text-gray-900">
-                              ${item.price}
+                              ₹{item.price}
                             </span>
                             {item.originalPrice && (
                               <span className="text-lg text-gray-500 line-through">
-                                ${item.originalPrice}
+                                ₹{item.originalPrice}
                               </span>
                             )}
                             {item.discount && (
@@ -205,26 +205,26 @@ export default function Cart() {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-lg">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-semibold">${cartTotals.subtotal.toFixed(2)}</span>
+                  <span className="font-semibold">₹{cartTotals.subtotal.toFixed(2)}</span>
                 </div>
                 
                 {promoCode && cartTotals.discountAmount > 0 && (
                   <div className="flex justify-between text-lg text-red-600">
                     <span>Discount ({promoCode})</span>
-                    <span>-${cartTotals.discountAmount.toFixed(2)}</span>
+                    <span>-₹{cartTotals.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 
                 <div className="flex justify-between text-lg">
                   <span className="text-gray-600">Delivery Fee</span>
-                  <span className="font-semibold">${cartTotals.deliveryFee}</span>
+                  <span className="font-semibold">₹{cartTotals.deliveryFee}</span>
                 </div>
                 
                 <hr className="border-gray-200" />
                 
                 <div className="flex justify-between text-xl font-bold">
                   <span>Total</span>
-                  <span>${cartTotals.total.toFixed(2)}</span>
+                  <span>₹{cartTotals.total.toFixed(2)}</span>
                 </div>
               </div>
 

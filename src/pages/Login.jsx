@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Phone, Lock } from 'lucide-react'
+import { Mail, Lock } from 'lucide-react'
 import { AuthInput, GoogleIcon } from '../features/auth'
 import { apiPost } from '../services/apiClient'
 import { authStorage } from '../utils/auth'
 import { useAuth } from '../context/AuthContext'
-import { setupRecaptcha, sendSmsVerification, confirmCode } from '../services/firebaseClient'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -17,13 +16,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [isPhone, setIsPhone] = useState(false)
   const { fetchMe } = useAuth()
-  // OTP states
-  const [otpMode, setOtpMode] = useState(false)
-  const [phoneForOtp, setPhoneForOtp] = useState('')
-  const [confirmationResult, setConfirmationResult] = useState(null)
-  const [otpCode, setOtpCode] = useState('')
-  const [isSendingOtp, setIsSendingOtp] = useState(false)
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
 
   // Detect if input is phone number or email
   const handleEmailOrPhoneChange = (e) => {
@@ -97,57 +89,38 @@ export default function Login() {
 
     try {
       const payload = { email: formData.emailOrPhone, password: formData.password }
+      console.log('Login attempt with:', payload)
       const data = await apiPost('/auth/login', payload)
+      console.log('Login response:', data)
+      
+      // Store token if returned
+      if (data.token) {
+        authStorage.setToken(data.token)
+      }
+      
       // server sets httpOnly cookie for session; store returned user locally
       const user = data.user || data
-      authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, role: user.roles || user.role })
+      const userRoles = user.roles || user.role || []
+      authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, roles: userRoles })
+      
       // populate global auth state from backend cookies
       try { await fetchMe() } catch (e) { /* ignore */ }
-      // On success, redirect to home
-      navigate('/')
+      
+      // Redirect admin users to admin panel, regular users to home
+      const isAdmin = Array.isArray(userRoles) 
+        ? userRoles.some(r => r.toLowerCase() === 'admin') 
+        : (userRoles || '').toLowerCase() === 'admin'
+      navigate(isAdmin ? '/admin' : '/')
     } catch (error) {
-      const msg = error?.message || 'Login failed. Please try again.'
+      console.error('Login error:', error)
+      const msg = error?.message || error?.error || 'Login failed. Please try again.'
       setErrors({ submit: msg })
     } finally {
       setIsLoading(false)
     }
   }
 
-  // OTP handlers
-  const handleSendOtp = async () => {
-    setIsSendingOtp(true)
-    try {
-      const phone = phoneForOtp.trim()
-      if (!phone) throw new Error('Phone is required')
-      // ensure E.164 format; here we assume user enters full with + or country code
-      const verifier = setupRecaptcha('recaptcha-container')
-      const confirmation = await sendSmsVerification(phone, verifier)
-      setConfirmationResult(confirmation)
-    } catch (err) {
-      setErrors(prev => ({ ...prev, submit: err.message || 'Failed to send OTP' }))
-    } finally {
-      setIsSendingOtp(false)
-    }
-  }
 
-  const handleVerifyOtp = async () => {
-    setIsVerifyingOtp(true)
-    try {
-      if (!confirmationResult) throw new Error('No OTP request found')
-      const res = await confirmCode(confirmationResult, otpCode)
-      const idToken = res.idToken
-      // send idToken to backend to exchange for app JWT cookie
-      const data = await apiPost('/auth/firebase', { idToken })
-      const user = data.user || data
-      authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, role: user.roles || user.role })
-      try { await fetchMe() } catch (e) { /* ignore */ }
-      navigate('/')
-    } catch (err) {
-      setErrors(prev => ({ ...prev, submit: err.message || 'OTP verification failed' }))
-    } finally {
-      setIsVerifyingOtp(false)
-    }
-  }
 
   const handleGoogleLogin = () => {
     const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
@@ -174,14 +147,14 @@ export default function Login() {
         {/* Login Form */}
         <div className="bg-white py-8 px-6 shadow-lg rounded-2xl border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email or Phone Input */}
+            {/* Email Input */}
             <AuthInput
               type="text"
               name="emailOrPhone"
               placeholder="Email or Phone Number"
               value={formData.emailOrPhone}
               onChange={handleEmailOrPhoneChange}
-              icon={isPhone ? Phone : Mail}
+              icon={Mail}
               error={errors.emailOrPhone}
               required
             />
@@ -198,31 +171,7 @@ export default function Login() {
               required
             />
 
-            {/* OTP Sign-in toggle */}
-            <div className="mt-2">
-              <button type="button" onClick={() => setOtpMode(v => !v)} className="text-sm text-blue-600">{otpMode ? 'Use password login' : 'Sign in with SMS (OTP)'}</button>
-            </div>
 
-            {otpMode && (
-              <div className="space-y-3 mt-3">
-                <div>
-                  <input value={phoneForOtp} onChange={(e)=>setPhoneForOtp(e.target.value)} placeholder="Phone (E.164, e.g. +911234567890)" className="w-full p-3 border rounded" />
-                </div>
-                <div id="recaptcha-container"></div>
-                {!confirmationResult ? (
-                  <button type="button" onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-gray-800 text-white py-2 rounded">
-                    {isSendingOtp ? 'Sending...' : 'Send OTP'}
-                  </button>
-                ) : (
-                  <>
-                    <input value={otpCode} onChange={(e)=>setOtpCode(e.target.value)} placeholder="Enter OTP" className="w-full p-3 border rounded" />
-                    <button type="button" onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="w-full bg-green-600 text-white py-2 rounded mt-2">
-                      {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
 
             {/* Forgot Password */}
             <div className="flex justify-end">

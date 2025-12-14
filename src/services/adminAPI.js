@@ -8,10 +8,10 @@ const adminAPI = {
   // Products
   getProducts: async (q = {}) => (await api.get("/admin/products", { params: q })).data,
   getProduct: async (id) => (await api.get(`/admin/products/${id}`)).data,
-  createProduct: async (formData) =>
-    (await api.post("/admin/products", formData, { headers: { "Content-Type": "multipart/form-data" } })).data,
-  updateProduct: async (id, formData) =>
-    (await api.put(`/admin/products/${id}`, formData, { headers: { "Content-Type": "multipart/form-data" } })).data,
+  createProduct: async (data) =>
+    (await api.post("/admin/products", data)).data,
+  updateProduct: async (id, data) =>
+    (await api.put(`/admin/products/${id}`, data)).data,
   deleteProduct: async (id) => (await api.delete(`/admin/products/${id}`)).data,
 
   // Orders

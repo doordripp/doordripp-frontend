@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { apiGet } from '../services/apiClient'
 import { ProductCard } from '../features/catalog'
+import { NEW_ARRIVALS } from '../constants/products'
 
 export default function NewArrivalsPage() {
   const [products, setProducts] = useState([])
@@ -10,13 +11,39 @@ export default function NewArrivalsPage() {
   useEffect(() => {
     let mounted = true
     setLoading(true)
-    apiGet('/products?type=new&page=1&limit=24')
+    
+    // Fetch from API for products marked as New Arrivals
+    apiGet('/products?page=1&limit=100')
       .then(res => {
         if (!mounted) return
-        setProducts(res.data || [])
-        setMeta(res.meta || { page: 1, limit: 24, total: 0 })
+        const apiProducts = res.data || []
+        // Filter products where isNewArrival is true
+        const newArrivals = apiProducts.filter(p => p.isNewArrival === true)
+        
+        // Combine with static NEW_ARRIVALS products
+        const combinedProducts = [...NEW_ARRIVALS, ...newArrivals]
+        
+        // Remove duplicates based on slug or _id
+        const uniqueProducts = combinedProducts.reduce((acc, product) => {
+          const exists = acc.find(p => 
+            (p.slug && product.slug && p.slug === product.slug) || 
+            (p._id && product._id && p._id.toString() === product._id.toString())
+          )
+          if (!exists) acc.push(product)
+          return acc
+        }, [])
+        
+        setProducts(uniqueProducts)
+        setMeta({ page: 1, limit: uniqueProducts.length, total: uniqueProducts.length })
       })
-      .catch(err => console.error(err))
+      .catch(err => {
+        console.error(err)
+        // Fallback to static products on error
+        if (mounted) {
+          setProducts(NEW_ARRIVALS)
+          setMeta({ page: 1, limit: NEW_ARRIVALS.length, total: NEW_ARRIVALS.length })
+        }
+      })
       .finally(() => mounted && setLoading(false))
     return () => { mounted = false }
   }, [])
@@ -38,7 +65,7 @@ export default function NewArrivalsPage() {
         ) : (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map(p => (
-              <ProductCard key={p._id} product={p} />
+              <ProductCard key={p._id || p.slug} product={p} initialImageIndex={1} />
             ))}
           </div>
         )}
