@@ -2,22 +2,46 @@
 // Comprehensive product catalog with categories, filters, and detailed information
 
 // Import product images from assets
-import blackTshirtImg from '../assets/image 7.png'  // Black T-shirt
-import skinnyJeansImg from '../assets/image 8.png'  // Blue Jeans
-import checkeredShirtImg from '../assets/image 9.png' // Checkered Shirt
-import stripedTshirtImg from '../assets/image 10.png' // Orange/Black Striped T-shirt
+import blackTshirtImg from '../assets/image 7.png'
+import skinnyJeansImg from '../assets/image 8.png'
+import checkeredShirtImg from '../assets/image 9.png'
+import stripedTshirtImg from '../assets/image 10.png'
 
 // Top Selling Images
-import stripedShirtImg from '../assets/image 11.png' // Green Striped Shirt
-import orangeTshirtImg from '../assets/image 12.png' // Orange T-shirt with text
-import bermudaShortsImg from '../assets/image 8 (1).png' // Blue Shorts
-import fadedJeansImg from '../assets/image 7 (1).png' // Black Jeans
+import stripedShirtImg from '../assets/image 11.png'
+import orangeTshirtImg from '../assets/image 12.png'
+import bermudaShortsImg from '../assets/image 8 (1).png'
+import fadedJeansImg from '../assets/image 7 (1).png'
 
 // Additional category images
 import graphicTeeImg from '../assets/image 11 (1).png'
 import poloShirtImg from '../assets/image 9 (1).png'
 import casualShirtImg from '../assets/Rectangle 2.png'
 import hoodieImg from '../assets/Rectangle 2 (1).png'
+
+// Men's clothing
+import mensImg1 from '../assets/4909eefdd4938899f2419357de98781c.jpg'
+import mensImg2 from '../assets/4cb1497a8350a0f0cc8239a6845076a4.jpg'
+import mensImg3 from '../assets/9b2990de04e99aa5154207de6d62b46f.jpg'
+import mensImg4 from '../assets/b2fa1e773bf84519023d806147eb20ae.jpg'
+
+// Women's clothing
+import womensImg1 from '../assets/aba82f1ac48b7d970fbe94ff4f35a24a.jpg'
+import womensImg2 from '../assets/bcba29523514afda81669aadfc1e6838.jpg'
+import womensImg3 from '../assets/ea4cb70a854b3e148ddc9f7c1fae6bf8.jpg'
+import womensImg4 from '../assets/d4adf6cc494b5da71bd372cb7be89fd2.jpg'
+
+// Accessories
+import accessoriesImg1 from '../assets/300ce70937bb2f31d700c335c9c731aa.jpg'
+import accessoriesImg2 from '../assets/792d28d6f0f696c51c2c43dd67410fe3.jpg'
+import accessoriesImg3 from '../assets/b81bf357484b07404ffeea64fc09ba1d.jpg'
+import accessoriesImg4 from '../assets/d6754f3e9e6c14d3d5b308d69a022452.jpg'
+
+// Footwear
+import footwearImg1 from '../assets/b26fea69ccfd8aa5825862cdb9604a4fb4930464.jpg'
+import footwearImg2 from '../assets/Frame 38.png'
+import footwearImg3 from '../assets/Rectangle 8.png'
+import footwearImg4 from '../assets/Rectangle 9.png'
 
 // Product images mapping
 const PRODUCT_IMAGES = {
@@ -169,6 +193,230 @@ export const TOP_SELLING = [
   }
 ]
 
+// Men's Clothing Products
+export const MENS_PRODUCTS = [
+  {
+    id: 'men-1',
+    name: 'Classic Denim Jacket',
+    image: mensImg1,
+    price: 299,
+    originalPrice: 350,
+    discount: 15,
+    rating: createRating(4.5, 234),
+    category: 'men',
+    subcategory: 'Jackets',
+    colors: ['#1E3A8A', '#000000'],
+    sizes: ['S', 'M', 'L', 'XL']
+  },
+  {
+    id: 'men-2',
+    name: 'Premium Cotton Shirt',
+    image: mensImg2,
+    price: 180,
+    originalPrice: 220,
+    discount: 18,
+    rating: createRating(4.0, 189),
+    category: 'men',
+    subcategory: 'Shirts',
+    colors: ['#FFFFFF', '#87CEEB', '#FFC0CB'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 'men-3',
+    name: 'Casual Green Shirt',
+    image: mensImg3,
+    price: 210,
+    originalPrice: null,
+    discount: null,
+    rating: createRating(5.0, 567),
+    category: 'men',
+    subcategory: 'Shirts',
+    colors: ['#228B22', '#000000', '#FFFFFF'],
+    sizes: ['M', 'L', 'XL']
+  },
+  {
+    id: 'men-4',
+    name: 'Street Style Outfit',
+    image: mensImg4,
+    price: 425,
+    originalPrice: 500,
+    discount: 15,
+    rating: createRating(4.5, 892),
+    category: 'men',
+    subcategory: 'Outfits',
+    colors: ['#8B4513', '#FFFFFF'],
+    sizes: ['S', 'M', 'L', 'XL']
+  }
+]
+
+// Women's Clothing Products
+export const WOMENS_PRODUCTS = [
+  {
+    id: 'women-1',
+    name: 'Elegant Summer Dress',
+    image: womensImg1,
+    price: 350,
+    originalPrice: 420,
+    discount: 17,
+    rating: createRating(4.8, 456),
+    category: 'women',
+    subcategory: 'Dresses',
+    colors: ['#FF69B4', '#FFFFFF', '#000000'],
+    sizes: ['XS', 'S', 'M', 'L']
+  },
+  {
+    id: 'women-2',
+    name: 'Power Suit Outfit',
+    image: womensImg2,
+    price: 520,
+    originalPrice: 650,
+    discount: 20,
+    rating: createRating(5.0, 678),
+    category: 'women',
+    subcategory: 'Suits',
+    colors: ['#A9A9A9', '#000000'],
+    sizes: ['S', 'M', 'L', 'XL']
+  },
+  {
+    id: 'women-3',
+    name: 'Outdoor Party Jacket',
+    image: womensImg3,
+    price: 380,
+    originalPrice: 450,
+    discount: 16,
+    rating: createRating(4.5, 345),
+    category: 'women',
+    subcategory: 'Jackets',
+    colors: ['#D2B48C', '#8B4513', '#000000'],
+    sizes: ['XS', 'S', 'M', 'L', 'XL']
+  },
+  {
+    id: 'women-4',
+    name: 'Vintage Style Top',
+    image: womensImg4,
+    price: 195,
+    originalPrice: 240,
+    discount: 19,
+    rating: createRating(4.2, 234),
+    category: 'women',
+    subcategory: 'Tops',
+    colors: ['#FFE4E1', '#FFFFFF', '#C0C0C0'],
+    sizes: ['S', 'M', 'L']
+  }
+]
+
+// Accessories Products
+export const ACCESSORIES_PRODUCTS = [
+  {
+    id: 'acc-1',
+    name: 'Designer Handbag',
+    image: accessoriesImg1,
+    price: 450,
+    originalPrice: 550,
+    discount: 18,
+    rating: createRating(4.7, 567),
+    category: 'accessories',
+    subcategory: 'Bags',
+    colors: ['#8B4513', '#000000', '#A0522D'],
+    sizes: ['One Size']
+  },
+  {
+    id: 'acc-2',
+    name: 'Luxury Watch',
+    image: accessoriesImg2,
+    price: 850,
+    originalPrice: 1000,
+    discount: 15,
+    rating: createRating(5.0, 892),
+    category: 'accessories',
+    subcategory: 'Watches',
+    colors: ['#FFD700', '#C0C0C0', '#000000'],
+    sizes: ['One Size']
+  },
+  {
+    id: 'acc-3',
+    name: 'Leather Belt',
+    image: accessoriesImg3,
+    price: 120,
+    originalPrice: 150,
+    discount: 20,
+    rating: createRating(4.3, 234),
+    category: 'accessories',
+    subcategory: 'Belts',
+    colors: ['#8B4513', '#000000'],
+    sizes: ['S', 'M', 'L', 'XL']
+  },
+  {
+    id: 'acc-4',
+    name: 'Stylish Sunglasses',
+    image: accessoriesImg4,
+    price: 180,
+    originalPrice: 220,
+    discount: 18,
+    rating: createRating(4.6, 456),
+    category: 'accessories',
+    subcategory: 'Sunglasses',
+    colors: ['#000000', '#8B4513', '#FFD700'],
+    sizes: ['One Size']
+  }
+]
+
+// Footwear Products
+export const FOOTWEAR_PRODUCTS = [
+  {
+    id: 'foot-1',
+    name: 'Classic Sneakers',
+    image: footwearImg1,
+    price: 320,
+    originalPrice: 400,
+    discount: 20,
+    rating: createRating(4.8, 678),
+    category: 'footwear',
+    subcategory: 'Sneakers',
+    colors: ['#FFFFFF', '#000000', '#FF0000'],
+    sizes: ['7', '8', '9', '10', '11']
+  },
+  {
+    id: 'foot-2',
+    name: 'Formal Leather Shoes',
+    image: footwearImg2,
+    price: 450,
+    originalPrice: 550,
+    discount: 18,
+    rating: createRating(4.5, 345),
+    category: 'footwear',
+    subcategory: 'Formal',
+    colors: ['#000000', '#8B4513'],
+    sizes: ['7', '8', '9', '10', '11', '12']
+  },
+  {
+    id: 'foot-3',
+    name: 'Running Sports Shoes',
+    image: footwearImg3,
+    price: 280,
+    originalPrice: 350,
+    discount: 20,
+    rating: createRating(4.7, 892),
+    category: 'footwear',
+    subcategory: 'Sports',
+    colors: ['#1E90FF', '#000000', '#FFFFFF'],
+    sizes: ['7', '8', '9', '10', '11']
+  },
+  {
+    id: 'foot-4',
+    name: 'Casual Loafers',
+    image: footwearImg4,
+    price: 250,
+    originalPrice: 300,
+    discount: 17,
+    rating: createRating(4.4, 234),
+    category: 'footwear',
+    subcategory: 'Casual',
+    colors: ['#8B4513', '#000000', '#D2691E'],
+    sizes: ['7', '8', '9', '10', '11']
+  }
+]
+
 // Comprehensive Category Products for Category Pages
 export const CATEGORY_PRODUCTS = {
   casual: [
@@ -289,7 +537,11 @@ export const CATEGORY_PRODUCTS = {
       colors: ['blue', 'khaki', 'black'],
       sizes: ['S', 'M', 'L', 'XL']
     }
-  ]
+  ],
+  men: MENS_PRODUCTS,
+  women: WOMENS_PRODUCTS,
+  accessories: ACCESSORIES_PRODUCTS,
+  footwear: FOOTWEAR_PRODUCTS
 }
 
 // Filter options for category pages

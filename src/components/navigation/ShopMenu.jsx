@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, forwardRef } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
-export default function ShopMenu({ isOpen, onOpenChange, onClose }) {
+const ShopMenu = forwardRef(({ isOpen, onOpenChange, onClose, onMouseEnter, onMouseLeave }, ref) => {
   const [open, setOpen] = useState(false)
-  const ref = useRef(null)
+  const internalRef = useRef(null)
+  const containerRef = ref || internalRef
   const navigate = useNavigate()
   const firstItemRef = useRef(null)
 
@@ -22,7 +23,7 @@ export default function ShopMenu({ isOpen, onOpenChange, onClose }) {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
         handleOpenChange(false)
       }
     }
@@ -67,7 +68,7 @@ export default function ShopMenu({ isOpen, onOpenChange, onClose }) {
   // Keyboard navigation support
   const onKeyDown = (e) => {
     if (!open) return
-    const items = Array.from(ref.current.querySelectorAll('[role="menuitem"]'))
+    const items = Array.from(containerRef.current.querySelectorAll('[role="menuitem"]'))
     const index = items.indexOf(document.activeElement)
     if (e.key === 'Escape') {
       setOpen(false)
@@ -82,10 +83,10 @@ export default function ShopMenu({ isOpen, onOpenChange, onClose }) {
 
   return (
     <div
-      ref={ref}
+      ref={containerRef}
       className="relative"
-      onMouseEnter={() => handleOpenChange(true)}
-      onMouseLeave={() => handleOpenChange(false)}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       onKeyDown={onKeyDown}
     >
       <button
@@ -97,21 +98,14 @@ export default function ShopMenu({ isOpen, onOpenChange, onClose }) {
         Shop <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Screen overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-transparent"
-          aria-hidden
-          onClick={() => handleOpenChange(false)}
-        />
-      )}
-
       <div
-        className={`absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-gray-200 bg-white shadow-lg transition-all duration-150 ${
-          open ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-2 invisible'
+        className={`absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-gray-200 bg-white shadow-lg transition-all duration-200 ${
+          open ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-2 invisible pointer-events-none'
         }`}
         role="menu"
         aria-label="Shop menu"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       >
         <div className="py-1">
           <button
@@ -175,4 +169,8 @@ export default function ShopMenu({ isOpen, onOpenChange, onClose }) {
       </div>
     </div>
   )
-}
+})
+
+ShopMenu.displayName = 'ShopMenu'
+
+export default ShopMenu

@@ -1,5 +1,5 @@
 import { Hero, FastestDelivery, CustomerTestimonials } from '../layout'
-import { CategoriesSection, NewArrivals, TopSelling } from '../features/catalog'
+import { CategoriesSection, NewArrivals, TopSelling, PopularProducts, FootwearSection, AccessoriesSection } from '../features/catalog'
 
 export default function Home() {
   return (
@@ -9,6 +9,9 @@ export default function Home() {
       <CategoriesSection />
       <NewArrivals />
       <TopSelling />
+      <PopularProducts />
+      <FootwearSection />
+      <AccessoriesSection />
       <CustomerTestimonials />
     </>
   )

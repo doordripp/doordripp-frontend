@@ -12,6 +12,8 @@ export default function Navbar() {
 	const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false)
 	const [showShopDropdown, setShowShopDropdown] = useState(false)
 	const categoriesRef = useRef(null)
+	const shopRef = useRef(null)
+	const closeTimeoutRef = useRef(null)
 	const navigate = useNavigate()
 	const { cartTotals, toggleDrawer } = useCart()
 	const { user, logout } = useAuth()
@@ -38,16 +40,71 @@ export default function Navbar() {
 		toggleDrawer(true)
 	}
 
-	// Close categories on outside click
+	const handleShopMouseEnter = () => {
+		if (closeTimeoutRef.current) {
+			clearTimeout(closeTimeoutRef.current)
+			closeTimeoutRef.current = null
+		}
+		setShowShopDropdown(true)
+		setShowCategoriesDropdown(false)
+	}
+
+	const handleShopMouseLeave = () => {
+		if (closeTimeoutRef.current) {
+			clearTimeout(closeTimeoutRef.current)
+		}
+		closeTimeoutRef.current = setTimeout(() => {
+			setShowShopDropdown(false)
+		}, 150)
+	}
+
+	const handleCategoriesMouseEnter = () => {
+		if (closeTimeoutRef.current) {
+			clearTimeout(closeTimeoutRef.current)
+			closeTimeoutRef.current = null
+		}
+		setShowCategoriesDropdown(true)
+		setShowShopDropdown(false)
+	}
+
+	const handleCategoriesMouseLeave = () => {
+		if (closeTimeoutRef.current) {
+			clearTimeout(closeTimeoutRef.current)
+		}
+		closeTimeoutRef.current = setTimeout(() => {
+			setShowCategoriesDropdown(false)
+		}, 150)
+	}
+
+	const closeAllDropdowns = () => {
+		if (closeTimeoutRef.current) {
+			clearTimeout(closeTimeoutRef.current)
+		}
+		setShowShopDropdown(false)
+		setShowCategoriesDropdown(false)
+	}
+
+	// Close dropdowns on outside click
 	useEffect(() => {
 		const handleClickOutside = (event) => {
 			if (categoriesRef.current && !categoriesRef.current.contains(event.target)) {
 				setShowCategoriesDropdown(false)
 			}
+			if (shopRef.current && !shopRef.current.contains(event.target)) {
+				setShowShopDropdown(false)
+			}
 		}
-		if (showCategoriesDropdown) document.addEventListener('mousedown', handleClickOutside)
-		return () => document.removeEventListener('mousedown', handleClickOutside)
-	}, [showCategoriesDropdown])
+
+		if (showCategoriesDropdown || showShopDropdown) {
+			document.addEventListener('mousedown', handleClickOutside)
+		}
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside)
+			if (closeTimeoutRef.current) {
+				clearTimeout(closeTimeoutRef.current)
+			}
+		}
+	}, [showCategoriesDropdown, showShopDropdown])
 
 	return (
 		<header className="w-full border-b border-neutral-200/60 bg-white z-50 relative sticky top-0">
@@ -65,38 +122,38 @@ export default function Navbar() {
 
 			<div className="flex w-full items-center gap-4 px-3 py-3">
 				{/* Left: Brand */}
-				<a href="/" className="shrink-0 text-xl font-extrabold tracking-wide">DOORDRIPP</a>
+				<a href="/" className="shrink-0 text-xl font-extrabold tracking-wide" onMouseEnter={closeAllDropdowns}>DOORDRIPP</a>
 
 				{/* Middle: Nav links */}
 				<nav className="hidden md:flex items-center gap-6 text-sm">
 					<ShopMenu 
+						ref={shopRef}
 						isOpen={showShopDropdown}
 						onOpenChange={setShowShopDropdown}
 						onClose={() => {
 							setShowShopDropdown(false)
 							setShowCategoriesDropdown(false)
 						}}
+						onMouseEnter={handleShopMouseEnter}
+						onMouseLeave={handleShopMouseLeave}
 					/>
 					{/* Categories Dropdown */}
 					<div 
 						ref={categoriesRef} 
 						className="relative" 
-						onMouseEnter={() => {
-							setShowCategoriesDropdown(true)
-							setShowShopDropdown(false)
-						}} 
-						onMouseLeave={() => setShowCategoriesDropdown(false)}
+						onMouseEnter={handleCategoriesMouseEnter}
+						onMouseLeave={handleCategoriesMouseLeave}
 					>
 						<button className="inline-flex items-center gap-1 hover:text-black/80 transition-colors duration-200 font-medium">
 							Categories
 							<ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showCategoriesDropdown ? 'rotate-180' : ''}`} />
 						</button>
 
-						{showCategoriesDropdown && (
-							<div className="fixed inset-0 z-40 bg-transparent" aria-hidden onClick={() => setShowCategoriesDropdown(false)} />
-						)}
-
-						<div className={`absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-gray-200 bg-white shadow-lg transition-all duration-150 ${showCategoriesDropdown ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-2 invisible'}`}>
+						<div 
+							className={`absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-gray-200 bg-white shadow-lg transition-all duration-200 ${showCategoriesDropdown ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-2 invisible pointer-events-none'}`}
+							onMouseEnter={handleCategoriesMouseEnter}
+							onMouseLeave={handleCategoriesMouseLeave}
+						>
 							<div className="py-1">
 								<Link to="/category?category=casual" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
 									All Categories
@@ -117,17 +174,17 @@ export default function Navbar() {
 						</div>
 					</div>
 
-					<Link to="/products" className="hover:text-black/70 transition-colors duration-200">All Products</Link>
-					<button onClick={() => scrollToSection('new-arrivals')} className="hover:text-black/70 transition-colors duration-200">New Arrivals</button>
-					<button onClick={() => scrollToSection('top-selling')} className="hover:text-black/70 transition-colors duration-200">Best Sellers</button>
+					<Link to="/products" className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>All Products</Link>
+					<button onClick={() => scrollToSection('new-arrivals')} className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>New Arrivals</button>
+					<button onClick={() => scrollToSection('top-selling')} className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>Best Sellers</button>
 				</nav>
 
 				{/* Search */}
-				<div className="flex-1" />
-				<Searchbar className="hidden sm:flex w-[400px] max-w-full" onSearch={handleSearch} />
+				<div className="flex-1" onMouseEnter={closeAllDropdowns} />
+				<Searchbar className="hidden sm:flex w-[400px] max-w-full" onSearch={handleSearch} onMouseEnter={closeAllDropdowns} />
 
 				{/* Right: Icons */}
-				<div className="ml-2 flex items-center gap-4">
+				<div className="ml-2 flex items-center gap-4" onMouseEnter={closeAllDropdowns}>
 					{/* Mobile Menu */}
 					<MobileMenu />
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
-import { FILTER_OPTIONS, NEW_ARRIVALS, TOP_SELLING } from '../constants/products'
+import { FILTER_OPTIONS, NEW_ARRIVALS, TOP_SELLING, MENS_PRODUCTS, WOMENS_PRODUCTS, ACCESSORIES_PRODUCTS, FOOTWEAR_PRODUCTS } from '../constants/products'
 import { apiGet } from '../services/apiClient'
 import { ProductCard } from '../features/catalog'
 
@@ -16,7 +16,7 @@ export default function CategoryPage() {
   const [viewMode, setViewMode] = useState('grid')
   const [sortBy, setSortBy] = useState('most-popular')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 9
+  const itemsPerPage = 50
   
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,7 +30,7 @@ export default function CategoryPage() {
     size: true,
     dressStyle: true
   })
-  const [priceRange, setPriceRange] = useState([50, 200])
+  const [priceRange, setPriceRange] = useState([50, 10000])
   const [selectedFilters, setSelectedFilters] = useState({
     subcategories: subcategoryFromUrl ? [subcategoryFromUrl] : [],
     colors: [],
@@ -56,42 +56,76 @@ export default function CategoryPage() {
     let mounted = true
     setLoading(true)
     
-    // Combine local products from NEW_ARRIVALS and TOP_SELLING
-    const allLocalProducts = [...NEW_ARRIVALS, ...TOP_SELLING]
-    
-    // Filter by category
-    let categoryProducts = allLocalProducts.filter(p => 
-      p.category?.toLowerCase() === category.toLowerCase()
-    )
-    
-    // If subcategory specified, filter further
-    if (subcategoryFromUrl) {
-      categoryProducts = categoryProducts.filter(p =>
-        p.subcategory?.toLowerCase() === subcategoryFromUrl.toLowerCase()
-      )
+    // Start with local products based on category
+    let categoryProducts = []
+    if (category === 'men') {
+      categoryProducts = [...MENS_PRODUCTS]
+    } else if (category === 'women') {
+      categoryProducts = [...WOMENS_PRODUCTS]
+    } else if (category === 'accessories') {
+      categoryProducts = [...ACCESSORIES_PRODUCTS]
+    } else if (category === 'footwear') {
+      categoryProducts = [...FOOTWEAR_PRODUCTS]
+    } else {
+      categoryProducts = [...NEW_ARRIVALS, ...TOP_SELLING]
     }
     
-    setProducts(categoryProducts)
-    setLoading(false)
+    const allLocalProducts = categoryProducts
     
-    // Also try to fetch from API and merge (optional)
-    apiGet(`/products/categories/${encodeURIComponent(category)}?page=${currentPage}&limit=${itemsPerPage}`)
+    // Fetch products from API - get ALL products
+    apiGet(`/products?limit=200`)
       .then(res => {
         if (!mounted) return
-        const apiProducts = res.data || []
-        // Merge API products with local products (avoid duplicates)
-        const allProducts = [...categoryProducts]
-        apiProducts.forEach(apiProd => {
+        
+        // Handle different response structures
+        let apiProducts = []
+        if (res.data) {
+          if (Array.isArray(res.data)) {
+            apiProducts = res.data
+          } else if (res.data.products && Array.isArray(res.data.products)) {
+            apiProducts = res.data.products
+          }
+        }
+        
+        // Merge ALL API products with local products (avoid duplicates by name)
+        const allProducts = [...apiProducts]
+        allLocalProducts.forEach(localProd => {
           const exists = allProducts.find(p => 
-            (p.id === apiProd.id || p._id === apiProd._id || p.name === apiProd.name)
+            p.name?.toLowerCase() === localProd.name?.toLowerCase()
           )
           if (!exists) {
-            allProducts.push(apiProd)
+            allProducts.push(localProd)
           }
         })
-        setProducts(allProducts)
+        
+        console.log('Total products loaded:', allProducts.length)
+        console.log('Products:', allProducts.map(p => ({ name: p.name, price: p.price, category: p.category })))
+        
+        // If subcategory specified, filter
+        if (subcategoryFromUrl) {
+          const filtered = allProducts.filter(p =>
+            p.subcategory?.toLowerCase() === subcategoryFromUrl.toLowerCase()
+          )
+          setProducts(filtered)
+        } else {
+          setProducts(allProducts)
+        }
+        
+        setLoading(false)
       })
-      .catch(err => console.error('Failed to load category products', err))
+      .catch(err => {
+        console.error('Failed to load products from API:', err)
+        // Use only local products on error
+        if (subcategoryFromUrl) {
+          const filtered = allLocalProducts.filter(p =>
+            p.subcategory?.toLowerCase() === subcategoryFromUrl.toLowerCase()
+          )
+          setProducts(filtered)
+        } else {
+          setProducts(allLocalProducts)
+        }
+        setLoading(false)
+      })
     
     return () => { mounted = false }
   }, [category, currentPage, subcategoryFromUrl])
@@ -189,7 +223,7 @@ export default function CategoryPage() {
       sizes: [],
       dressStyles: []
     })
-    setPriceRange([50, 200])
+    setPriceRange([50, 10000])
     setCurrentPage(1)
     scrollToProducts()
   }
@@ -278,7 +312,7 @@ export default function CategoryPage() {
                       <input
                         type="range"
                         min="50"
-                        max="300"
+                        max="10000"
                         value={priceRange[1]}
                         onChange={(e) => handlePriceChange([priceRange[0], parseInt(e.target.value)])}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
