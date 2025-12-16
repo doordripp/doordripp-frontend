@@ -20,8 +20,15 @@ export default function NewArrivalsPage() {
         // Filter products where isNewArrival is true
         const newArrivals = apiProducts.filter(p => p.isNewArrival === true)
         
-        // Combine with static NEW_ARRIVALS products
-        const combinedProducts = [...NEW_ARRIVALS, ...newArrivals]
+        // Sort by creation date (newest first)
+        newArrivals.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0)
+          const dateB = new Date(b.createdAt || 0)
+          return dateB - dateA // Newest first
+        })
+        
+        // Combine: API products first (newest), then static products
+        const combinedProducts = [...newArrivals, ...NEW_ARRIVALS]
         
         // Remove duplicates based on slug or _id
         const uniqueProducts = combinedProducts.reduce((acc, product) => {

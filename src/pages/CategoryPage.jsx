@@ -58,15 +58,27 @@ export default function CategoryPage() {
     let mounted = true
     setLoading(true)
     
+    // Determine the category to filter by
+    let categoryFilter = null
+    if (gender === 'men' || category === 'men') {
+      categoryFilter = 'Men'
+    } else if (gender === 'women' || category === 'women') {
+      categoryFilter = 'Women'
+    } else if (category === 'accessories') {
+      categoryFilter = 'Accessories'
+    } else if (category === 'footwear') {
+      categoryFilter = 'Footwear'
+    }
+    
     // Start with local products based on category or gender
     let categoryProducts = []
-    if (gender === 'men' || category === 'men') {
+    if (categoryFilter === 'Men') {
       categoryProducts = [...MENS_PRODUCTS]
-    } else if (gender === 'women' || category === 'women') {
+    } else if (categoryFilter === 'Women') {
       categoryProducts = [...WOMENS_PRODUCTS]
-    } else if (category === 'accessories') {
+    } else if (categoryFilter === 'Accessories') {
       categoryProducts = [...ACCESSORIES_PRODUCTS]
-    } else if (category === 'footwear') {
+    } else if (categoryFilter === 'Footwear') {
       categoryProducts = [...FOOTWEAR_PRODUCTS]
     } else {
       categoryProducts = [...NEW_ARRIVALS, ...TOP_SELLING]
@@ -89,7 +101,14 @@ export default function CategoryPage() {
           }
         }
         
-        // Merge ALL API products with local products (avoid duplicates by name)
+        // Filter API products by category
+        if (categoryFilter) {
+          apiProducts = apiProducts.filter(p => 
+            p.category?.toLowerCase() === categoryFilter.toLowerCase()
+          )
+        }
+        
+        // Merge filtered API products with local products (avoid duplicates by name)
         const allProducts = [...apiProducts]
         allLocalProducts.forEach(localProd => {
           const exists = allProducts.find(p => 
@@ -100,6 +119,7 @@ export default function CategoryPage() {
           }
         })
         
+        console.log('Category:', categoryFilter)
         console.log('Total products loaded:', allProducts.length)
         console.log('Products:', allProducts.map(p => ({ name: p.name, price: p.price, category: p.category })))
         
@@ -130,7 +150,7 @@ export default function CategoryPage() {
       })
     
     return () => { mounted = false }
-  }, [category, currentPage, subcategoryFromUrl])
+  }, [category, currentPage, subcategoryFromUrl, gender])
 
   // Get products for current category (fetched from backend)
   const categoryProducts = products || []

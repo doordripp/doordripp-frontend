@@ -13,6 +13,13 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState(null)
   const location = useLocation()
 
+  const roleOptions = [
+    { value: 'all', label: 'All Roles' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'manager', label: 'Manager' },
+    { value: 'customer', label: 'Customer' }
+  ]
+
   // Mock user data
   const mockUsers = [
     {
@@ -229,7 +236,7 @@ export default function AdminUsers() {
     setShowAddUserModal(true)
   }
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     const user = users.find(u => u.id === userId)
     if (user.role === 'admin' && user.email === 'admin@doordripp.local') {
       alert('Cannot delete the main admin user')
@@ -237,28 +244,53 @@ export default function AdminUsers() {
     }
     
     if (window.confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(u => u.id !== userId))
+      try {
+        await adminAPI.deleteUser(userId)
+        setUsers(users.filter(u => u.id !== userId))
+      } catch (err) {
+        console.error('Failed to delete user:', err)
+        alert('Failed to delete user. Please try again.')
+      }
     }
   }
 
-  const handleSaveUser = (userData) => {
-    if (editingUser) {
-      // Update existing user
-      setUsers(users.map(u => 
-        u.id === editingUser.id ? { ...u, ...userData } : u
-      ))
-    } else {
-      // Add new user
-      const newUser = {
-        id: Date.now(),
-        ...userData,
-        status: 'active',
-        lastLogin: new Date().toISOString(),
-        createdAt: new Date().toISOString()
+  const handleSaveUser = async (userData) => {
+    try {
+      if (editingUser) {
+        // Update existing user
+        const updated = await adminAPI.updateUser(editingUser.id, {
+          name: userData.name,
+          email: userData.email,
+          roles: [userData.role],
+          blocked: userData.status === 'inactive'
+        })
+        
+        setUsers(users.map(u => 
+          u.id === editingUser.id ? {
+            ...u,
+            name: updated.name,
+            email: updated.email,
+            role: updated.roles && updated.roles.length > 0 ? updated.roles[0] : 'customer',
+            status: updated.blocked ? 'inactive' : 'active'
+          } : u
+        ))
+      } else {
+        // Note: For adding new users, you'd need a separate endpoint or use auth signup
+        // For now, this is a placeholder
+        const newUser = {
+          id: Date.now(),
+          ...userData,
+          status: 'active',
+          lastLogin: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        }
+        setUsers([newUser, ...users])
       }
-      setUsers([newUser, ...users])
+      setShowAddUserModal(false)
+    } catch (err) {
+      console.error('Failed to save user:', err)
+      alert('Failed to save user. Please try again.')
     }
-    setShowAddUserModal(false)
   }
 
   if (loading) {

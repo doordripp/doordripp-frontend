@@ -114,6 +114,7 @@ export const NEW_ARRIVALS = [
     subcategory: 'T-shirts',
     colors: ['#000000', '#FFFFFF', '#808080'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    stock: 100,
     isNew: true
   },
   {
@@ -129,6 +130,7 @@ export const NEW_ARRIVALS = [
     subcategory: 'Jeans',
     colors: ['#4169E1', '#000000'],
     sizes: ['28', '30', '32', '34', '36'],
+    stock: 100,
     isNew: true
   },
   {
@@ -144,6 +146,7 @@ export const NEW_ARRIVALS = [
     subcategory: 'Shirts',
     colors: ['#FF0000', '#0000FF', '#008000'],
     sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100,
     isNew: true
   },
   {
@@ -159,6 +162,7 @@ export const NEW_ARRIVALS = [
     subcategory: 'T-shirts',
     colors: ['#FFA500', '#000000', '#FFFFFF'],
     sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100,
     isNew: true
   },
   {
@@ -174,6 +178,7 @@ export const NEW_ARRIVALS = [
     subcategory: 'Jackets',
     colors: ['#4169E1', '#1C1C1C'],
     sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100,
     isNew: true
   },
   {
@@ -189,6 +194,7 @@ export const NEW_ARRIVALS = [
     subcategory: 'Shirts',
     colors: ['#000080', '#FFFFFF', '#DC143C'],
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    stock: 100,
     isNew: true
   },
   {
@@ -204,6 +210,7 @@ export const NEW_ARRIVALS = [
     subcategory: 'Shorts',
     colors: ['#8B4513', '#000000', '#696969'],
     sizes: ['28', '30', '32', '34', '36'],
+    stock: 100,
     isNew: true
   },
   {
@@ -219,6 +226,7 @@ export const NEW_ARRIVALS = [
     subcategory: 'Hoodies',
     colors: ['#808080', '#000000', '#000080'],
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    stock: 100,
     isNew: true
   }
 ]
@@ -238,6 +246,7 @@ export const TOP_SELLING = [
     subcategory: 'Shirts',
     colors: ['#008000', '#0000FF', '#FFFFFF'],
     sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100,
     isTopSelling: true
   },
   {
@@ -253,6 +262,7 @@ export const TOP_SELLING = [
     subcategory: 'T-shirts',
     colors: ['#FFA500', '#FFFFFF', '#000000'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    stock: 100,
     isTopSelling: true
   },
   {
@@ -268,6 +278,7 @@ export const TOP_SELLING = [
     subcategory: 'Shorts',
     colors: ['#4169E1', '#8B4513', '#000000'],
     sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100,
     isTopSelling: true
   },
   {
@@ -283,6 +294,7 @@ export const TOP_SELLING = [
     subcategory: 'Jeans',
     colors: ['#000000', '#4169E1'],
     sizes: ['28', '30', '32', '34', '36'],
+    stock: 100,
     isTopSelling: true
   },
   {
@@ -298,6 +310,7 @@ export const TOP_SELLING = [
     subcategory: 'Shirts',
     colors: ['#000080', '#FFFFFF', '#DC143C'],
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    stock: 100,
     isTopSelling: true
   },
   {
@@ -313,6 +326,7 @@ export const TOP_SELLING = [
     subcategory: 'T-shirts',
     colors: ['#000000', '#FFFFFF', '#808080'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    stock: 100,
     isTopSelling: true
   },
   {
@@ -328,6 +342,7 @@ export const TOP_SELLING = [
     subcategory: 'Hoodies',
     colors: ['#000000', '#808080', '#000080'],
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    stock: 100,
     isTopSelling: true
   },
   {
@@ -343,6 +358,7 @@ export const TOP_SELLING = [
     subcategory: 'Shirts',
     colors: ['#4169E1', '#FFFFFF', '#000000'],
     sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100,
     isTopSelling: true
   }
 ]
@@ -360,7 +376,8 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'Jackets',
     colors: ['#1E3A8A', '#000000'],
-    sizes: ['S', 'M', 'L', 'XL']
+    sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100
   },
   {
     id: 'men-2',
@@ -373,7 +390,8 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'Shirts',
     colors: ['#FFFFFF', '#87CEEB', '#FFC0CB'],
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    stock: 100
   },
   {
     id: 'men-3',
@@ -386,7 +404,8 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'Shirts',
     colors: ['#228B22', '#000000', '#FFFFFF'],
-    sizes: ['M', 'L', 'XL']
+    sizes: ['M', 'L', 'XL'],
+    stock: 100
   },
   {
     id: 'men-4',
@@ -399,7 +418,8 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'Outfits',
     colors: ['#8B4513', '#FFFFFF'],
-    sizes: ['S', 'M', 'L', 'XL']
+    sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100
   },
   {
     id: 'men-5',
@@ -412,7 +432,8 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'Shirts',
     colors: ['#0000FF', '#FF0000', '#008000'],
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    stock: 100
   },
   {
     id: 'men-6',
@@ -425,7 +446,8 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'Jeans',
     colors: ['#4169E1', '#000000', '#808080'],
-    sizes: ['28', '30', '32', '34', '36', '38']
+    sizes: ['28', '30', '32', '34', '36', '38'],
+    stock: 100
   },
   {
     id: 'men-7',
@@ -438,7 +460,8 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'T-shirts',
     colors: ['#000000', '#FFFFFF', '#808080', '#000080'],
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    stock: 100
   },
   {
     id: 'men-8',
@@ -451,7 +474,8 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'T-shirts',
     colors: ['#FFA500', '#000000', '#FFFFFF'],
-    sizes: ['S', 'M', 'L', 'XL']
+    sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100
   }
 ]
 
@@ -468,7 +492,8 @@ export const WOMENS_PRODUCTS = [
     category: 'women',
     subcategory: 'Dresses',
     colors: ['#FF69B4', '#FFFFFF', '#000000'],
-    sizes: ['XS', 'S', 'M', 'L']
+    sizes: ['XS', 'S', 'M', 'L'],
+    stock: 100
   },
   {
     id: 'women-2',
@@ -481,7 +506,8 @@ export const WOMENS_PRODUCTS = [
     category: 'women',
     subcategory: 'Suits',
     colors: ['#A9A9A9', '#000000'],
-    sizes: ['S', 'M', 'L', 'XL']
+    sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100
   },
   {
     id: 'women-3',
@@ -494,7 +520,8 @@ export const WOMENS_PRODUCTS = [
     category: 'women',
     subcategory: 'Jackets',
     colors: ['#D2B48C', '#8B4513', '#000000'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL']
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    stock: 100
   },
   {
     id: 'women-4',
@@ -507,7 +534,8 @@ export const WOMENS_PRODUCTS = [
     category: 'women',
     subcategory: 'Tops',
     colors: ['#FFE4E1', '#FFFFFF', '#C0C0C0'],
-    sizes: ['S', 'M', 'L']
+    sizes: ['S', 'M', 'L'],
+    stock: 100
   },
   {
     id: 'women-5',
@@ -520,7 +548,8 @@ export const WOMENS_PRODUCTS = [
     category: 'women',
     subcategory: 'Tops',
     colors: ['#FF69B4', '#FFFFFF', '#000080'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL']
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    stock: 100
   },
   {
     id: 'women-6',
@@ -533,7 +562,8 @@ export const WOMENS_PRODUCTS = [
     category: 'women',
     subcategory: 'Jeans',
     colors: ['#4169E1', '#000000', '#696969'],
-    sizes: ['24', '26', '28', '30', '32']
+    sizes: ['24', '26', '28', '30', '32'],
+    stock: 100
   },
   {
     id: 'women-7',
@@ -546,7 +576,8 @@ export const WOMENS_PRODUCTS = [
     category: 'women',
     subcategory: 'T-shirts',
     colors: ['#000000', '#FFFFFF', '#FF1493'],
-    sizes: ['XS', 'S', 'M', 'L']
+    sizes: ['XS', 'S', 'M', 'L'],
+    stock: 100
   },
   {
     id: 'women-8',
@@ -559,7 +590,8 @@ export const WOMENS_PRODUCTS = [
     category: 'women',
     subcategory: 'Hoodies',
     colors: ['#FFB6C1', '#808080', '#000000'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL']
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    stock: 100
   }
 ]
 
@@ -576,7 +608,8 @@ export const ACCESSORIES_PRODUCTS = [
     category: 'accessories',
     subcategory: 'Bags',
     colors: ['#8B4513', '#000000', '#A0522D'],
-    sizes: ['One Size']
+    sizes: ['One Size'],
+    stock: 100
   },
   {
     id: 'acc-2',
@@ -589,7 +622,8 @@ export const ACCESSORIES_PRODUCTS = [
     category: 'accessories',
     subcategory: 'Watches',
     colors: ['#FFD700', '#C0C0C0', '#000000'],
-    sizes: ['One Size']
+    sizes: ['One Size'],
+    stock: 100
   },
   {
     id: 'acc-3',
@@ -602,7 +636,8 @@ export const ACCESSORIES_PRODUCTS = [
     category: 'accessories',
     subcategory: 'Belts',
     colors: ['#8B4513', '#000000'],
-    sizes: ['S', 'M', 'L', 'XL']
+    sizes: ['S', 'M', 'L', 'XL'],
+    stock: 100
   },
   {
     id: 'acc-4',
@@ -615,7 +650,8 @@ export const ACCESSORIES_PRODUCTS = [
     category: 'accessories',
     subcategory: 'Sunglasses',
     colors: ['#000000', '#8B4513', '#FFD700'],
-    sizes: ['One Size']
+    sizes: ['One Size'],
+    stock: 100
   },
   {
     id: 'acc-5',
@@ -628,7 +664,8 @@ export const ACCESSORIES_PRODUCTS = [
     category: 'accessories',
     subcategory: 'Wallets',
     colors: ['#8B4513', '#000000', '#A0522D'],
-    sizes: ['One Size']
+    sizes: ['One Size'],
+    stock: 100
   },
   {
     id: 'acc-6',
@@ -641,7 +678,8 @@ export const ACCESSORIES_PRODUCTS = [
     category: 'accessories',
     subcategory: 'Watches',
     colors: ['#000000', '#C0C0C0', '#0000FF'],
-    sizes: ['One Size']
+    sizes: ['One Size'],
+    stock: 100
   },
   {
     id: 'acc-7',
@@ -654,7 +692,8 @@ export const ACCESSORIES_PRODUCTS = [
     category: 'accessories',
     subcategory: 'Bags',
     colors: ['#000000', '#808080', '#8B4513'],
-    sizes: ['One Size']
+    sizes: ['One Size'],
+    stock: 100
   },
   {
     id: 'acc-8',
@@ -667,7 +706,8 @@ export const ACCESSORIES_PRODUCTS = [
     category: 'accessories',
     subcategory: 'Sunglasses',
     colors: ['#FFD700', '#C0C0C0', '#000000'],
-    sizes: ['One Size']
+    sizes: ['One Size'],
+    stock: 100
   }
 ]
 
@@ -684,7 +724,8 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Sneakers',
     colors: ['#FFFFFF', '#000000', '#FF0000'],
-    sizes: ['7', '8', '9', '10', '11']
+    sizes: ['7', '8', '9', '10', '11'],
+    stock: 100
   },
   {
     id: 'foot-2',
@@ -697,7 +738,8 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Formal',
     colors: ['#000000', '#8B4513'],
-    sizes: ['7', '8', '9', '10', '11', '12']
+    sizes: ['7', '8', '9', '10', '11', '12'],
+    stock: 100
   },
   {
     id: 'foot-3',
@@ -710,7 +752,8 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Sports',
     colors: ['#1E90FF', '#000000', '#FFFFFF'],
-    sizes: ['7', '8', '9', '10', '11']
+    sizes: ['7', '8', '9', '10', '11'],
+    stock: 100
   },
   {
     id: 'foot-4',
@@ -723,7 +766,8 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Casual',
     colors: ['#8B4513', '#000000', '#D2691E'],
-    sizes: ['7', '8', '9', '10', '11']
+    sizes: ['7', '8', '9', '10', '11'],
+    stock: 100
   },
   {
     id: 'foot-5',
@@ -736,7 +780,8 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Sneakers',
     colors: ['#FFFFFF', '#FF0000', '#000080'],
-    sizes: ['6', '7', '8', '9', '10', '11']
+    sizes: ['6', '7', '8', '9', '10', '11'],
+    stock: 100
   },
   {
     id: 'foot-6',
@@ -749,7 +794,8 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Boots',
     colors: ['#8B4513', '#000000'],
-    sizes: ['7', '8', '9', '10', '11', '12']
+    sizes: ['7', '8', '9', '10', '11', '12'],
+    stock: 100
   },
   {
     id: 'foot-7',
@@ -762,7 +808,8 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Sports',
     colors: ['#000000', '#FFA500', '#FFFFFF'],
-    sizes: ['7', '8', '9', '10', '11']
+    sizes: ['7', '8', '9', '10', '11'],
+    stock: 100
   },
   {
     id: 'foot-8',
@@ -775,7 +822,8 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Casual',
     colors: ['#696969', '#000000', '#FFFFFF'],
-    sizes: ['7', '8', '9', '10', '11']
+    sizes: ['7', '8', '9', '10', '11'],
+    stock: 100
   }
 ]
 
@@ -793,7 +841,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'T-shirts',
       colors: ['white', 'black', 'gray'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL']
+      sizes: ['XS', 'S', 'M', 'L', 'XL'],
+      stock: 100
     },
     {
       id: 'casual-2',
@@ -806,7 +855,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'Shirts',
       colors: ['burgundy', 'navy', 'white'],
-      sizes: ['S', 'M', 'L', 'XL']
+      sizes: ['S', 'M', 'L', 'XL'],
+      stock: 100
     },
     {
       id: 'casual-3',
@@ -819,7 +869,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'T-shirts',
       colors: ['black', 'white'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+      sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+      stock: 100
     },
     {
       id: 'casual-4',
@@ -832,7 +883,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'Jeans',
       colors: ['blue', 'black'],
-      sizes: ['28', '30', '32', '34', '36']
+      sizes: ['28', '30', '32', '34', '36'],
+      stock: 100
     },
     {
       id: 'casual-5',
@@ -845,7 +897,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'Shirts',
       colors: ['red', 'blue', 'green'],
-      sizes: ['S', 'M', 'L', 'XL']
+      sizes: ['S', 'M', 'L', 'XL'],
+      stock: 100
     },
     {
       id: 'casual-6',
@@ -858,7 +911,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'T-shirts',
       colors: ['orange', 'blue', 'black'],
-      sizes: ['S', 'M', 'L', 'XL']
+      sizes: ['S', 'M', 'L', 'XL'],
+      stock: 100
     },
     {
       id: 'casual-7',
@@ -871,7 +925,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'Shirts',
       colors: ['green', 'blue'],
-      sizes: ['S', 'M', 'L', 'XL']
+      sizes: ['S', 'M', 'L', 'XL'],
+      stock: 100
     },
     {
       id: 'casual-8',
@@ -884,7 +939,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'T-shirts',
       colors: ['orange', 'white', 'black'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL']
+      sizes: ['XS', 'S', 'M', 'L', 'XL'],
+      stock: 100
     },
     {
       id: 'casual-9',
@@ -897,7 +953,8 @@ export const CATEGORY_PRODUCTS = {
       category: 'casual',
       subcategory: 'Shorts',
       colors: ['blue', 'khaki', 'black'],
-      sizes: ['S', 'M', 'L', 'XL']
+      sizes: ['S', 'M', 'L', 'XL'],
+      stock: 100
     }
   ],
   men: MENS_PRODUCTS,

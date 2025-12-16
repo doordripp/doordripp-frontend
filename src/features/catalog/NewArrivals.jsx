@@ -1,10 +1,59 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { NEW_ARRIVALS, TOP_SELLING } from '../../constants/products'
 import ProductCard from './ProductCard'
+import { apiGet } from '../../services/apiClient'
 
 export default function NewArrivals() {
-  // Show 8 NEW_ARRIVALS products
-  const displayProducts = NEW_ARRIVALS.slice(0, 8)
+  const [products, setProducts] = useState(NEW_ARRIVALS.slice(0, 8))
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    
+    // Fetch products marked as New Arrivals from API
+    apiGet('/products?page=1&limit=100')
+      .then(res => {
+        if (!mounted) return
+        const apiProducts = res.data || []
+        
+        // Filter products where isNewArrival is true
+        const newArrivals = apiProducts.filter(p => p.isNewArrival === true)
+        
+        // Sort by creation date (newest first)
+        newArrivals.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0)
+          const dateB = new Date(b.createdAt || 0)
+          return dateB - dateA // Newest first
+        })
+        
+        // Combine: API products first (newest), then static products
+        const combinedProducts = [...newArrivals, ...NEW_ARRIVALS]
+        
+        // Remove duplicates based on slug
+        const uniqueProducts = combinedProducts.reduce((acc, product) => {
+          const exists = acc.find(p => 
+            (p.slug && product.slug && p.slug === product.slug) || 
+            (p._id && product._id && p._id.toString() === product._id.toString())
+          )
+          if (!exists) acc.push(product)
+          return acc
+        }, [])
+        
+        // Show first 8 products
+        setProducts(uniqueProducts.slice(0, 8))
+      })
+      .catch(err => {
+        console.error('Failed to fetch new arrivals:', err)
+        // Fallback to static products on error
+        if (mounted) setProducts(NEW_ARRIVALS.slice(0, 8))
+      })
+      .finally(() => mounted && setLoading(false))
+    
+    return () => { mounted = false }
+  }, [])
+
+  const displayProducts = products
 
   return (
     <section id="new-arrivals" className="w-full bg-gray-200 py-12 lg:py-14">
@@ -25,15 +74,21 @@ export default function NewArrivals() {
         </div>
 
         {/* Products Grid - 6 Products */}
-        <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto">
-          {displayProducts.map((product) => (
-            <ProductCard 
-              key={product.id} 
-              product={product}
-              className="mx-auto w-full"
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Loading new arrivals...</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto">
+            {displayProducts.map((product) => (
+              <ProductCard 
+                key={product._id || product.id} 
+                product={product}
+                className="mx-auto w-full"
+              />
+            ))}
+          </div>
+        )}
 
         {/* View All Button for Mobile */}
         <div className="mt-14 text-center md:hidden">

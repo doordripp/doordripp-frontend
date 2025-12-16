@@ -5,6 +5,7 @@ import { ALL_PRODUCTS } from '../constants/products'
 import { useCart } from '../context/CartContext'
 import { ProductCard } from '../features/catalog'
 import api from '../services/api'
+import { optimizeImage } from '../config/imagekit'
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -18,6 +19,8 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState('details')
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [isAddedToCart, setIsAddedToCart] = useState(false)
+  const [isZoomed, setIsZoomed] = useState(false)
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
 
   // ULTRA-AGGRESSIVE FORCE SCROLL TO ABSOLUTE TOP - MAXIMUM PRIORITY
   useLayoutEffect(() => {
@@ -285,6 +288,21 @@ export default function ProductDetail() {
   const handleWishlist = () => {
     setIsWishlisted(!isWishlisted)
   }
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * 100
+    const y = ((e.clientY - rect.top) / rect.height) * 100
+    setZoomPosition({ x, y })
+  }
+
+  const handleMouseEnter = () => {
+    setIsZoomed(true)
+  }
+
+  const handleMouseLeave = () => {
+    setIsZoomed(false)
+  }
   
   const handleSubmitReview = (e) => {
     e.preventDefault()
@@ -333,12 +351,21 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden">
+            {/* Main Image with Zoom */}
+            <div 
+              className="aspect-square bg-gray-100 rounded-2xl overflow-hidden relative cursor-zoom-in"
+              onMouseMove={handleMouseMove}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
               <img 
-                src={productImages[selectedImage]} 
+                src={optimizeImage(productImages[selectedImage], { width: 800, height: 800, quality: 90 })} 
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 ease-in-out"
+                style={{
+                  transform: isZoomed ? 'scale(1.6)' : 'scale(1)',
+                  transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`
+                }}
               />
             </div>
             
@@ -353,7 +380,7 @@ export default function ProductDetail() {
                   }`}
                 >
                   <img 
-                    src={image} 
+                    src={optimizeImage(image, { width: 200, height: 200, quality: 85 })} 
                     alt={`${product.name} view ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
@@ -395,7 +422,7 @@ export default function ProductDetail() {
             
             {/* Description */}
             <p className="text-gray-600 leading-relaxed">
-              This graphic t-shirt which is perfect for any occasion. Crafted from a soft and breathable fabric, it offers superior comfort and style.
+              {product.description || 'This product is crafted with attention to detail and quality. Made from premium materials, it offers both comfort and durability.'}
             </p>
             
             {/* Colors */}
@@ -527,17 +554,9 @@ export default function ProductDetail() {
           <div className="py-8">
             {activeTab === 'details' && (
               <div className="prose max-w-none">
-                <p className="text-gray-600">
-                  This {product.name.toLowerCase()} is crafted with attention to detail and quality. 
-                  Made from premium materials, it offers both comfort and durability. Perfect for casual wear 
-                  or dressing up for special occasions.
-                </p>
-                <ul className="mt-4 space-y-2 text-gray-600">
-                  <li>• Premium quality fabric</li>
-                  <li>• Comfortable fit</li>
-                  <li>• Machine washable</li>
-                  <li>• Available in multiple colors and sizes</li>
-                </ul>
+                <div className="text-gray-600 whitespace-pre-line leading-relaxed">
+                  {product.description || `This ${product.name.toLowerCase()} is crafted with attention to detail and quality. Made from premium materials, it offers both comfort and durability. Perfect for casual wear or dressing up for special occasions.`}
+                </div>
               </div>
             )}
             

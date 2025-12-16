@@ -22,6 +22,8 @@ const adminAPI = {
   // Customers / Users
   getCustomers: async (q = {}) => (await api.get("/admin/users", { params: q })).data,
   getCustomer: async (id) => (await api.get(`/admin/users/${id}`)).data,
+  updateUser: async (id, data) => (await api.put(`/admin/users/${id}`, data)).data,
+  deleteUser: async (id) => (await api.delete(`/admin/users/${id}`)).data,
 
   // Reports (best sellers)
   getBestSellers: async (q = {}) => (await api.get("/admin/reports/best-sellers", { params: q })).data,

@@ -9,6 +9,7 @@ export default function AdminProducts() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [stockFilter, setStockFilter] = useState('all') // all, in-stock, out-of-stock
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [error, setError] = useState(null)
@@ -139,12 +140,23 @@ export default function AdminProducts() {
           <button 
             onClick={() => handleEditProduct(product)}
             className="text-blue-600 hover:text-blue-900"
+            title="Edit Product"
           >
             <Edit size={16} />
           </button>
           <button 
-            onClick={() => handleDeleteProduct(product.id)}
+            onClick={() => handleToggleStock(product)}
+            className={`${
+              product.stock > 0 ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'
+            }`}
+            title={product.stock > 0 ? 'Mark Out of Stock' : 'Mark In Stock'}
+          >
+            {product.stock > 0 ? '📦' : '✅'}
+          </button>
+          <button 
+            onClick={() => handleDeleteProduct(product._id || product.id)}
             className="text-red-600 hover:text-red-900"
+            title="Delete Product"
           >
             <Trash2 size={16} />
           </button>
@@ -153,10 +165,16 @@ export default function AdminProducts() {
     }
   ]
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesStock = stockFilter === 'all' || 
+      (stockFilter === 'in-stock' && product.stock > 0) ||
+      (stockFilter === 'out-of-stock' && product.stock === 0)
+    
+    return matchesSearch && matchesStock
+  })
 
   const handleAddProduct = () => {
     setEditingProduct(null)
@@ -172,10 +190,32 @@ export default function AdminProducts() {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await adminAPI.deleteProduct(id)
-        setProducts(products.filter(p => p.id !== id))
+        setProducts(products.filter(p => {
+          const pId = p._id || p.id
+          return pId !== id
+        }))
       } catch (err) {
         console.error('Failed to delete product:', err)
         alert('Failed to delete product. Please try again.')
+      }
+    }
+  }
+
+  const handleToggleStock = async (product) => {
+    const productId = product._id || product.id
+    const newStock = product.stock > 0 ? 0 : 100
+    const action = newStock === 0 ? 'out of stock' : 'in stock'
+    
+    if (window.confirm(`Mark "${product.name}" as ${action}?`)) {
+      try {
+        const updated = await adminAPI.updateProduct(productId, { stock: newStock })
+        setProducts(products.map(p => {
+          const pId = p._id || p.id
+          return pId === productId ? updated : p
+        }))
+      } catch (err) {
+        console.error('Failed to update stock:', err)
+        alert('Failed to update stock status. Please try again.')
       }
     }
   }
@@ -184,11 +224,14 @@ export default function AdminProducts() {
     try {
       setSaving(true)
       if (editingProduct) {
-        // Update existing product
-        const updated = await adminAPI.updateProduct(editingProduct.id, productData)
-        setProducts(products.map(p => 
-          p.id === editingProduct.id ? updated : p
-        ))
+        // Update existing product - use _id or id
+        const productId = editingProduct._id || editingProduct.id
+        const updated = await adminAPI.updateProduct(productId, productData)
+        setProducts(products.map(p => {
+          const pId = p._id || p.id
+          const editId = editingProduct._id || editingProduct.id
+          return pId === editId ? updated : p
+        }))
       } else {
         // Add new product
         const newProduct = await adminAPI.createProduct(productData)
@@ -197,7 +240,8 @@ export default function AdminProducts() {
       setShowAddModal(false)
     } catch (err) {
       console.error('Failed to save product:', err)
-      alert('Failed to save product. Please try again.')
+      console.error('Error details:', err.response?.data || err.message)
+      alert(`Failed to save product: ${err.response?.data?.error || err.message || 'Please try again.'}`)
     } finally {
       setSaving(false)
     }
@@ -254,13 +298,23 @@ export default function AdminProducts() {
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
-            <Filter size={16} />
-            <span>Filter</span>
-          </button>
+          <select
+            value={stockFilter}
+            onChange={(e) => setStockFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All Products</option>
+            <option value="in-stock">✅ In Stock</option>
+            <option value="out-of-stock">❌ Out of Stock</option>
+          </select>
         </div>
         <div className="text-sm text-gray-500">
           {filteredProducts.length} products
+          {stockFilter === 'out-of-stock' && filteredProducts.length > 0 && (
+            <span className="ml-2 text-red-600 font-medium">
+              ({filteredProducts.length} out of stock)
+            </span>
+          )}
         </div>
       </div>
 
@@ -290,7 +344,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
     price: product?.price || '',
     originalPrice: product?.originalPrice || '',
     stock: product?.stock || '',
-    category: product?.category || 'casual',
+    category: product?.category || 'Men',
     subcategory: product?.subcategory || '',
     description: product?.description || '',
     images: product?.images || [],
@@ -302,9 +356,9 @@ function ProductModal({ product, onSave, onClose, saving }) {
     isFeatured: product?.isFeatured || false
   })
 
-  const categories = ['casual', 'formal', 'party', 'gym']
-  const subcategories = ['T-shirts', 'Shirts', 'Jeans', 'Shorts', 'Hoodies', 'Jackets', 'Sweaters', 'Pants']
-  const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34', '36']
+  const categories = ['Men', 'Women', 'Accessories', 'Footwear']
+  const subcategories = ['T-shirts', 'Shirts', 'Jeans', 'Shorts', 'Hoodies', 'Jackets']
+  const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34', '36', '38', '40', '42']
   const availableColors = [
     { name: 'Black', hex: '#000000' },
     { name: 'White', hex: '#FFFFFF' },
@@ -417,14 +471,25 @@ function ProductModal({ product, onSave, onClose, saving }) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Stock Quantity *
               </label>
-              <input
-                type="number"
-                required
-                value={formData.stock}
-                onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 100"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  required
+                  value={formData.stock}
+                  onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                  className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 100"
+                />
+                <select
+                  value={formData.stock > 0 ? 'in-stock' : 'out-of-stock'}
+                  onChange={(e) => setFormData({...formData, stock: e.target.value === 'out-of-stock' ? 0 : 100})}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  title="Quick stock status"
+                >
+                  <option value="in-stock">✅ In Stock</option>
+                  <option value="out-of-stock">❌ Out of Stock</option>
+                </select>
+              </div>
             </div>
           </div>
 

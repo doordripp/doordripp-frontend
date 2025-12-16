@@ -1,10 +1,56 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FOOTWEAR_PRODUCTS, MENS_PRODUCTS } from '../../constants/products'
 import ProductCard from './ProductCard'
+import { apiGet } from '../../services/apiClient'
 
 export default function FootwearSection() {
-  // Use footwear products and fill with men's products to show 8 products
-  const displayProducts = [...FOOTWEAR_PRODUCTS, ...MENS_PRODUCTS].slice(0, 8)
+  const [products, setProducts] = useState([...FOOTWEAR_PRODUCTS, ...MENS_PRODUCTS].slice(0, 8))
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    
+    apiGet('/products?page=1&limit=100')
+      .then(res => {
+        if (!mounted) return
+        const apiProducts = res.data || []
+        
+        // Filter footwear category
+        const footwear = apiProducts.filter(p => p.category === 'Footwear')
+        
+        // Sort by creation date (newest first)
+        footwear.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0)
+          const dateB = new Date(b.createdAt || 0)
+          return dateB - dateA
+        })
+        
+        // Combine: API products first, then static
+        const combinedProducts = [...footwear, ...FOOTWEAR_PRODUCTS, ...MENS_PRODUCTS]
+        
+        // Remove duplicates
+        const uniqueProducts = combinedProducts.reduce((acc, product) => {
+          const exists = acc.find(p => 
+            (p.slug && product.slug && p.slug === product.slug) || 
+            (p._id && product._id && p._id.toString() === product._id.toString())
+          )
+          if (!exists) acc.push(product)
+          return acc
+        }, [])
+        
+        setProducts(uniqueProducts.slice(0, 8))
+      })
+      .catch(err => {
+        console.error('Failed to fetch footwear:', err)
+        if (mounted) setProducts([...FOOTWEAR_PRODUCTS, ...MENS_PRODUCTS].slice(0, 8))
+      })
+      .finally(() => mounted && setLoading(false))
+    
+    return () => { mounted = false }
+  }, [])
+
+  const displayProducts = products
 
   return (
     <section id="footwear" className="w-full bg-gray-200 py-12 lg:py-14">
@@ -25,15 +71,21 @@ export default function FootwearSection() {
         </div>
 
         {/* Products Grid - 6 Products */}
-        <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto">
-          {displayProducts.map((product) => (
-            <ProductCard 
-              key={product.id} 
-              product={product}
-              className="mx-auto w-full"
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Loading footwear...</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto">
+            {displayProducts.map((product) => (
+              <ProductCard 
+                key={product._id || product.id} 
+                product={product}
+                className="mx-auto w-full"
+              />
+            ))}
+          </div>
+        )}
 
         {/* View All Button for Mobile */}
         <div className="mt-14 text-center md:hidden">

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Star, StarHalf, ShoppingCart, Check, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
+import { optimizeImage } from '../../config/imagekit'
 
 // Star Rating Component
 function StarRating({ rating, reviews, showReviews = true, className = '' }) {
@@ -134,15 +135,21 @@ export default function ProductCard({
   // When provided, this index will be forwarded to the product detail page
   initialImageIndex = 0,
 }) {
+  const { addToCart } = useCart()
+  const [isHovered, setIsHovered] = useState(false)
   const id = product.id || product._id || product.slug
   const name = product.name
-  const image = product.image || (product.images && product.images[0]) || '/images/placeholder.png'
+  const images = product.images || [product.image] || ['/images/placeholder.png']
+  const image = images[0]
+  const secondImage = images.length > 1 ? images[1] : image
   const price = product.price || 0
   const originalPrice = product.originalPrice
   const discount = product.discount
   const rating = product.rating || { rating: 0, reviews: 0 }
   const subcategory = product.subcategory
   const colors = product.colors || product.availableColors || []
+  const stock = product.stock || 0
+  const isOutOfStock = stock === 0
 
   const hasDiscount = originalPrice && discount
   
@@ -153,7 +160,7 @@ export default function ProductCard({
           <Link to={`/product/${id}`} state={{ imageIndex: initialImageIndex }} className="flex flex-1" onClick={scrollToTop}>
             <div className="w-32 h-32 flex-shrink-0 mr-6">
               <img 
-                src={image} 
+                src={optimizeImage(image, { width: 150, height: 150, quality: 85 })} 
                 alt={name}
                 className="w-full h-full object-cover rounded-lg"
               />
@@ -227,18 +234,46 @@ export default function ProductCard({
       <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-200 hover:border-gray-300">
         
         {/* Image Container */}
-        <div className="relative bg-gray-100 overflow-hidden aspect-square">
+        <div 
+          className="relative bg-gray-100 overflow-hidden aspect-square"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           <Link to={`/product/${id}`} state={{ imageIndex: 0 }} onClick={scrollToTop} className="block h-full">
+            {/* First Image */}
             <img
-              src={image}
+              src={optimizeImage(image, { width: 600, height: 600, quality: 85 })}
               alt={name}
-              className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-95"
+              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${
+                isOutOfStock ? 'opacity-60 grayscale' : ''
+              } ${isHovered && images.length > 1 ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}
               loading="lazy"
             />
+            
+            {/* Second Image - Shows on Hover */}
+            {images.length > 1 && (
+              <img
+                src={optimizeImage(secondImage, { width: 600, height: 600, quality: 85 })}
+                alt={`${name} - view 2`}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${
+                  isOutOfStock ? 'opacity-60 grayscale' : ''
+                } ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                loading="lazy"
+              />
+            )}
           </Link>
           
+          {/* Out of Stock Badge */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 z-30">
+              <div className="bg-white px-6 py-3 rounded-xl shadow-2xl transform rotate-[-15deg]">
+                <span className="text-red-600 font-bold text-lg">OUT OF STOCK</span>
+              </div>
+            </div>
+          )}
+          
           {/* Discount Badge */}
-          {hasDiscount && showDiscount && (
+          {hasDiscount && showDiscount && !isOutOfStock && (
             <div className="absolute left-3 top-3 rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-red-700 px-3 py-1.5 text-xs font-bold text-white shadow-2xl backdrop-blur-sm transform hover:scale-105 transition-transform duration-300 z-20">
               -{discount}%
             </div>
@@ -292,12 +327,19 @@ export default function ProductCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                addToCart(product, { size: 'M', color: 'default', quantity: 1 });
+                if (!isOutOfStock) {
+                  addToCart(product, { size: 'M', color: 'default', quantity: 1 });
+                }
               }}
-              className="w-full flex items-center justify-center gap-2 py-2 mt-2 bg-white hover:bg-black text-black hover:text-white font-semibold text-xs border-2 border-black rounded-lg transition-all duration-300 transform hover:scale-105">
+              disabled={isOutOfStock}
+              className={`w-full flex items-center justify-center gap-2 py-2 mt-2 font-semibold text-xs border-2 rounded-lg transition-all duration-300 ${
+                isOutOfStock
+                  ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed'
+                  : 'bg-white hover:bg-black text-black hover:text-white border-black transform hover:scale-105'
+              }`}
             >
               <ShoppingCart className="h-4 w-4" />
-              <span>ADD TO CART</span>
+              <span>{isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}</span>
             </button>
           )}
         </div>
