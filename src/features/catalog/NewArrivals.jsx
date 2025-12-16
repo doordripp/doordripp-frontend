@@ -3,11 +3,11 @@ import { NEW_ARRIVALS, TOP_SELLING } from '../../constants/products'
 import ProductCard from './ProductCard'
 
 export default function NewArrivals() {
-  // Combine NEW_ARRIVALS and TOP_SELLING to show 6 products
-  const displayProducts = [...NEW_ARRIVALS, ...TOP_SELLING].slice(0, 6)
+  // Show 8 NEW_ARRIVALS products
+  const displayProducts = NEW_ARRIVALS.slice(0, 8)
 
   return (
-    <section id="new-arrivals" className="w-full bg-gray-100 py-16 lg:py-20">
+    <section id="new-arrivals" className="w-full bg-gray-200 py-12 lg:py-14">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         {/* Section Header - Centered with View All */}
         <div className="mb-14 text-center relative">
@@ -25,7 +25,7 @@ export default function NewArrivals() {
         </div>
 
         {/* Products Grid - 6 Products */}
-        <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 max-w-[1200px] mx-auto">
+        <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto">
           {displayProducts.map((product) => (
             <ProductCard 
               key={product.id} 

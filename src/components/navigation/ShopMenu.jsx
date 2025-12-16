@@ -138,32 +138,32 @@ const ShopMenu = forwardRef(({ isOpen, onOpenChange, onClose, onMouseEnter, onMo
             All Categories
           </button>
           <button
-            onClick={() => handleNavigation('/category?category=casual&subcategory=T-shirts')}
+            onClick={() => handleNavigation('/category?gender=men')}
             className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
             role="menuitem"
           >
-            T-Shirts
+            Men
           </button>
           <button
-            onClick={() => handleNavigation('/category?category=casual&subcategory=Shirts')}
+            onClick={() => handleNavigation('/category?gender=women')}
             className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
             role="menuitem"
           >
-            Shirts
+            Women
           </button>
           <button
-            onClick={() => handleNavigation('/category?category=casual&subcategory=Jeans')}
+            onClick={() => handleNavigation('/category?category=accessories')}
             className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
             role="menuitem"
           >
-            Jeans
+            Accessories
           </button>
           <button
-            onClick={() => handleNavigation('/category?category=casual&subcategory=Shorts')}
+            onClick={() => handleNavigation('/category?category=footwear')}
             className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
             role="menuitem"
           >
-            Shorts
+            Footwear
           </button>
         </div>
       </div>

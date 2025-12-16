@@ -18,10 +18,10 @@ const FOOTER_LINKS = {
   ],
   CATEGORIES: [
     { name: 'All Categories', href: '/category?category=casual' },
-    { name: 'T-Shirts', href: '/category?category=casual&subcategory=T-shirts' },
-    { name: 'Shirts', href: '/category?category=casual&subcategory=Shirts' },
-    { name: 'Jeans', href: '/category?category=casual&subcategory=Jeans' },
-    { name: 'Shorts', href: '/category?category=casual&subcategory=Shorts' }
+    { name: 'Men', href: '/category?gender=men' },
+    { name: 'Women', href: '/category?gender=women' },
+    { name: 'Accessories', href: '/category?category=accessories' },
+    { name: 'Footwear', href: '/category?category=footwear' }
   ],
   HELP: [
     { name: 'Customer Support', href: '/support' },
@@ -86,10 +86,10 @@ export default function Footer() {
   return (
     <footer className="w-full bg-gray-50 border-t border-gray-200">
       {/* Main Footer Content */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
           {/* Brand Section */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="text-3xl font-extrabold text-black tracking-wide">
               DOORDRIPP
             </Link>
@@ -124,7 +124,7 @@ export default function Footer() {
 
       {/* Bottom Section */}
       <div className="border-t border-gray-200">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             {/* Copyright */}
             <div className="text-gray-600 text-sm">

@@ -3,16 +3,16 @@ import { ACCESSORIES_PRODUCTS, FOOTWEAR_PRODUCTS } from '../../constants/product
 import ProductCard from './ProductCard'
 
 export default function PopularProducts() {
-  // Combine accessories and footwear products to show 6 products
-  const displayProducts = [...ACCESSORIES_PRODUCTS, ...FOOTWEAR_PRODUCTS].slice(0, 6)
+  // Combine accessories and footwear products to show 8 products
+  const displayProducts = [...ACCESSORIES_PRODUCTS, ...FOOTWEAR_PRODUCTS].slice(0, 8)
 
   return (
-    <section id="popular-products" className="w-full bg-gray-100 py-16 lg:py-20">
+    <section id="popular-products" className="w-full bg-gray-200 py-12 lg:py-14">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         {/* Section Header - Centered with View All */}
         <div className="mb-14 text-center relative">
           <h2 className="text-4xl font-bold text-black md:text-5xl lg:text-6xl tracking-tight">
-            POPULAR PRODUCTS
+            FEATURED PRODUCTS
           </h2>
           <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2">
             <Link 
@@ -25,7 +25,7 @@ export default function PopularProducts() {
         </div>
 
         {/* Products Grid - 6 Products */}
-        <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 max-w-[1200px] mx-auto">
+        <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto">
           {displayProducts.map((product) => (
             <ProductCard 
               key={product.id} 

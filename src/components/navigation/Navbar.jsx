@@ -158,17 +158,17 @@ export default function Navbar() {
 								<Link to="/category?category=casual" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
 									All Categories
 								</Link>
-								<Link to="/category?category=casual&subcategory=T-shirts" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
-									T-Shirts
+								<Link to="/category?gender=men" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
+									Men
 								</Link>
-								<Link to="/category?category=casual&subcategory=Shirts" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
-									Shirts
+								<Link to="/category?gender=women" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
+									Women
 								</Link>
-								<Link to="/category?category=casual&subcategory=Jeans" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
-									Jeans
+								<Link to="/category?category=accessories" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
+									Accessories
 								</Link>
-								<Link to="/category?category=casual&subcategory=Shorts" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
-									Shorts
+								<Link to="/category?category=footwear" onClick={() => setShowCategoriesDropdown(false)} className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100">
+									Footwear
 								</Link>
 							</div>
 						</div>

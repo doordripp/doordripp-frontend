@@ -20,12 +20,12 @@ export default function Newsletter() {
   }
 
   return (
-    <section className="w-screen relative left-1/2 right-1/2 -mx-[50vw] bg-black py-16 lg:py-20">
+    <section className="w-screen relative left-1/2 right-1/2 -mx-[50vw] bg-black py-10 lg:py-12">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Left Content */}
           <div className="lg:max-w-md">
-            <h3 className="text-3xl font-bold text-white md:text-4xl lg:text-5xl leading-tight">
+            <h3 className="text-2xl font-bold text-white md:text-3xl lg:text-4xl leading-tight">
               STAY UPTO DATE ABOUT OUR LATEST OFFERS
             </h3>
           </div>
