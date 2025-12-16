@@ -16,10 +16,8 @@ export default function Signup() {
     confirmPassword: '',
     gender: '',
     dob: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
+    
+    
     profileImage: null,
     agreeToTerms: false
   })
@@ -118,7 +116,7 @@ export default function Signup() {
         password: formData.password,
         gender: formData.gender || undefined,
         dob: formData.dob || undefined,
-        address: formData.address ? { street: formData.address, city: formData.city, state: formData.state, zip: formData.zip } : undefined,
+        
         termsAccepted: formData.agreeToTerms
       }
       // include verification token if available
@@ -261,15 +259,7 @@ export default function Signup() {
               <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="p-3 border rounded" />
             </div>
 
-            {/* Address (optional) */}
-            <div>
-              <textarea name="address" value={formData.address} onChange={handleChange} placeholder="Street address (optional)" className="w-full p-3 border rounded" />
-              <div className="grid grid-cols-3 gap-3 mt-2">
-                <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="City" className="p-2 border rounded" />
-                <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" className="p-2 border rounded" />
-                <input type="text" name="zip" value={formData.zip} onChange={handleChange} placeholder="Zip" className="p-2 border rounded" />
-              </div>
-            </div>
+            
 
             {/* Password Input */}
             <AuthInput

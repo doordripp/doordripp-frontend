@@ -22,6 +22,7 @@ import BestSellersPage from './pages/BestSellers'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AdminLayout from './layout/AdminLayout'
 import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers } from './pages/admin'
+import AddProduct from './features/admin/products/AddProduct'
 import { ROLES } from './utils/roleUtils'
 
 // ULTRA-AGGRESSIVE Scroll to top - FORCES page to absolute top
@@ -110,6 +111,7 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
+              <Route path="products/add" element={<AddProduct />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="users" element={<AdminUsers />} />
             </Route>

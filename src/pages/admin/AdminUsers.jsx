@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { UserPlus, Search, Filter, Edit, Trash2, Shield, User, X } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
+import adminAPI from '../../services/adminAPI'
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
@@ -9,6 +11,7 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [showAddUserModal, setShowAddUserModal] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
+  const location = useLocation()
 
   // Mock user data
   const mockUsers = [
@@ -50,20 +53,61 @@ export default function AdminUsers() {
     }
   ]
 
-  const roleOptions = [
-    { value: 'all', label: 'All Roles' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'manager', label: 'Manager' },
-    { value: 'customer', label: 'Customer' }
-  ]
-
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setUsers(mockUsers)
-      setLoading(false)
-    }, 500)
-  }, [])
+    let mounted = true
+    setLoading(true)
+    
+    // Read optional query param 'q' from location and use as search
+    const params = new URLSearchParams(location.search || '')
+    const q = params.get('q') || ''
+    if (q) setSearchTerm(q)
+
+    // Try fetching real users from API; pass search if available
+    adminAPI.getCustomers(q ? { search: q } : {})
+      .then((res) => {
+        if (!mounted) return
+        // API returns { users: [...]} or array; normalize and transform
+        const data = (res && (res.users || res)) || []
+        
+        if (data && data.length > 0) {
+          const transformedUsers = data.map(user => ({
+            ...user,
+            role: user.roles && user.roles.length > 0 ? user.roles[0] : 'customer',
+            status: user.blocked ? 'inactive' : 'active',
+            lastLogin: user.lastLogin || user.createdAt || new Date().toISOString()
+          }))
+          setUsers(transformedUsers)
+        } else {
+          // No data from API, use mock data
+          console.warn('No users returned from API, using mock data')
+          if (q) {
+            const filtered = mockUsers.filter(u =>
+              u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase())
+            )
+            setUsers(filtered)
+          } else {
+            setUsers(mockUsers)
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load users from API, falling back to mock', err)
+        if (!mounted) return
+        if (q) {
+          const filtered = mockUsers.filter(u =>
+            u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase())
+          )
+          setUsers(filtered)
+        } else {
+          setUsers(mockUsers)
+        }
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+
+    return () => { mounted = false }
+  }, [location.search])
 
   const getRoleColor = (role) => {
     switch (role) {

@@ -28,6 +28,9 @@ export default function AddProduct() {
 
     const fd = new FormData();
     fd.append("name", vals.name);
+    fd.append("description", vals.description || "");
+    fd.append("category", vals.category || "");
+    fd.append("subcategory", vals.subcategory || "");
     fd.append("price", vals.price);
     fd.append("stock", vals.stock || 0);
 
@@ -64,6 +67,52 @@ export default function AddProduct() {
         {errors.name && (
           <p className="text-red-600 text-sm">{errors.name.message}</p>
         )}
+      </div>
+
+      <div>
+        <label className="block text-sm">Description</label>
+        <textarea
+          {...register("description")}
+          className="w-full border p-2 rounded"
+          rows="4"
+          placeholder="Enter product description"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm">Category</label>
+          <select
+            {...register("category")}
+            className="w-full border p-2 rounded"
+          >
+            <option value="">Select Category</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Accessories">Accessories</option>
+            <option value="Shoes">Shoes</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm">Sub Category</label>
+          <select
+            {...register("subcategory")}
+            className="w-full border p-2 rounded"
+          >
+            <option value="">Select Sub Category</option>
+            <option value="T-Shirt">T-Shirt</option>
+            <option value="Pants">Pants</option>
+            <option value="Suits">Suits</option>
+            <option value="Shirt">Shirt</option>
+            <option value="Jacket">Jacket</option>
+            <option value="Cap">Cap</option>
+            <option value="Belt">Belt</option>
+            <option value="Watch">Watch</option>
+            <option value="Sneakers">Sneakers</option>
+            <option value="Boots">Boots</option>
+            <option value="Formal Shoes">Formal Shoes</option>
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
