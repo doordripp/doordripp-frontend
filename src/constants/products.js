@@ -55,7 +55,41 @@ const PRODUCT_IMAGES = {
   stripedShirt: stripedShirtImg,
   orangeTshirt: orangeTshirtImg,
   bermudaShorts: bermudaShortsImg,
-  fadedJeans: fadedJeansImg
+  fadedJeans: fadedJeansImg,
+  
+  // Additional products
+  graphicTee: graphicTeeImg,
+  poloShirt: poloShirtImg,
+  casualShirt: casualShirtImg,
+  hoodie: hoodieImg,
+  
+  // Men's
+  mensShirt: mensImg1,
+  mensJacket: mensImg2,
+  mensPants: mensImg3,
+  mensCasual: mensImg4,
+  
+  // Women's
+  womensDress: womensImg1,
+  womensTop: womensImg2,
+  womensJeans: womensImg3,
+  womensBlouse: womensImg4,
+  
+  // Accessories
+  bag: accessoriesImg1,
+  watch: accessoriesImg2,
+  sunglasses: accessoriesImg3,
+  belt: accessoriesImg4,
+  
+  // Footwear
+  sneakers: footwearImg1,
+  boots: footwearImg2,
+  loafers: footwearImg3,
+  sandals: footwearImg4,
+  
+  // Aliases for variety
+  denimJacket: mensImg2,
+  shorts: bermudaShortsImg
 }
 
 // Star ratings component data
@@ -126,6 +160,66 @@ export const NEW_ARRIVALS = [
     colors: ['#FFA500', '#000000', '#FFFFFF'],
     sizes: ['S', 'M', 'L', 'XL'],
     isNew: true
+  },
+  {
+    id: 'na-5',
+    name: 'Classic Denim Jacket',
+    image: PRODUCT_IMAGES.denimJacket,
+    images: [PRODUCT_IMAGES.denimJacket],
+    price: 350,
+    originalPrice: 400,
+    discount: 15,
+    rating: createRating(4.7, 289),
+    category: 'casual',
+    subcategory: 'Jackets',
+    colors: ['#4169E1', '#1C1C1C'],
+    sizes: ['S', 'M', 'L', 'XL'],
+    isNew: true
+  },
+  {
+    id: 'na-6',
+    name: 'Cotton Polo Shirt',
+    image: PRODUCT_IMAGES.poloShirt,
+    images: [PRODUCT_IMAGES.poloShirt],
+    price: 150,
+    originalPrice: null,
+    discount: null,
+    rating: createRating(4.3, 198),
+    category: 'casual',
+    subcategory: 'Shirts',
+    colors: ['#000080', '#FFFFFF', '#DC143C'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    isNew: true
+  },
+  {
+    id: 'na-7',
+    name: 'Casual Shorts',
+    image: PRODUCT_IMAGES.shorts,
+    images: [PRODUCT_IMAGES.shorts],
+    price: 95,
+    originalPrice: 120,
+    discount: 20,
+    rating: createRating(4.2, 342),
+    category: 'casual',
+    subcategory: 'Shorts',
+    colors: ['#8B4513', '#000000', '#696969'],
+    sizes: ['28', '30', '32', '34', '36'],
+    isNew: true
+  },
+  {
+    id: 'na-8',
+    name: 'Hooded Sweatshirt',
+    image: PRODUCT_IMAGES.hoodie,
+    images: [PRODUCT_IMAGES.hoodie],
+    price: 280,
+    originalPrice: 320,
+    discount: 12,
+    rating: createRating(4.6, 521),
+    category: 'casual',
+    subcategory: 'Hoodies',
+    colors: ['#808080', '#000000', '#000080'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    isNew: true
   }
 ]
 
@@ -190,6 +284,66 @@ export const TOP_SELLING = [
     colors: ['#000000', '#4169E1'],
     sizes: ['28', '30', '32', '34', '36'],
     isTopSelling: true
+  },
+  {
+    id: 'ts-5',
+    name: 'Classic Polo Shirt',
+    image: PRODUCT_IMAGES.poloShirt,
+    images: [PRODUCT_IMAGES.poloShirt],
+    price: 165,
+    originalPrice: 190,
+    discount: 13,
+    rating: createRating(4.6, 892),
+    category: 'casual',
+    subcategory: 'Shirts',
+    colors: ['#000080', '#FFFFFF', '#DC143C'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    isTopSelling: true
+  },
+  {
+    id: 'ts-6',
+    name: 'Graphic Print Tee',
+    image: PRODUCT_IMAGES.graphicTee,
+    images: [PRODUCT_IMAGES.graphicTee],
+    price: 110,
+    originalPrice: 140,
+    discount: 21,
+    rating: createRating(4.4, 678),
+    category: 'casual',
+    subcategory: 'T-shirts',
+    colors: ['#000000', '#FFFFFF', '#808080'],
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    isTopSelling: true
+  },
+  {
+    id: 'ts-7',
+    name: 'Premium Hoodie',
+    image: PRODUCT_IMAGES.hoodie,
+    images: [PRODUCT_IMAGES.hoodie],
+    price: 295,
+    originalPrice: 350,
+    discount: 16,
+    rating: createRating(4.8, 1234),
+    category: 'casual',
+    subcategory: 'Hoodies',
+    colors: ['#000000', '#808080', '#000080'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    isTopSelling: true
+  },
+  {
+    id: 'ts-8',
+    name: 'Casual Button Shirt',
+    image: PRODUCT_IMAGES.casualShirt,
+    images: [PRODUCT_IMAGES.casualShirt],
+    price: 175,
+    originalPrice: null,
+    discount: null,
+    rating: createRating(4.3, 445),
+    category: 'casual',
+    subcategory: 'Shirts',
+    colors: ['#4169E1', '#FFFFFF', '#000000'],
+    sizes: ['S', 'M', 'L', 'XL'],
+    isTopSelling: true
   }
 ]
 
@@ -245,6 +399,58 @@ export const MENS_PRODUCTS = [
     category: 'men',
     subcategory: 'Outfits',
     colors: ['#8B4513', '#FFFFFF'],
+    sizes: ['S', 'M', 'L', 'XL']
+  },
+  {
+    id: 'men-5',
+    name: 'Urban Casual Shirt',
+    image: PRODUCT_IMAGES.checkeredShirt,
+    price: 165,
+    originalPrice: 200,
+    discount: 17,
+    rating: createRating(4.4, 321),
+    category: 'men',
+    subcategory: 'Shirts',
+    colors: ['#0000FF', '#FF0000', '#008000'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 'men-6',
+    name: 'Slim Fit Denim',
+    image: PRODUCT_IMAGES.skinnyJeans,
+    price: 255,
+    originalPrice: 300,
+    discount: 15,
+    rating: createRating(4.6, 543),
+    category: 'men',
+    subcategory: 'Jeans',
+    colors: ['#4169E1', '#000000', '#808080'],
+    sizes: ['28', '30', '32', '34', '36', '38']
+  },
+  {
+    id: 'men-7',
+    name: 'Athletic T-Shirt',
+    image: PRODUCT_IMAGES.blackTshirt,
+    price: 125,
+    originalPrice: null,
+    discount: null,
+    rating: createRating(4.3, 412),
+    category: 'men',
+    subcategory: 'T-shirts',
+    colors: ['#000000', '#FFFFFF', '#808080', '#000080'],
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 'men-8',
+    name: 'Striped Casual Tee',
+    image: PRODUCT_IMAGES.stripedTshirt,
+    price: 135,
+    originalPrice: 170,
+    discount: 20,
+    rating: createRating(4.5, 389),
+    category: 'men',
+    subcategory: 'T-shirts',
+    colors: ['#FFA500', '#000000', '#FFFFFF'],
     sizes: ['S', 'M', 'L', 'XL']
   }
 ]
@@ -302,6 +508,58 @@ export const WOMENS_PRODUCTS = [
     subcategory: 'Tops',
     colors: ['#FFE4E1', '#FFFFFF', '#C0C0C0'],
     sizes: ['S', 'M', 'L']
+  },
+  {
+    id: 'women-5',
+    name: 'Chic Casual Blouse',
+    image: PRODUCT_IMAGES.checkeredShirt,
+    price: 175,
+    originalPrice: 220,
+    discount: 20,
+    rating: createRating(4.4, 298),
+    category: 'women',
+    subcategory: 'Tops',
+    colors: ['#FF69B4', '#FFFFFF', '#000080'],
+    sizes: ['XS', 'S', 'M', 'L', 'XL']
+  },
+  {
+    id: 'women-6',
+    name: 'Skinny Fit Jeans',
+    image: PRODUCT_IMAGES.skinnyJeans,
+    price: 265,
+    originalPrice: 310,
+    discount: 15,
+    rating: createRating(4.7, 512),
+    category: 'women',
+    subcategory: 'Jeans',
+    colors: ['#4169E1', '#000000', '#696969'],
+    sizes: ['24', '26', '28', '30', '32']
+  },
+  {
+    id: 'women-7',
+    name: 'Trendy Graphic Tee',
+    image: PRODUCT_IMAGES.graphicTee,
+    price: 140,
+    originalPrice: null,
+    discount: null,
+    rating: createRating(4.3, 367),
+    category: 'women',
+    subcategory: 'T-shirts',
+    colors: ['#000000', '#FFFFFF', '#FF1493'],
+    sizes: ['XS', 'S', 'M', 'L']
+  },
+  {
+    id: 'women-8',
+    name: 'Cozy Hoodie',
+    image: PRODUCT_IMAGES.hoodie,
+    price: 310,
+    originalPrice: 360,
+    discount: 14,
+    rating: createRating(4.8, 621),
+    category: 'women',
+    subcategory: 'Hoodies',
+    colors: ['#FFB6C1', '#808080', '#000000'],
+    sizes: ['XS', 'S', 'M', 'L', 'XL']
   }
 ]
 
@@ -358,6 +616,58 @@ export const ACCESSORIES_PRODUCTS = [
     subcategory: 'Sunglasses',
     colors: ['#000000', '#8B4513', '#FFD700'],
     sizes: ['One Size']
+  },
+  {
+    id: 'acc-5',
+    name: 'Premium Leather Wallet',
+    image: accessoriesImg1,
+    price: 95,
+    originalPrice: 120,
+    discount: 21,
+    rating: createRating(4.5, 389),
+    category: 'accessories',
+    subcategory: 'Wallets',
+    colors: ['#8B4513', '#000000', '#A0522D'],
+    sizes: ['One Size']
+  },
+  {
+    id: 'acc-6',
+    name: 'Sport Watch',
+    image: accessoriesImg2,
+    price: 650,
+    originalPrice: 800,
+    discount: 19,
+    rating: createRating(4.8, 712),
+    category: 'accessories',
+    subcategory: 'Watches',
+    colors: ['#000000', '#C0C0C0', '#0000FF'],
+    sizes: ['One Size']
+  },
+  {
+    id: 'acc-7',
+    name: 'Designer Backpack',
+    image: accessoriesImg3,
+    price: 380,
+    originalPrice: 450,
+    discount: 16,
+    rating: createRating(4.6, 523),
+    category: 'accessories',
+    subcategory: 'Bags',
+    colors: ['#000000', '#808080', '#8B4513'],
+    sizes: ['One Size']
+  },
+  {
+    id: 'acc-8',
+    name: 'Aviator Sunglasses',
+    image: accessoriesImg4,
+    price: 210,
+    originalPrice: 260,
+    discount: 19,
+    rating: createRating(4.7, 445),
+    category: 'accessories',
+    subcategory: 'Sunglasses',
+    colors: ['#FFD700', '#C0C0C0', '#000000'],
+    sizes: ['One Size']
   }
 ]
 
@@ -413,6 +723,58 @@ export const FOOTWEAR_PRODUCTS = [
     category: 'footwear',
     subcategory: 'Casual',
     colors: ['#8B4513', '#000000', '#D2691E'],
+    sizes: ['7', '8', '9', '10', '11']
+  },
+  {
+    id: 'foot-5',
+    name: 'High-Top Canvas Shoes',
+    image: footwearImg1,
+    price: 195,
+    originalPrice: 240,
+    discount: 19,
+    rating: createRating(4.3, 412),
+    category: 'footwear',
+    subcategory: 'Sneakers',
+    colors: ['#FFFFFF', '#FF0000', '#000080'],
+    sizes: ['6', '7', '8', '9', '10', '11']
+  },
+  {
+    id: 'foot-6',
+    name: 'Premium Boots',
+    image: footwearImg2,
+    price: 520,
+    originalPrice: 650,
+    discount: 20,
+    rating: createRating(4.9, 567),
+    category: 'footwear',
+    subcategory: 'Boots',
+    colors: ['#8B4513', '#000000'],
+    sizes: ['7', '8', '9', '10', '11', '12']
+  },
+  {
+    id: 'foot-7',
+    name: 'Trail Running Shoes',
+    image: footwearImg3,
+    price: 310,
+    originalPrice: 380,
+    discount: 18,
+    rating: createRating(4.6, 723),
+    category: 'footwear',
+    subcategory: 'Sports',
+    colors: ['#000000', '#FFA500', '#FFFFFF'],
+    sizes: ['7', '8', '9', '10', '11']
+  },
+  {
+    id: 'foot-8',
+    name: 'Slip-On Casual Shoes',
+    image: footwearImg4,
+    price: 220,
+    originalPrice: 270,
+    discount: 19,
+    rating: createRating(4.5, 334),
+    category: 'footwear',
+    subcategory: 'Casual',
+    colors: ['#696969', '#000000', '#FFFFFF'],
     sizes: ['7', '8', '9', '10', '11']
   }
 ]
@@ -546,12 +908,19 @@ export const CATEGORY_PRODUCTS = {
 
 // Filter options for category pages
 export const FILTER_OPTIONS = {
+  categories: [
+    { id: 'men', name: 'Men', count: 4 },
+    { id: 'women', name: 'Women', count: 4 },
+    { id: 'accessories', name: 'Accessories', count: 3 },
+    { id: 'footwear', name: 'Footwear', count: 2 }
+  ],
   subcategories: [
     { id: 't-shirts', name: 'T-shirts', count: 4 },
-    { id: 'shorts', name: 'Shorts', count: 1 },
     { id: 'shirts', name: 'Shirts', count: 3 },
-    { id: 'hoodie', name: 'Hoodie', count: 0 },
-    { id: 'jeans', name: 'Jeans', count: 1 }
+    { id: 'jeans', name: 'Jeans', count: 2 },
+    { id: 'jackets', name: 'Jackets', count: 1 },
+    { id: 'shorts', name: 'Shorts', count: 1 },
+    { id: 'hoodies', name: 'Hoodies', count: 0 }
   ],
   priceRanges: [
     { min: 50, max: 100, label: '₹50 - ₹100' },
@@ -594,9 +963,18 @@ export const ALL_PRODUCTS = [...NEW_ARRIVALS, ...TOP_SELLING, ...CATEGORY_PRODUC
 
 // Product categories
 export const CATEGORIES = [
-  'T-Shirts',
-  'Jeans', 
+  'Men',
+  'Women', 
+  'Accessories',
+  'Footwear'
+]
+
+// Product subcategories
+export const SUBCATEGORIES = [
+  'T-shirts',
   'Shirts',
+  'Jeans',
+  'Jackets',
   'Shorts',
-  'Hoodie'
+  'Hoodies'
 ]

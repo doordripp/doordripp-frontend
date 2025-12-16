@@ -8,7 +8,8 @@ import { ProductCard } from '../features/catalog'
 export default function CategoryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const category = searchParams.get('category') || 'casual'
+  const category = searchParams.get('category') || searchParams.get('gender') || 'casual'
+  const gender = searchParams.get('gender')
   const subcategoryFromUrl = searchParams.get('subcategory')
   const priceRangeFromUrl = searchParams.get('priceRange')
   
@@ -25,12 +26,13 @@ export default function CategoryPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
     category: true,
+    subcategory: true,
     price: true,
     colors: true,
     size: true,
     dressStyle: true
   })
-  const [priceRange, setPriceRange] = useState([50, 10000])
+  const [priceRange, setPriceRange] = useState([0, 100])
   const [selectedFilters, setSelectedFilters] = useState({
     subcategories: subcategoryFromUrl ? [subcategoryFromUrl] : [],
     colors: [],
@@ -56,11 +58,11 @@ export default function CategoryPage() {
     let mounted = true
     setLoading(true)
     
-    // Start with local products based on category
+    // Start with local products based on category or gender
     let categoryProducts = []
-    if (category === 'men') {
+    if (gender === 'men' || category === 'men') {
       categoryProducts = [...MENS_PRODUCTS]
-    } else if (category === 'women') {
+    } else if (gender === 'women' || category === 'women') {
       categoryProducts = [...WOMENS_PRODUCTS]
     } else if (category === 'accessories') {
       categoryProducts = [...ACCESSORIES_PRODUCTS]
@@ -188,6 +190,11 @@ export default function CategoryPage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedProducts = sortedProducts.slice(startIndex, startIndex + itemsPerPage)
   
+  // Scroll to products section
+  const scrollToProducts = () => {
+    window.scrollTo({ top: 300, behavior: 'smooth' })
+  }
+  
   // Toggle filter section
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -198,6 +205,21 @@ export default function CategoryPage() {
   
   // Handle filter changes
   const toggleFilter = (filterType, value) => {
+    // If filtering by main category (Men, Women, Accessories, Footwear), navigate instead
+    if (filterType === 'categories') {
+      const categoryMap = {
+        'Men': '/category?gender=men',
+        'Women': '/category?gender=women',
+        'Accessories': '/category?category=accessories',
+        'Footwear': '/category?category=footwear'
+      }
+      if (categoryMap[value]) {
+        navigate(categoryMap[value])
+        return
+      }
+    }
+    
+    // For subcategories and other filters, update state
     setSelectedFilters(prev => ({
       ...prev,
       [filterType]: prev[filterType].includes(value)
@@ -223,7 +245,7 @@ export default function CategoryPage() {
       sizes: [],
       dressStyles: []
     })
-    setPriceRange([50, 10000])
+    setPriceRange([0, 100])
     setCurrentPage(1)
     scrollToProducts()
   }
@@ -254,7 +276,7 @@ export default function CategoryPage() {
         <nav className="flex items-center space-x-2 py-4 text-sm text-gray-600">
           <Link to="/" className="hover:text-gray-900">Home</Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium capitalize">{category}</span>
+          <span className="text-gray-900 font-medium capitalize">{gender || category}</span>
         </nav>
         
         <div className="flex flex-col lg:flex-row gap-6">
@@ -270,16 +292,53 @@ export default function CategoryPage() {
               
               {/* Filter Sections */}
               <div className="space-y-5">
-                {/* Subcategories */}
+                {/* Main Categories */}
                 <div className="border-b border-gray-200 pb-5">
                   <button
                     onClick={() => toggleSection('category')}
                     className="flex items-center justify-between w-full text-left mb-4"
                   >
-                    <h3 className="font-semibold text-gray-900">Category</h3>
+                    <h3 className="font-semibold text-gray-900">Main Category</h3>
                     <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.category ? 'rotate-90' : ''}`} />
                   </button>
                   {expandedSections.category && (
+                    <div className="space-y-3">
+                      {FILTER_OPTIONS.categories.map((mainCategory) => {
+                        const isActive = 
+                          (mainCategory.name === 'Men' && (gender === 'men' || category === 'men')) ||
+                          (mainCategory.name === 'Women' && (gender === 'women' || category === 'women')) ||
+                          (mainCategory.name === 'Accessories' && category === 'accessories') ||
+                          (mainCategory.name === 'Footwear' && category === 'footwear')
+                        
+                        return (
+                          <label key={mainCategory.id} className="flex items-center cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="category"
+                              checked={isActive}
+                              onChange={() => toggleFilter('categories', mainCategory.name)}
+                              className="w-4 h-4 border-gray-300 text-black focus:ring-1 focus:ring-black"
+                            />
+                            <span className={`ml-3 text-sm transition-colors ${isActive ? 'text-black font-medium' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                              {mainCategory.name}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Subcategories - Filter within current category */}
+                <div className="border-b border-gray-200 pb-5">
+                  <button
+                    onClick={() => toggleSection('subcategory')}
+                    className="flex items-center justify-between w-full text-left mb-4"
+                  >
+                    <h3 className="font-semibold text-gray-900">Type</h3>
+                    <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.subcategory ? 'rotate-90' : ''}`} />
+                  </button>
+                  {expandedSections.subcategory && (
                     <div className="space-y-3">
                       {FILTER_OPTIONS.subcategories.map((subcategory) => (
                         <label key={subcategory.id} className="flex items-center cursor-pointer group">
@@ -311,8 +370,8 @@ export default function CategoryPage() {
                     <div>
                       <input
                         type="range"
-                        min="50"
-                        max="10000"
+                        min="0"
+                        max="8000"
                         value={priceRange[1]}
                         onChange={(e) => handlePriceChange([priceRange[0], parseInt(e.target.value)])}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
@@ -321,62 +380,6 @@ export default function CategoryPage() {
                         <span className="text-sm font-medium text-gray-900">₹{priceRange[0]}</span>
                         <span className="text-sm font-medium text-gray-900">₹{priceRange[1]}</span>
                       </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Colors */}
-                <div className="border-b border-gray-200 pb-5">
-                  <button
-                    onClick={() => toggleSection('colors')}
-                    className="flex items-center justify-between w-full text-left mb-4"
-                  >
-                    <h3 className="font-semibold text-gray-900">Colors</h3>
-                    <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.colors ? 'rotate-90' : ''}`} />
-                  </button>
-                  {expandedSections.colors && (
-                    <div className="grid grid-cols-5 gap-3">
-                      {FILTER_OPTIONS.colors.map((color) => (
-                        <button
-                          key={color.id}
-                          onClick={() => toggleFilter('colors', color.id)}
-                          className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 ${
-                            selectedFilters.colors.includes(color.id)
-                              ? 'ring-2 ring-offset-2 ring-black'
-                              : 'border-gray-300'
-                          }`}
-                          style={{ backgroundColor: color.hex }}
-                          title={color.name}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Sizes */}
-                <div className="border-b border-gray-200 pb-5">
-                  <button
-                    onClick={() => toggleSection('size')}
-                    className="flex items-center justify-between w-full text-left mb-4"
-                  >
-                    <h3 className="font-semibold text-gray-900">Size</h3>
-                    <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.size ? 'rotate-90' : ''}`} />
-                  </button>
-                  {expandedSections.size && (
-                    <div className="flex flex-wrap gap-2">
-                      {FILTER_OPTIONS.sizes.map((size) => (
-                        <button
-                          key={size.id}
-                          onClick={() => toggleFilter('sizes', size.short)}
-                          className={`px-5 py-2.5 text-sm font-medium rounded-full transition-all ${
-                            selectedFilters.sizes.includes(size.short)
-                              ? 'bg-black text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {size.short}
-                        </button>
-                      ))}
                     </div>
                   )}
                 </div>
@@ -475,7 +478,7 @@ export default function CategoryPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
                 {paginatedProducts.map((product) => (
                   <ProductCard 
                     key={product._id || product.id} 

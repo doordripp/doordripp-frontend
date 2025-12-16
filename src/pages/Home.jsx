@@ -1,4 +1,4 @@
-import { Hero, FastestDelivery, CustomerTestimonials } from '../layout'
+import { Hero, FastestDelivery } from '../layout'
 import { CategoriesSection, NewArrivals, TopSelling, PopularProducts, FootwearSection, AccessoriesSection } from '../features/catalog'
 
 export default function Home() {
@@ -12,7 +12,6 @@ export default function Home() {
       <PopularProducts />
       <FootwearSection />
       <AccessoriesSection />
-      <CustomerTestimonials />
     </>
   )
 }

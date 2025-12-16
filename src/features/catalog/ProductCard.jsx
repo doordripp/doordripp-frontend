@@ -222,68 +222,86 @@ export default function ProductCard({
   }
 
   return (
-    <div className={`group cursor-pointer transition-all duration-300 ${className}`}>
-      {/* Product Image */}
-      <div className="relative overflow-hidden rounded-2xl bg-gray-100 aspect-square">
-        <Link to={`/product/${id}`} state={{ imageIndex: initialImageIndex }} onClick={scrollToTop}>
-          <img
-            src={image}
-            alt={name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-        </Link>
+    <div className={`group cursor-pointer transition-all duration-500 hover:-translate-y-2 scale-80 ${className}`}>
+      {/* Product Card - Image Container with Info Box Below */}
+      <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-200 hover:border-gray-300">
         
-        {/* Discount Badge */}
-        {hasDiscount && showDiscount && (
-          <div className="absolute left-3 top-3 rounded-lg bg-red-500 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
-            -{discount}%
-          </div>
-        )}
-
-        {/* Add to Cart Button - Overlay */}
-        {showAddToCart && (
-          <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-            <AddToCartButton 
-              product={product} 
-              variant="icon"
+        {/* Image Container */}
+        <div className="relative bg-gray-100 overflow-hidden aspect-square">
+          <Link to={`/product/${id}`} state={{ imageIndex: 0 }} onClick={scrollToTop} className="block h-full">
+            <img
+              src={image}
+              alt={name}
+              className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-95"
+              loading="lazy"
             />
-          </div>
-        )}
-      </div>
-
-      {/* Product Info */}
-      <Link to={`/product/${id}`} state={{ imageIndex: initialImageIndex }} onClick={scrollToTop}>
-        <div className="mt-3 space-y-1.5">
-          {/* Product Name */}
-          <h3 className="text-base font-semibold text-gray-900 line-clamp-1 group-hover:text-black transition-colors">
-            {name}
-          </h3>
-
-          {/* Star Rating */}
-          <StarRating 
-            rating={rating.rating} 
-            reviews={rating.reviews}
-            showReviews={false}
-            className="text-xs"
-          />
-
-          {/* Pricing */}
-          <div className="flex items-center gap-2 pt-1">
-            <span className="text-xl font-bold text-black">
-              ₹{price}
-            </span>
-            
-            {hasDiscount && (
-              <>
-                <span className="text-base font-bold text-gray-400 line-through">
-                  ₹{originalPrice}
-                </span>
-              </>
-            )}
+          </Link>
+          
+          {/* Discount Badge */}
+          {hasDiscount && showDiscount && (
+            <div className="absolute left-3 top-3 rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-red-700 px-3 py-1.5 text-xs font-bold text-white shadow-2xl backdrop-blur-sm transform hover:scale-105 transition-transform duration-300 z-20">
+              -{discount}%
+            </div>
+          )}
+          
+          {/* Three Dots Menu */}
+          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-500 z-20">
+            <div className="w-9 h-9 bg-white backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl hover:bg-gray-50 transition-colors duration-300">
+              <div className="flex flex-col gap-0.5">
+                <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+                <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+                <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+              </div>
+            </div>
           </div>
         </div>
-      </Link>
+
+        {/* Product Info Box - Clean Separation */}
+        <div className="p-2.5 bg-white border-t-2 border-gray-100">
+          <Link to={`/product/${id}`} state={{ imageIndex: 0 }} onClick={scrollToTop}>
+            {/* Price - Bold and Clear */}
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-lg font-black tracking-tight text-gray-900">
+                ₹{price.toLocaleString()}
+              </span>
+              {hasDiscount && (
+                <span className="text-xs font-semibold text-gray-400 line-through">
+                  ₹{originalPrice.toLocaleString()}
+                </span>
+              )}
+            </div>
+            
+            {/* Product Name - Clean Typography */}
+            <h3 className="text-xs font-semibold text-gray-800 line-clamp-2 leading-relaxed mb-1 tracking-wide">
+              {name}
+            </h3>
+            
+            {/* Subcategory - Subtle Badge */}
+            {subcategory && (
+              <div className="inline-block mb-1.5">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2 py-0.5 bg-gray-100 rounded-md">
+                  {subcategory}
+                </span>
+              </div>
+            )}
+          </Link>
+
+          {/* Add to Cart Button - Full Width */}
+          {showAddToCart && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addToCart(product, { size: 'M', color: 'default', quantity: 1 });
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2 mt-2 bg-white hover:bg-black text-black hover:text-white font-semibold text-xs border-2 border-black rounded-lg transition-all duration-300 transform hover:scale-105">
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span>ADD TO CART</span>
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
