@@ -69,13 +69,37 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const forgotPassword = async (emailOrPhone) => {
+    setLoading(true)
+    try {
+      const response = await apiPost('/auth/forgot-password', { emailOrPhone })
+      return response
+    } catch (error) {
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resetPassword = async (token, password) => {
+    setLoading(true)
+    try {
+      const response = await apiPost('/auth/reset-password', { token, password })
+      return response
+    } catch (error) {
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchMe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, setUser, initializing, loading, fetchMe, refreshToken, logout }}>
+    <AuthContext.Provider value={{ user, setUser, initializing, loading, fetchMe, refreshToken, logout, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )
