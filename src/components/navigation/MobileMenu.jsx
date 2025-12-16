@@ -11,10 +11,10 @@ export default function MobileMenu() {
       title: 'Categories',
       links: [
         { name: 'All Categories', href: '/category?category=casual' },
-        { name: 'T-Shirts', href: '/category?category=casual&subcategory=T-shirts' },
-        { name: 'Shirts', href: '/category?category=casual&subcategory=Shirts' },
-        { name: 'Jeans', href: '/category?category=casual&subcategory=Jeans' },
-        { name: 'Shorts', href: '/category?category=casual&subcategory=Shorts' }
+        { name: 'Men', href: '/category?gender=men' },
+        { name: 'Women', href: '/category?gender=women' },
+        { name: 'Accessories', href: '/category?category=accessories' },
+        { name: 'Footwear', href: '/category?category=footwear' }
       ]
     },
     {
@@ -23,7 +23,7 @@ export default function MobileMenu() {
         { name: 'All Products', href: '/products' },
         { name: 'New Arrivals', href: '/#new-arrivals' },
         { name: 'Best Sellers', href: '/#top-selling' },
-        { name: 'Under $100', href: '/category?category=casual&priceRange=50-100' }
+        { name: 'Under ₹100', href: '/category?category=casual&priceRange=50-100' }
       ]
     }
   ]

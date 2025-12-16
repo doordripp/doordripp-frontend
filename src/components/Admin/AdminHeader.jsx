@@ -3,7 +3,7 @@ import React from "react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function AdminHeader() {
-  const { auth, logout } = useAuth();
+  const { user, logout } = useAuth();
   return (
     <header className="h-14 bg-white shadow-sm flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
@@ -14,7 +14,7 @@ export default function AdminHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="text-sm text-gray-700">{auth.user?.name || "Admin"}</div>
+        <div className="text-sm text-gray-700">{user?.name || "Admin"}</div>
         <button onClick={logout} className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700">Logout</button>
       </div>
     </header>

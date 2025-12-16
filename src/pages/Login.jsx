@@ -5,7 +5,6 @@ import { AuthInput, GoogleIcon } from '../features/auth'
 import { apiPost } from '../services/apiClient'
 import { authStorage } from '../utils/auth'
 import { useAuth } from '../context/AuthContext'
-// OTP via email (nodemailer) - Firebase SMS removed
 
 export default function Login() {
   const navigate = useNavigate()
@@ -15,19 +14,24 @@ export default function Login() {
   })
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-  // phone removed, using email-only flows
+  const [isPhone, setIsPhone] = useState(false)
   const { fetchMe } = useAuth()
-  // OTP states (email-based)
-  const [otpMode, setOtpMode] = useState(false)
-  const [emailForOtp, setEmailForOtp] = useState('')
-  const [otpCode, setOtpCode] = useState('')
-  const [isSendingOtp, setIsSendingOtp] = useState(false)
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
 
+  // Detect if input is phone number or email
   const handleEmailOrPhoneChange = (e) => {
     const value = e.target.value
-    setFormData(prev => ({ ...prev, emailOrPhone: value }))
-    if (errors.emailOrPhone) setErrors(prev => ({ ...prev, emailOrPhone: '' }))
+    const phoneRegex = /^[\d\s\-\+\(\)]+$/
+    
+    setIsPhone(phoneRegex.test(value) && value.length > 5)
+    setFormData(prev => ({
+      ...prev,
+      emailOrPhone: value
+    }))
+    
+    // Clear error when user starts typing
+    if (errors.emailOrPhone) {
+      setErrors(prev => ({ ...prev, emailOrPhone: '' }))
+    }
   }
 
   const handleChange = (e) => {
@@ -48,10 +52,18 @@ export default function Login() {
     
     if (!formData.emailOrPhone) {
       newErrors.emailOrPhone = 'Email or phone number is required'
-    } else {
-      // Email validation only
+    } else if (!isPhone) {
+      // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(formData.emailOrPhone)) newErrors.emailOrPhone = 'Please enter a valid email address'
+      if (!emailRegex.test(formData.emailOrPhone)) {
+        newErrors.emailOrPhone = 'Please enter a valid email address'
+      }
+    } else {
+      // Phone validation
+      const phoneRegex = /^[\+]?[\d\s\-\(\)]{10,}$/
+      if (!phoneRegex.test(formData.emailOrPhone)) {
+        newErrors.emailOrPhone = 'Please enter a valid phone number'
+      }
     }
     
     if (!formData.password) {
@@ -77,79 +89,53 @@ export default function Login() {
 
     try {
       const payload = { email: formData.emailOrPhone, password: formData.password }
+      console.log('Login attempt with:', payload)
       const data = await apiPost('/auth/login', payload)
+      console.log('Login response:', data)
+      
+      // Check if email verification is required
+      if (data.requiresVerification) {
+        // Redirect to email verification page
+        navigate('/verify-email', { 
+          state: { email: data.email || formData.emailOrPhone },
+          replace: false 
+        })
+        setErrors({ 
+          submit: data.message || 'Please verify your email to continue' 
+        })
+        return
+      }
+      
+      // Store token if returned
+      if (data.token) {
+        authStorage.setToken(data.token)
+      }
+      
       // server sets httpOnly cookie for session; store returned user locally
       const user = data.user || data
-      authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, role: user.roles || user.role })
-      // populate global auth state from backend cookies and redirect based on role
-      let me = null
-      try { me = await fetchMe() } catch (e) { /* ignore */ }
-      const current = me || authStorage.getUser() || {}
-      const roles = current?.roles || current?.role || []
-      const roleArray = Array.isArray(roles) ? roles : [roles]
-      if (roleArray.includes('ADMIN') || roleArray.includes('SUPER_ADMIN')) {
-        navigate('/admin')
-      } else {
-        navigate('/')
-      }
+      const userRoles = user.roles || user.role || []
+      authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, roles: userRoles })
+      
+      // populate global auth state from backend cookies
+      try { await fetchMe() } catch (e) { /* ignore */ }
+      
+      // Redirect admin users to admin panel, regular users to home
+      const isAdmin = Array.isArray(userRoles) 
+        ? userRoles.some(r => r.toLowerCase() === 'admin') 
+        : (userRoles || '').toLowerCase() === 'admin'
+      navigate(isAdmin ? '/admin' : '/')
     } catch (error) {
-      const msg = error?.error || error?.message || (typeof error === 'string' ? error : JSON.stringify(error))
-      setErrors({ submit: msg || 'Login failed. Please try again.' })
+      console.error('Login error:', error)
+      const msg = error?.message || error?.error || 'Login failed. Please try again.'
+      setErrors({ submit: msg })
     } finally {
       setIsLoading(false)
     }
   }
 
-  // OTP handlers
-  const handleSendOtp = async () => {
-    setIsSendingOtp(true)
-    try {
-      const email = emailForOtp.trim()
-      if (!email) throw new Error('Email is required')
-      // Request backend to send email OTP
-      await apiPost('/auth/send-otp', { email })
-      // show instruction to check email
-      setErrors(prev => ({ ...prev, submit: 'OTP sent to your email. Please check and enter the code.' }))
-    } catch (err) {
-      const msg = err?.error || err?.message || (typeof err === 'string' ? err : JSON.stringify(err))
-      setErrors(prev => ({ ...prev, submit: msg || 'Failed to send OTP' }))
-    } finally {
-      setIsSendingOtp(false)
-    }
-  }
-
-  const handleVerifyOtp = async () => {
-    setIsVerifyingOtp(true)
-    try {
-      const email = emailForOtp.trim()
-      if (!email) throw new Error('Email is required')
-      const data = await apiPost('/auth/verify-otp', { email, code: otpCode })
-      const user = data.user || data
-      authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, role: user.roles || user.role })
-      let me = null
-      try { me = await fetchMe() } catch (e) { /* ignore */ }
-      const current = me || authStorage.getUser() || {}
-      const roles = current?.roles || current?.role || []
-      const roleArray = Array.isArray(roles) ? roles : [roles]
-      if (roleArray.includes('ADMIN') || roleArray.includes('SUPER_ADMIN')) {
-        navigate('/admin')
-      } else {
-        navigate('/')
-      }
-    } catch (err) {
-      const msg = err?.error || err?.message || (typeof err === 'string' ? err : JSON.stringify(err))
-      setErrors(prev => ({ ...prev, submit: msg || 'OTP verification failed' }))
-    } finally {
-      setIsVerifyingOtp(false)
-    }
-  }
-
   const handleGoogleLogin = () => {
-    // Use relative /api so Vite dev proxy forwards to backend and
-    // the browser remains same-origin for cookies.
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '/api'
-    // Redirect browser to backend Google OAuth endpoint
-    window.location.href = `${apiBase}/auth/google`
+    // Redirect to backend Google OAuth endpoint (don't add /api, it's already in base URL)
+    window.location.href = 'http://localhost:4000/api/auth/google'
   }
 
   return (
@@ -171,11 +157,11 @@ export default function Login() {
         {/* Login Form */}
         <div className="bg-white py-8 px-6 shadow-lg rounded-2xl border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email or Phone Input */}
+            {/* Email Input */}
             <AuthInput
               type="text"
               name="emailOrPhone"
-              placeholder="Email"
+              placeholder="Email or Phone Number"
               value={formData.emailOrPhone}
               onChange={handleEmailOrPhoneChange}
               icon={Mail}
@@ -195,29 +181,7 @@ export default function Login() {
               required
             />
 
-            {/* OTP Sign-in toggle */}
-            <div className="mt-2">
-              <button type="button" onClick={() => setOtpMode(v => !v)} className="text-sm text-blue-600">{otpMode ? 'Use password login' : 'Sign in with Email OTP'}</button>
-            </div>
 
-            {otpMode && (
-              <div className="space-y-3 mt-3">
-                <div>
-                  <input value={emailForOtp} onChange={(e)=>setEmailForOtp(e.target.value)} placeholder="Email for OTP" className="w-full p-3 border rounded" />
-                </div>
-                <div>
-                  <button type="button" onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-gray-800 text-white py-2 rounded">
-                    {isSendingOtp ? 'Sending...' : 'Send OTP'}
-                  </button>
-                </div>
-                <div>
-                  <input value={otpCode} onChange={(e)=>setOtpCode(e.target.value)} placeholder="Enter OTP" className="w-full p-3 border rounded" />
-                  <button type="button" onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="w-full bg-green-600 text-white py-2 rounded mt-2">
-                    {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Forgot Password */}
             <div className="flex justify-end">

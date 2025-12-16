@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, User } from 'lucide-react'
+import { Mail, Lock, User, Phone } from 'lucide-react'
 import { AuthInput, GoogleIcon } from '../features/auth'
 import { apiPost } from '../services/apiClient'
 import { authStorage } from '../utils/auth'
@@ -11,20 +11,22 @@ export default function Signup() {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
     gender: '',
     dob: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
+    
+    
     profileImage: null,
     agreeToTerms: false
   })
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-  // OTP/signup: removed phone/SMS flow; use email verification separately if needed
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpVerified, setOtpVerified] = useState(false)
+  const [otpToken, setOtpToken] = useState(null)
   const { fetchMe } = useAuth()
 
   const handleFileChange = (e) => {
@@ -62,7 +64,13 @@ export default function Signup() {
       if (!emailRegex.test(formData.email)) newErrors.email = 'Please enter a valid email address'
     }
 
-    // Phone removed from UI; no phone validation required here.
+    // Phone validation (India - 10 digits)
+    if (!formData.phone) {
+      newErrors.phone = 'Mobile number is required'
+    } else {
+      const phoneRegex = /^[6-9]\d{9}$/
+      if (!phoneRegex.test(formData.phone)) newErrors.phone = 'Please enter a valid 10-digit Indian mobile number'
+    }
 
     // Password validation
     if (!formData.password) {
@@ -104,22 +112,33 @@ export default function Signup() {
       const payload = {
         name: formData.fullName,
         email: formData.email,
+        phone: formData.phone,
         password: formData.password,
         gender: formData.gender || undefined,
         dob: formData.dob || undefined,
-        address: formData.address ? { street: formData.address, city: formData.city, state: formData.state, zip: formData.zip } : undefined,
+        
         termsAccepted: formData.agreeToTerms
       }
-      // include verification token if available (stored by earlier verification step)
-      const storedVerificationToken = (typeof window !== 'undefined') ? localStorage.getItem('verification_token') : null
-      if (storedVerificationToken) payload.verificationToken = storedVerificationToken
+      // include verification token if available
+      if (otpToken) payload.verificationToken = otpToken
       console.log('Submitting register payload', payload)
       const data = await apiPost('/auth/register', payload)
-      // store token and user (local cache)
+      
+      // Check if email verification is required
+      if (data.requiresVerification) {
+        // Redirect to email verification page
+        navigate('/verify-email', { 
+          state: { email: formData.email },
+          replace: true 
+        })
+        return
+      }
+      
+      // Legacy flow: if token is returned, user is logged in immediately
       if (data.token) authStorage.setToken(data.token)
       const user = data.user || data
       authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, role: user.roles || user.role })
-      // populate global auth state from backend cookies (avatar upload and final redirect happen below)
+      // populate global auth state from backend cookies
       try { await fetchMe() } catch (e) { /* ignore */ }
       // If user selected a profile image, upload it now
       if (formData.profileImage) {
@@ -136,41 +155,18 @@ export default function Signup() {
           console.warn('Profile image upload failed', e)
         }
       }
-      // On success, redirect based on role (admin -> /admin)
-      let me2 = null
-      try { me2 = await fetchMe() } catch (e) { /* ignore */ }
-      const current2 = me2 || authStorage.getUser() || {}
-      const roles2 = current2?.roles || current2?.role || []
-      const roleArray2 = Array.isArray(roles2) ? roles2 : [roles2]
-      if (roleArray2.includes('ADMIN') || roleArray2.includes('SUPER_ADMIN')) {
-        navigate('/admin')
-      } else {
-        navigate('/')
-      }
+      // On success, redirect to home
+      navigate('/')
     } catch (error) {
-      const msg = error?.error || error?.message || (typeof error === 'string' ? error : JSON.stringify(error))
-      // If backend requires email verification, redirect user to the Verify Email flow
-      if (String(msg).toLowerCase().includes('email verification required')) {
-        try {
-          // attempt to send an OTP for this email, ignore errors
-          await apiPost('/auth/send-otp', { email: formData.email })
-        } catch (e) {
-          // ignore
-        }
-        // navigate to Verify Email page with the email prefilled
-        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`)
-        return
-      }
-      setErrors({ submit: msg || 'Registration failed. Please try again.' })
+      const msg = error?.message || 'Registration failed. Please try again.'
+      setErrors({ submit: msg })
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleGoogleSignup = () => {
-    // Use relative /api so Vite dev proxy forwards to backend and
-    // the browser remains same-origin for cookies.
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '/api'
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
     // Redirect browser to backend Google OAuth endpoint
     window.location.href = `${apiBase}/auth/google`
   }
@@ -218,35 +214,22 @@ export default function Signup() {
               required
             />
 
-            {/* Phone input kept optional; OTP via email is handled on login flow. */}
-            {/* Phone input removed while phone OTP is disabled */}
+            {/* Phone Input */}
+            <AuthInput
+              type="tel"
+              name="phone"
+              placeholder="Enter your mobile number"
+              value={formData.phone}
+              onChange={handleChange}
+              icon={Phone}
+              error={errors.phone}
+              required
+            />
+            
 
-            {/* Profile Image (optional) */}
-            <div>
-              <label className="text-sm font-medium text-gray-700">Profile Photo (optional)</label>
-              <input type="file" accept="image/*" onChange={handleFileChange} className="mt-2" />
-            </div>
 
-            {/* Optional: Gender / DOB */}
-            <div className="grid grid-cols-2 gap-3">
-              <select name="gender" value={formData.gender} onChange={handleChange} className="p-3 border rounded">
-                <option value="">Gender (optional)</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-              <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="p-3 border rounded" />
-            </div>
-
-            {/* Address (optional) */}
-            <div>
-              <textarea name="address" value={formData.address} onChange={handleChange} placeholder="Street address (optional)" className="w-full p-3 border rounded" />
-              <div className="grid grid-cols-3 gap-3 mt-2">
-                <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="City" className="p-2 border rounded" />
-                <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" className="p-2 border rounded" />
-                <input type="text" name="zip" value={formData.zip} onChange={handleChange} placeholder="Zip" className="p-2 border rounded" />
-              </div>
-            </div>
+            
+            
 
             {/* Password Input */}
             <AuthInput

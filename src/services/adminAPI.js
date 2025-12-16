@@ -8,10 +8,10 @@ const adminAPI = {
   // Products
   getProducts: async (q = {}) => (await api.get("/admin/products", { params: q })).data,
   getProduct: async (id) => (await api.get(`/admin/products/${id}`)).data,
-  createProduct: async (formData) =>
-    (await api.post("/admin/products", formData, { headers: { "Content-Type": "multipart/form-data" } })).data,
-  updateProduct: async (id, formData) =>
-    (await api.put(`/admin/products/${id}`, formData, { headers: { "Content-Type": "multipart/form-data" } })).data,
+  createProduct: async (data) =>
+    (await api.post("/admin/products", data)).data,
+  updateProduct: async (id, data) =>
+    (await api.put(`/admin/products/${id}`, data)).data,
   deleteProduct: async (id) => (await api.delete(`/admin/products/${id}`)).data,
 
   // Orders
@@ -22,6 +22,8 @@ const adminAPI = {
   // Customers / Users
   getCustomers: async (q = {}) => (await api.get("/admin/users", { params: q })).data,
   getCustomer: async (id) => (await api.get(`/admin/users/${id}`)).data,
+  updateUser: async (id, data) => (await api.put(`/admin/users/${id}`, data)).data,
+  deleteUser: async (id) => (await api.delete(`/admin/users/${id}`)).data,
 
   // Reports (best sellers)
   getBestSellers: async (q = {}) => (await api.get("/admin/reports/best-sellers", { params: q })).data,

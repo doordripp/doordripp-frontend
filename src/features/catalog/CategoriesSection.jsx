@@ -13,7 +13,7 @@ export default function CategoriesSection() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Men Card */}
           <div className="group relative h-[400px] w-full overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-300 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
-            <a href="/?category=men" className="absolute inset-0 block" aria-label="Browse Men">
+            <a href="/category?gender=men" className="absolute inset-0 block" aria-label="Browse Men">
               <img
                 src={CATEGORY_IMAGES.men}
                 alt="Men"
@@ -30,7 +30,7 @@ export default function CategoriesSection() {
 
           {/* Women Card */}
           <div className="group relative h-[400px] w-full overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-300 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
-            <a href="/?category=women" className="absolute inset-0 block" aria-label="Browse Women">
+            <a href="/category?gender=women" className="absolute inset-0 block" aria-label="Browse Women">
               <img
                 src={CATEGORY_IMAGES.women}
                 alt="Women"
@@ -49,7 +49,7 @@ export default function CategoriesSection() {
           <div className="relative h-[400px] w-full overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-300 transition-all duration-300 hover:shadow-xl">
             {/* Accessories section - top-left triangle */}
             <a
-              href="/?category=accessories"
+              href="/category?category=accessories"
               className="group absolute inset-0 block transition-all duration-300 hover:z-10"
               style={{ clipPath: 'polygon(0% 0%, 100% 0%, 0% 100%)' }}
               aria-label="Browse Accessories"
@@ -68,7 +68,7 @@ export default function CategoriesSection() {
 
             {/* Footwear section - bottom-right triangle */}
             <a
-              href="/?category=footwear"
+              href="/category?category=footwear"
               className="group absolute inset-0 block transition-all duration-300 hover:z-10"
               style={{ clipPath: 'polygon(100% 6%, 100% 100%, 2% 100%)' }}
               aria-label="Browse Footwear"

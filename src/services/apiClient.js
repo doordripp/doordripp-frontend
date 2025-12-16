@@ -1,7 +1,5 @@
 // Simple API client using fetch with credentials included.
-// Default to relative `/api` so Vite dev proxy (if configured) is used
-// and the browser sees the same origin for cookies.
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
 const buildUrl = (path) => {
   if (!path) return API_BASE;

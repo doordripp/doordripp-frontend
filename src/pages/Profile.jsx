@@ -1,13 +1,26 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiPost } from '../services/apiClient'
+import { Settings } from 'lucide-react'
 
 export default function Profile() {
   const { user, logout, fetchMe } = useAuth()
   const navigate = useNavigate()
   const [preview, setPreview] = useState(user?.avatar || null)
   const [uploading, setUploading] = useState(false)
+
+  // Check if user is admin
+  const isAdmin = user?.roles && Array.isArray(user.roles) 
+    ? user.roles.some(r => r.toUpperCase() === 'ADMIN')
+    : false
+
+  // Redirect admin to admin panel
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/admin')
+    }
+  }, [isAdmin, navigate])
 
   const handleLogout = async () => {
     await logout()
@@ -86,8 +99,28 @@ export default function Profile() {
 
         <div className="mb-4">
           <div className="text-sm text-gray-500">Role</div>
-          <div className="text-lg font-medium">{user.role || 'customer'}</div>
+          <div className="text-lg font-medium">
+            {isAdmin ? (
+              <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-semibold">
+                👑 Admin
+              </span>
+            ) : (
+              <span className="text-gray-700">Customer</span>
+            )}
+          </div>
         </div>
+
+        {isAdmin && (
+          <div className="mb-6">
+            <Link 
+              to="/admin" 
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-green-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+            >
+              <Settings size={18} />
+              Go to Admin Panel
+            </Link>
+          </div>
+        )}
 
         <div className="mt-6">
           <button

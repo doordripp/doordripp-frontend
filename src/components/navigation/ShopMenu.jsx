@@ -1,140 +1,176 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, forwardRef } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
-export default function ShopMenu() {
+const ShopMenu = forwardRef(({ isOpen, onOpenChange, onClose, onMouseEnter, onMouseLeave }, ref) => {
   const [open, setOpen] = useState(false)
-  const ref = useRef(null)
+  const internalRef = useRef(null)
+  const containerRef = ref || internalRef
+  const navigate = useNavigate()
+  const firstItemRef = useRef(null)
 
-  // Lock body scroll when menu is open
   useEffect(() => {
-    const prev = document.body.style.overflow
-    if (open) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = prev || ''
+    if (isOpen !== undefined) {
+      setOpen(isOpen)
+    }
+  }, [isOpen])
+
+  const handleOpenChange = (newState) => {
+    setOpen(newState)
+    onOpenChange?.(newState)
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        handleOpenChange(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
     return () => {
-      document.body.style.overflow = prev || ''
+      document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [open])
 
+  // Handle navigation and close menu
+  const handleNavigation = (path) => {
+    handleOpenChange(false)
+    onClose?.()
+    // Scroll to top before navigation
+    window.scrollTo(0, 0)
+    navigate(path)
+    // Scroll again after navigation to ensure it works
+    setTimeout(() => {
+      window.scrollTo(0, 0)
+    }, 0)
+  }
+
+  const scrollToSection = (sectionId) => {
+    handleOpenChange(false)
+    onClose?.()
+    // Scroll to top first
+    window.scrollTo(0, 0)
+    if (window.location.pathname !== '/') {
+      navigate('/')
+      setTimeout(() => {
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    } else {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  // Keyboard navigation support
+  const onKeyDown = (e) => {
+    if (!open) return
+    const items = Array.from(containerRef.current.querySelectorAll('[role="menuitem"]'))
+    const index = items.indexOf(document.activeElement)
+    if (e.key === 'Escape') {
+      setOpen(false)
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      items[(index + 1) % items.length]?.focus()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      items[(index - 1 + items.length) % items.length]?.focus()
+    }
+  }
+
   return (
     <div
-      ref={ref}
+      ref={containerRef}
       className="relative"
-      onMouseEnter={() => setOpen(true)}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onKeyDown={onKeyDown}
     >
       <button
         type="button"
-        className="inline-flex items-center gap-1 hover:text-black/70"
+        className="inline-flex items-center gap-1 hover:text-black/80 transition-colors duration-200 font-medium"
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
       >
-        Shop <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+        Shop <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Screen overlay to block background interaction */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/20"
-          aria-hidden
-          onClick={() => setOpen(false)}
-        />
-      )}
-
       <div
-        className={`absolute left-0 top-full z-50 mt-2 w-72 rounded-lg border border-neutral-200 bg-white shadow-lg transition-all ${
-          open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-1 pointer-events-none'
+        className={`absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-gray-200 bg-white shadow-lg transition-all duration-200 ${
+          open ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-2 invisible pointer-events-none'
         }`}
         role="menu"
+        aria-label="Shop menu"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       >
-        <div className="py-2">
-          {/* Featured Categories */}
-          <div className="px-3 py-2 border-b border-gray-100">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Categories</h3>
-            <div className="space-y-1">
-              <Link
-                to="/category?category=casual"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                All Categories
-              </Link>
-              <Link
-                to="/category?category=casual&subcategory=T-shirts"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                T-Shirts
-              </Link>
-              <Link
-                to="/category?category=casual&subcategory=Shirts"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                Shirts
-              </Link>
-              <Link
-                to="/category?category=casual&subcategory=Jeans"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                Jeans
-              </Link>
-              <Link
-                to="/category?category=casual&subcategory=Shorts"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                Shorts
-              </Link>
-            </div>
-          </div>
-          
-          {/* Quick Links */}
-          <div className="px-3 py-2">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Quick Links</h3>
-            <div className="space-y-1">
-              <Link
-                to="/products"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                All Products
-              </Link>
-              <Link
-                to="/#new-arrivals"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                New Arrivals
-              </Link>
-              <Link
-                to="/#top-selling"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                Best Sellers
-              </Link>
-              <Link
-                to="/category?category=casual&priceRange=50-100"
-                className="block px-2 py-2 text-sm hover:bg-gray-100 rounded transition-colors"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-              >
-                Under $100
-              </Link>
-            </div>
-          </div>
+        <div className="py-1">
+          <button
+            onClick={() => handleNavigation('/products')}
+            className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
+            role="menuitem"
+          >
+            All Products
+          </button>
+          <button
+            onClick={() => scrollToSection('new-arrivals')}
+            className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
+            role="menuitem"
+          >
+            New Arrivals
+          </button>
+          <button
+            onClick={() => scrollToSection('top-selling')}
+            className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
+            role="menuitem"
+          >
+            Best Sellers
+          </button>
+          <div className="my-1 border-t border-gray-200"></div>
+          <button
+            onClick={() => handleNavigation('/category?category=casual')}
+            className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
+            role="menuitem"
+          >
+            All Categories
+          </button>
+          <button
+            onClick={() => handleNavigation('/category?gender=men')}
+            className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
+            role="menuitem"
+          >
+            Men
+          </button>
+          <button
+            onClick={() => handleNavigation('/category?gender=women')}
+            className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
+            role="menuitem"
+          >
+            Women
+          </button>
+          <button
+            onClick={() => handleNavigation('/category?category=accessories')}
+            className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
+            role="menuitem"
+          >
+            Accessories
+          </button>
+          <button
+            onClick={() => handleNavigation('/category?category=footwear')}
+            className="w-full text-left px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-100"
+            role="menuitem"
+          >
+            Footwear
+          </button>
         </div>
       </div>
     </div>
   )
-}
+})
+
+ShopMenu.displayName = 'ShopMenu'
+
+export default ShopMenu
