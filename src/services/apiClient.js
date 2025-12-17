@@ -1,5 +1,5 @@
 // Simple API client using fetch with credentials included.
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://doordripp-backend.onrender.com/api';
 
 const buildUrl = (path) => {
   if (!path) return API_BASE;
