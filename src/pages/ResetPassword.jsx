@@ -71,7 +71,7 @@ export default function ResetPassword() {
     try {
       await apiPost('/auth/reset-password', {
         token,
-        password: formData.password
+        newPassword: formData.password
       })
       setIsSubmitted(true)
     } catch (error) {

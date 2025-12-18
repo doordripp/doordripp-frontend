@@ -231,7 +231,7 @@ export default function ForgotPassword() {
               Verify OTP
             </h2>
             <p className="mt-2 text-gray-600">
-              We've sent a 6-digit OTP to {formData.emailOrPhone}
+              We've sent a link to reset password {formData.emailOrPhone}
             </p>
           </div>
 
