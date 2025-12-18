@@ -124,6 +124,9 @@ export default function Signup() {
       console.log('Submitting register payload', payload)
       const data = await apiPost('/auth/register-initiate', payload)
 
+      // Persist email for the verification page as a fallback
+      try { localStorage.setItem('pending_email', formData.email) } catch (_) {}
+
       // Always move to email verification step on success
       navigate('/verify-email', { 
         state: { email: formData.email },

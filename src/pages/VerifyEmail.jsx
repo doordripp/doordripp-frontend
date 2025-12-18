@@ -21,8 +21,11 @@ export default function VerifyEmail() {
   useEffect(() => {
     // Get email from navigation state (passed from Signup page)
     const emailFromState = location.state?.email;
+    const emailFromStorage = (() => { try { return localStorage.getItem('pending_email') } catch (_) { return null } })();
     if (emailFromState) {
       setEmail(emailFromState);
+    } else if (emailFromStorage) {
+      setEmail(emailFromStorage);
     } else {
       // If no email provided, redirect to signup
       navigate('/signup');
@@ -117,6 +120,8 @@ export default function VerifyEmail() {
         console.warn('Failed to fetch user:', e);
       }
 
+      // Clear pending marker once verified
+      try { localStorage.removeItem('pending_email') } catch (_) {}
       setSuccess('Email verified successfully! Redirecting...');
       
       // Redirect to home page after 1.5 seconds
