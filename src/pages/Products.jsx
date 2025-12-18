@@ -266,17 +266,17 @@ export default function Products() {
             </div>
 
             {/* Products Grid with Animation */}
-            <div className="grid gap-x-5 gap-y-8 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-x-6 gap-y-10 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-fr">
               {products.map((product, index) => (
                 <div
                   key={product._id || product.id}
-                  className="animate-fadeIn"
+                  className="animate-fadeIn h-full flex"
                   style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <ProductCard 
                     product={product}
                     onClick={handleProductClick}
-                    className="h-full"
+                    className="h-full w-full"
                   />
                 </div>
               ))}

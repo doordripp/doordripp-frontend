@@ -229,40 +229,39 @@ export default function ProductCard({
   }
 
   return (
-    <div className={`group cursor-pointer transition-all duration-500 hover:-translate-y-2 scale-80 ${className}`}>
+    <div className={`group cursor-pointer transition-all duration-500 hover:-translate-y-2 ${className}`} style={{ minHeight: 420, maxHeight: 420, minWidth: 260, maxWidth: 320, width: '100%' }}>
       {/* Product Card - Image Container with Info Box Below */}
-      <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-200 hover:border-gray-300">
-        
+      <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-200 hover:border-gray-300 flex flex-col h-full">
         {/* Image Container */}
         <div 
-          className="relative bg-gray-100 overflow-hidden aspect-square"
+          className="relative bg-gray-100 overflow-hidden aspect-[4/5] w-full min-h-[260px] max-h-[320px] flex-shrink-0"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <Link to={`/product/${id}`} state={{ imageIndex: 0 }} onClick={scrollToTop} className="block h-full">
+          <Link to={`/product/${id}`} state={{ imageIndex: 0 }} onClick={scrollToTop} className="block h-full w-full">
             {/* First Image */}
             <img
-              src={optimizeImage(image, { width: 600, height: 600, quality: 85 })}
+              src={optimizeImage(image, { width: 400, height: 500, quality: 85 })}
               alt={name}
               className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${
                 isOutOfStock ? 'opacity-60 grayscale' : ''
               } ${isHovered && images.length > 1 ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}
               loading="lazy"
+              style={{ minHeight: 260, maxHeight: 320 }}
             />
-            
             {/* Second Image - Shows on Hover */}
             {images.length > 1 && (
               <img
-                src={optimizeImage(secondImage, { width: 600, height: 600, quality: 85 })}
+                src={optimizeImage(secondImage, { width: 400, height: 500, quality: 85 })}
                 alt={`${name} - view 2`}
                 className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${
                   isOutOfStock ? 'opacity-60 grayscale' : ''
                 } ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
                 loading="lazy"
+                style={{ minHeight: 260, maxHeight: 320 }}
               />
             )}
           </Link>
-          
           {/* Out of Stock Badge */}
           {isOutOfStock && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 z-30">
@@ -271,14 +270,12 @@ export default function ProductCard({
               </div>
             </div>
           )}
-          
           {/* Discount Badge */}
           {hasDiscount && showDiscount && !isOutOfStock && (
             <div className="absolute left-3 top-3 rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-red-700 px-3 py-1.5 text-xs font-bold text-white shadow-2xl backdrop-blur-sm transform hover:scale-105 transition-transform duration-300 z-20">
               -{discount}%
             </div>
           )}
-          
           {/* Three Dots Menu */}
           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-500 z-20">
             <div className="w-9 h-9 bg-white backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl hover:bg-gray-50 transition-colors duration-300">
@@ -290,9 +287,8 @@ export default function ProductCard({
             </div>
           </div>
         </div>
-
         {/* Product Info Box - Clean Separation */}
-        <div className="p-2.5 bg-white border-t-2 border-gray-100">
+        <div className="p-2.5 bg-white border-t-2 border-gray-100 flex-1 flex flex-col justify-between">
           <Link to={`/product/${id}`} state={{ imageIndex: 0 }} onClick={scrollToTop}>
             {/* Price - Bold and Clear */}
             <div className="flex items-baseline gap-2 mb-1">
@@ -305,12 +301,10 @@ export default function ProductCard({
                 </span>
               )}
             </div>
-            
             {/* Product Name - Clean Typography */}
             <h3 className="text-xs font-semibold text-gray-800 line-clamp-2 leading-relaxed mb-1 tracking-wide">
               {name}
             </h3>
-            
             {/* Subcategory - Subtle Badge */}
             {subcategory && (
               <div className="inline-block mb-1.5">
@@ -320,7 +314,6 @@ export default function ProductCard({
               </div>
             )}
           </Link>
-
           {/* Add to Cart Button - Full Width */}
           {showAddToCart && (
             <button
