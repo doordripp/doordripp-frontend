@@ -216,17 +216,6 @@ export default function ForgotPassword() {
       </div>
     )
   }
-            <Link
-              to={`/reset-password?email=${encodeURIComponent(formData.emailOrPhone)}`}
-              className="w-full bg-black text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 inline-flex items-center justify-center"
-            >
-              Reset Password
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   // Step 2: OTP Verification
   if (step === 2) {
