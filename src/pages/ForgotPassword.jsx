@@ -111,13 +111,21 @@ export default function ForgotPassword() {
     setErrors({})
     
     try {
+      // Extract email from the input (ignore phone for now)
+      const email = isPhone ? null : formData.emailOrPhone
+      if (!email) {
+        setErrors({ submit: 'Please enter an email address to reset your password.' })
+        setIsLoading(false)
+        return
+      }
+
       await apiPost('/auth/forgot-password', {
-        emailOrPhone: formData.emailOrPhone
+        email
       })
-      setCountdown(60)
-      setStep(2)
+      setErrors({ submit: '' })
+      setStep(3) // Skip OTP step and show success message
     } catch (error) {
-      setErrors({ submit: error?.message || 'Failed to send OTP. Please try again.' })
+      setErrors({ submit: error?.message || 'Failed to send password reset email. Please try again.' })
     } finally {
       setIsLoading(false)
     }
@@ -183,13 +191,31 @@ export default function ForgotPassword() {
             </div>
             
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              OTP Verified Successfully
+              Check Your Email
             </h2>
             
-            <p className="text-gray-600 mb-8">
-              Your OTP has been verified. You can now reset your password.
+            <p className="text-gray-600 mb-2">
+              We've sent a password reset link to:
+            </p>
+            <p className="font-semibold text-gray-900 mb-6">
+              {formData.emailOrPhone}
             </p>
             
+            <p className="text-sm text-gray-500 mb-8">
+              The link will expire in 1 hour. If you don't receive it, check your spam folder.
+            </p>
+            
+            <Link
+              to="/login"
+              className="w-full bg-black text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 inline-flex items-center justify-center"
+            >
+              Back to Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
             <Link
               to={`/reset-password?email=${encodeURIComponent(formData.emailOrPhone)}`}
               className="w-full bg-black text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 inline-flex items-center justify-center"
