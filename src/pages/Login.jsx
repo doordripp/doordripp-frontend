@@ -135,7 +135,7 @@ export default function Login() {
 
   const handleGoogleLogin = () => {
     // Redirect to backend Google OAuth endpoint (don't add /api, it's already in base URL)
-    window.location.href = 'https://doordripp-backend.onrender.com/api/auth/google'
+    window.location.href = 'http://localhost:4000/api/auth/google'
   }
 
   return (

@@ -1,5 +1,7 @@
 // Simple API client using fetch with credentials included.
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://doordripp-backend.onrender.com/api';
+// Default to relative `/api` so Vite dev proxy (if configured) is used
+// and the browser sees the same origin for cookies.
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const buildUrl = (path) => {
   if (!path) return API_BASE;
@@ -48,3 +50,15 @@ export const apiDelete = async (path) => {
 };
 
 export default { apiGet, apiPost, apiPut, apiDelete };
+
+// Health ping helper; returns { ok: boolean, info }
+export const apiHealth = async () => {
+  try {
+    const res = await fetch(buildUrl('/health'), { credentials: 'include' });
+    if (!res.ok) return { ok: false, info: `status ${res.status}` };
+    const data = await res.json();
+    return { ok: !!data?.ok, info: data };
+  } catch (e) {
+    return { ok: false, info: e?.message || 'network error' };
+  }
+};
