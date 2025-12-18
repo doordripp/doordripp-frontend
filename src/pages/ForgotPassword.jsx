@@ -339,7 +339,7 @@ export default function ForgotPassword() {
             Forgot password?
           </h2>
           <p className="mt-2 text-gray-600">
-            Enter your email or phone number and we'll send you an OTP
+            Enter your email and we'll send you a password reset link
           </p>
         </div>
 
@@ -374,10 +374,10 @@ export default function ForgotPassword() {
               {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Sending OTP...
+                  Sending Reset Email...
                 </div>
               ) : (
-                'Send OTP'
+                'Send Reset Email'
               )}
             </button>
 
