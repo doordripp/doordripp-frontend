@@ -122,41 +122,16 @@ export default function Signup() {
       // include verification token if available
       if (otpToken) payload.verificationToken = otpToken
       console.log('Submitting register payload', payload)
-      const data = await apiPost('/auth/register', payload)
+      const data = await apiPost('/auth/register-initiate', payload)
+
+      // Always move to email verification step on success
+      navigate('/verify-email', { 
+        state: { email: formData.email },
+        replace: true 
+      })
+      return
       
-      // Check if email verification is required
-      if (data.requiresVerification) {
-        // Redirect to email verification page
-        navigate('/verify-email', { 
-          state: { email: formData.email },
-          replace: true 
-        })
-        return
-      }
-      
-      // Legacy flow: if token is returned, user is logged in immediately
-      if (data.token) authStorage.setToken(data.token)
-      const user = data.user || data
-      authStorage.setUser({ _id: user.id || user._id, name: user.name, email: user.email, role: user.roles || user.role })
-      // populate global auth state from backend cookies
-      try { await fetchMe() } catch (e) { /* ignore */ }
-      // If user selected a profile image, upload it now
-      if (formData.profileImage) {
-        try {
-          const reader = new FileReader()
-          const base64 = await new Promise((resolve, reject) => {
-            reader.onload = () => resolve(reader.result)
-            reader.onerror = reject
-            reader.readAsDataURL(formData.profileImage)
-          })
-          await apiPost('/auth/avatar', { avatar: base64 })
-          await fetchMe()
-        } catch (e) {
-          console.warn('Profile image upload failed', e)
-        }
-      }
-      // On success, redirect to home
-      navigate('/')
+      // The rest of this flow occurs after verification
     } catch (error) {
       const msg = error?.message || 'Registration failed. Please try again.'
       setErrors({ submit: msg })

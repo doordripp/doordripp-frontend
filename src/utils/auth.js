@@ -148,7 +148,8 @@ export const isAuthenticated = () => {
 // API endpoints configuration
 export const authEndpoints = {
   login: '/api/auth/login',
-  register: '/api/auth/register',
+  registerInitiate: '/api/auth/register-initiate',
+  verifyEmail: '/api/auth/verify-email',
   me: '/api/auth/me',
   logout: '/api/auth/logout'
 }

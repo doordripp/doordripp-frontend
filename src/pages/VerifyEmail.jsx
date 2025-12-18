@@ -91,9 +91,9 @@ export default function VerifyEmail() {
     setSuccess('');
 
     try {
-      const response = await apiPost('/auth/verify-email-otp', {
+      const response = await apiPost('/auth/verify-email', {
         email,
-        code: otpCode
+        otp: otpCode
       });
 
       // Store token and user
@@ -140,7 +140,7 @@ export default function VerifyEmail() {
     setSuccess('');
 
     try {
-      await apiPost('/auth/resend-email-otp', { email });
+      await apiPost('/auth/register-resend', { email });
       setSuccess('OTP sent successfully! Please check your email.');
       setCountdown(60); // 60 seconds cooldown
       setOtp(['', '', '', '', '', '']);
