@@ -51,8 +51,8 @@ export default function AdminProducts() {
       header: 'Product',
       accessor: 'name',
       render: (product) => (
-        <div className="flex items-center space-x-3">
-          <div className="flex -space-x-2">
+        <div className="flex items-center space-x-3 max-w-md">
+          <div className="flex -space-x-2 flex-shrink-0">
             {product.images && product.images.length > 0 ? (
               product.images.slice(0, 2).map((img, idx) => (
                 <img 
@@ -75,8 +75,8 @@ export default function AdminProducts() {
               </div>
             )}
           </div>
-          <div>
-            <div className="font-medium text-gray-900">{product.name}</div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-gray-900 truncate max-w-xs" title={product.name}>{product.name}</div>
             <div className="text-sm text-gray-500">{product.category}</div>
           </div>
         </div>
@@ -357,7 +357,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
   })
 
   const categories = ['Men', 'Women', 'Accessories', 'Footwear']
-  const subcategories = ['T-shirts', 'Shirts', 'Jeans', 'Shorts', 'Hoodies', 'Jackets']
+  const subcategories = ['T-shirts', 'Shirts', 'Jeans', 'Shorts', 'Hoodies', 'Jackets', 'Dresses', 'Tops', 'Suits', 'Outfits', 'Kurtis', 'Casual Partywear', 'Bags', 'Watches', 'Belts', 'Sunglasses', 'Wallets', 'Caps', 'Sneakers', 'Boots', 'Formal Shoes', 'Sports Shoes', 'Casual Shoes', 'Sandals']
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34', '36', '38', '40', '42']
   const availableColors = [
     { name: 'Black', hex: '#000000' },
@@ -453,10 +453,9 @@ function ProductModal({ product, onSave, onClose, saving }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Subcategory *
+                Subcategory <span className="text-gray-400 text-xs">(optional)</span>
               </label>
               <select
-                required
                 value={formData.subcategory}
                 onChange={(e) => setFormData({...formData, subcategory: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"

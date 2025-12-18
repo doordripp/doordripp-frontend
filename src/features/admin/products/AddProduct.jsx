@@ -33,6 +33,11 @@ export default function AddProduct() {
     fd.append("subcategory", vals.subcategory || "");
     fd.append("price", vals.price);
     fd.append("stock", vals.stock || 0);
+    
+    // Collection flags
+    fd.append("isNewArrival", vals.isNewArrival || false);
+    fd.append("isBestSeller", vals.isBestSeller || false);
+    fd.append("isFeatured", vals.isFeatured || false);
 
     images.forEach((file) => fd.append("images", file));
 
@@ -81,37 +86,88 @@ export default function AddProduct() {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm">Category</label>
+          <label className="block text-sm font-medium text-gray-700">Category *</label>
           <select
-            {...register("category")}
+            {...register("category", { required: "Category is required" })}
             className="w-full border p-2 rounded"
           >
             <option value="">Select Category</option>
-            <option value="Clothing">Clothing</option>
+            <option value="Men">Men</option>
+            <option value="Women">Women</option>
             <option value="Accessories">Accessories</option>
-            <option value="Shoes">Shoes</option>
+            <option value="Footwear">Footwear</option>
           </select>
+          {errors.category && (
+            <p className="text-red-600 text-sm">{errors.category.message}</p>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm">Sub Category</label>
+          <label className="block text-sm font-medium text-gray-700">Sub Category</label>
           <select
             {...register("subcategory")}
             className="w-full border p-2 rounded"
           >
             <option value="">Select Sub Category</option>
-            <option value="T-Shirt">T-Shirt</option>
-            <option value="Pants">Pants</option>
+            {/* Men & Women Subcategories */}
+            <option value="T-shirts">T-shirts</option>
+            <option value="Shirts">Shirts</option>
+            <option value="Jeans">Jeans</option>
+            <option value="Jackets">Jackets</option>
+            <option value="Shorts">Shorts</option>
+            <option value="Hoodies">Hoodies</option>
+            <option value="Dresses">Dresses</option>
+            <option value="Kurtis">Kurtis</option>
+            <option value="Casual Partywear">Casual Partywear</option>
             <option value="Suits">Suits</option>
-            <option value="Shirt">Shirt</option>
-            <option value="Jacket">Jacket</option>
-            <option value="Cap">Cap</option>
-            <option value="Belt">Belt</option>
-            <option value="Watch">Watch</option>
+            <option value="Tops">Tops</option>
+            <option value="Outfits">Outfits</option>
+            {/* Accessories Subcategories */}
+            <option value="Bags">Bags</option>
+            <option value="Watches">Watches</option>
+            <option value="Belts">Belts</option>
+            <option value="Sunglasses">Sunglasses</option>
+            <option value="Wallets">Wallets</option>
+            <option value="Caps">Caps</option>
+            {/* Footwear Subcategories */}
             <option value="Sneakers">Sneakers</option>
             <option value="Boots">Boots</option>
-            <option value="Formal Shoes">Formal Shoes</option>
+            <option value="Formal">Formal Shoes</option>
+            <option value="Sports">Sports Shoes</option>
+            <option value="Casual">Casual Shoes</option>
+            <option value="Sandals">Sandals</option>
           </select>
+        </div>
+      </div>
+
+      {/* Collection Flags */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">Collection Tags</label>
+        <div className="flex gap-4 flex-wrap">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              {...register("isNewArrival")}
+              className="rounded border-gray-300"
+            />
+            <span className="text-sm">New Arrival</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              {...register("isBestSeller")}
+              className="rounded border-gray-300"
+            />
+            <span className="text-sm">Best Seller</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              {...register("isFeatured")}
+              className="rounded border-gray-300"
+            />
+            <span className="text-sm">Featured</span>
+          </label>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
-import { FILTER_OPTIONS, NEW_ARRIVALS, TOP_SELLING, MENS_PRODUCTS, WOMENS_PRODUCTS, ACCESSORIES_PRODUCTS, FOOTWEAR_PRODUCTS } from '../constants/products'
+import { FILTER_OPTIONS } from '../constants/products'
 import { apiGet } from '../services/apiClient'
 import { ProductCard } from '../features/catalog'
 
@@ -15,7 +15,7 @@ export default function CategoryPage() {
   
   // UI states - declare BEFORE useEffect
   const [viewMode, setViewMode] = useState('grid')
-  const [sortBy, setSortBy] = useState('most-popular')
+  const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 50
   
@@ -32,7 +32,7 @@ export default function CategoryPage() {
     size: true,
     dressStyle: true
   })
-  const [priceRange, setPriceRange] = useState([0, 100])
+  const [priceRange, setPriceRange] = useState([0, 10000])
   const [selectedFilters, setSelectedFilters] = useState({
     subcategories: subcategoryFromUrl ? [subcategoryFromUrl] : [],
     colors: [],
@@ -70,22 +70,6 @@ export default function CategoryPage() {
       categoryFilter = 'Footwear'
     }
     
-    // Start with local products based on category or gender
-    let categoryProducts = []
-    if (categoryFilter === 'Men') {
-      categoryProducts = [...MENS_PRODUCTS]
-    } else if (categoryFilter === 'Women') {
-      categoryProducts = [...WOMENS_PRODUCTS]
-    } else if (categoryFilter === 'Accessories') {
-      categoryProducts = [...ACCESSORIES_PRODUCTS]
-    } else if (categoryFilter === 'Footwear') {
-      categoryProducts = [...FOOTWEAR_PRODUCTS]
-    } else {
-      categoryProducts = [...NEW_ARRIVALS, ...TOP_SELLING]
-    }
-    
-    const allLocalProducts = categoryProducts
-    
     // Fetch products from API - get ALL products
     apiGet(`/products?limit=200`)
       .then(res => {
@@ -108,44 +92,24 @@ export default function CategoryPage() {
           )
         }
         
-        // Merge filtered API products with local products (avoid duplicates by name)
-        const allProducts = [...apiProducts]
-        allLocalProducts.forEach(localProd => {
-          const exists = allProducts.find(p => 
-            p.name?.toLowerCase() === localProd.name?.toLowerCase()
-          )
-          if (!exists) {
-            allProducts.push(localProd)
-          }
-        })
-        
         console.log('Category:', categoryFilter)
-        console.log('Total products loaded:', allProducts.length)
-        console.log('Products:', allProducts.map(p => ({ name: p.name, price: p.price, category: p.category })))
+        console.log('Total products loaded:', apiProducts.length)
         
         // If subcategory specified, filter
         if (subcategoryFromUrl) {
-          const filtered = allProducts.filter(p =>
+          const filtered = apiProducts.filter(p =>
             p.subcategory?.toLowerCase() === subcategoryFromUrl.toLowerCase()
           )
           setProducts(filtered)
         } else {
-          setProducts(allProducts)
+          setProducts(apiProducts)
         }
         
         setLoading(false)
       })
       .catch(err => {
         console.error('Failed to load products from API:', err)
-        // Use only local products on error
-        if (subcategoryFromUrl) {
-          const filtered = allLocalProducts.filter(p =>
-            p.subcategory?.toLowerCase() === subcategoryFromUrl.toLowerCase()
-          )
-          setProducts(filtered)
-        } else {
-          setProducts(allLocalProducts)
-        }
+        setProducts([])
         setLoading(false)
       })
     
@@ -196,11 +160,16 @@ export default function CategoryPage() {
       case 'price-high':
         return b.price - a.price
       case 'newest':
-        return b.id.localeCompare(a.id)
+        // Sort by createdAt date (newest first)
+        const dateA = new Date(a.createdAt || 0)
+        const dateB = new Date(b.createdAt || 0)
+        return dateB - dateA
       case 'rating':
-        return b.rating.rating - a.rating.rating
-      default: // most-popular
-        return b.rating.reviews - a.rating.reviews
+        return (b.rating?.rating || 0) - (a.rating?.rating || 0)
+      default: // most-popular - also sort by newest first by default
+        const createdA = new Date(a.createdAt || 0)
+        const createdB = new Date(b.createdAt || 0)
+        return createdB - createdA
     }
   })
   

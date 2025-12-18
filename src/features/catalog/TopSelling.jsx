@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TOP_SELLING, MENS_PRODUCTS, WOMENS_PRODUCTS } from '../../constants/products'
 import ProductCard from './ProductCard'
 import { apiGet } from '../../services/apiClient'
 
 export default function TopSelling() {
-  const [products, setProducts] = useState(TOP_SELLING.slice(0, 8))
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -26,24 +25,11 @@ export default function TopSelling() {
           return dateB - dateA
         })
         
-        // Combine: API products first, then static
-        const combinedProducts = [...bestSellers, ...TOP_SELLING]
-        
-        // Remove duplicates
-        const uniqueProducts = combinedProducts.reduce((acc, product) => {
-          const exists = acc.find(p => 
-            (p.slug && product.slug && p.slug === product.slug) || 
-            (p._id && product._id && p._id.toString() === product._id.toString())
-          )
-          if (!exists) acc.push(product)
-          return acc
-        }, [])
-        
-        setProducts(uniqueProducts.slice(0, 8))
+        setProducts(bestSellers.slice(0, 8))
       })
       .catch(err => {
         console.error('Failed to fetch best sellers:', err)
-        if (mounted) setProducts(TOP_SELLING.slice(0, 8))
+        if (mounted) setProducts([])
       })
       .finally(() => mounted && setLoading(false))
     

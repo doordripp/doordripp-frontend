@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiGet } from '../services/apiClient'
 import { ProductCard } from '../features/catalog'
-import { NEW_ARRIVALS } from '../constants/products'
 
 export default function NewArrivalsPage() {
   const [products, setProducts] = useState([])
@@ -27,28 +26,14 @@ export default function NewArrivalsPage() {
           return dateB - dateA // Newest first
         })
         
-        // Combine: API products first (newest), then static products
-        const combinedProducts = [...newArrivals, ...NEW_ARRIVALS]
-        
-        // Remove duplicates based on slug or _id
-        const uniqueProducts = combinedProducts.reduce((acc, product) => {
-          const exists = acc.find(p => 
-            (p.slug && product.slug && p.slug === product.slug) || 
-            (p._id && product._id && p._id.toString() === product._id.toString())
-          )
-          if (!exists) acc.push(product)
-          return acc
-        }, [])
-        
-        setProducts(uniqueProducts)
-        setMeta({ page: 1, limit: uniqueProducts.length, total: uniqueProducts.length })
+        setProducts(newArrivals)
+        setMeta({ page: 1, limit: newArrivals.length, total: newArrivals.length })
       })
       .catch(err => {
         console.error(err)
-        // Fallback to static products on error
         if (mounted) {
-          setProducts(NEW_ARRIVALS)
-          setMeta({ page: 1, limit: NEW_ARRIVALS.length, total: NEW_ARRIVALS.length })
+          setProducts([])
+          setMeta({ page: 1, limit: 0, total: 0 })
         }
       })
       .finally(() => mounted && setLoading(false))

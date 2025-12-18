@@ -2,23 +2,20 @@ import { useState, useEffect } from 'react'
 import { Search, Filter } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { ProductCard } from '../features/catalog'
-import { CATEGORIES, NEW_ARRIVALS, TOP_SELLING } from '../constants/products'
+import { CATEGORIES } from '../constants/products'
 import { apiGet } from '../services/apiClient'
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [sortBy, setSortBy] = useState('name')
+  const [sortBy, setSortBy] = useState('newest')
   const [showFilters, setShowFilters] = useState(false)
   const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const limit = 24
-
-  // Combine products from constants
-  const allLocalProducts = [...NEW_ARRIVALS, ...TOP_SELLING]
 
   // Update search query when URL params change
   useEffect(() => {
@@ -28,48 +25,12 @@ export default function Products() {
     }
   }, [searchParams])
 
-  // Fetch products - combine API and local products
+  // Fetch products from API
   useEffect(() => {
     let mounted = true
+    setLoading(true)
     
-    // Start with local products
-    let filteredProducts = [...allLocalProducts]
-
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filteredProducts = filteredProducts.filter(p => 
-        p.name.toLowerCase().includes(query) ||
-        (p.category && p.category.toLowerCase().includes(query)) ||
-        (p.subcategory && p.subcategory.toLowerCase().includes(query))
-      )
-    }
-
-    // Apply category filter
-    if (selectedCategory && selectedCategory !== 'All') {
-      filteredProducts = filteredProducts.filter(p => 
-        p.category === selectedCategory.toLowerCase() ||
-        p.subcategory === selectedCategory
-      )
-    }
-
-    // Apply sorting
-    if (sortBy === 'price-low') {
-      filteredProducts.sort((a, b) => a.price - b.price)
-    } else if (sortBy === 'price-high') {
-      filteredProducts.sort((a, b) => b.price - a.price)
-    } else if (sortBy === 'rating') {
-      filteredProducts.sort((a, b) => (b.rating?.rating || 0) - (a.rating?.rating || 0))
-    } else {
-      // Sort by name
-      filteredProducts.sort((a, b) => a.name.localeCompare(b.name))
-    }
-
-    setProducts(filteredProducts)
-    setTotal(filteredProducts.length)
-    setLoading(false)
-
-    // Also try to fetch from API and merge (optional)
+    // Build query params
     const q = {}
     if (searchQuery) q.search = searchQuery
     if (selectedCategory && selectedCategory !== 'All') q.category = selectedCategory
@@ -78,26 +39,60 @@ export default function Products() {
     q.limit = limit
 
     const params = Object.entries(q).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')
+    
     apiGet(`/products?${params}`)
       .then(res => {
         if (!mounted) return
-        const apiProducts = res.data || []
-        // Merge API products with local products (avoid duplicates)
-        const allProducts = [...filteredProducts]
-        apiProducts.forEach(apiProd => {
-          const exists = allProducts.find(p => 
-            (p.id === apiProd.id || p._id === apiProd._id || p.name === apiProd.name)
+        let apiProducts = res.data || []
+        
+        // Apply client-side search filter if needed
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase()
+          apiProducts = apiProducts.filter(p => 
+            p.name?.toLowerCase().includes(query) ||
+            (p.category && p.category.toLowerCase().includes(query)) ||
+            (p.subcategory && p.subcategory.toLowerCase().includes(query))
           )
-          if (!exists) {
-            allProducts.push(apiProd)
-          }
-        })
-        setProducts(allProducts)
-        setTotal(allProducts.length)
+        }
+
+        // Apply category filter
+        if (selectedCategory && selectedCategory !== 'All') {
+          apiProducts = apiProducts.filter(p => 
+            p.category?.toLowerCase() === selectedCategory.toLowerCase() ||
+            p.subcategory?.toLowerCase() === selectedCategory.toLowerCase()
+          )
+        }
+
+        // Apply sorting
+        if (sortBy === 'price-low') {
+          apiProducts.sort((a, b) => a.price - b.price)
+        } else if (sortBy === 'price-high') {
+          apiProducts.sort((a, b) => b.price - a.price)
+        } else if (sortBy === 'rating') {
+          apiProducts.sort((a, b) => (b.rating?.rating || 0) - (a.rating?.rating || 0))
+        } else if (sortBy === 'name') {
+          // Sort by name
+          apiProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        } else {
+          // Default: Sort by newest first (createdAt)
+          apiProducts.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0)
+            const dateB = new Date(b.createdAt || 0)
+            return dateB - dateA
+          })
+        }
+
+        setProducts(apiProducts)
+        setTotal(apiProducts.length)
+        setLoading(false)
       })
       .catch(err => {
         console.error('Failed to fetch products from API', err)
-        // Keep local products on error
+        if (mounted) {
+          setProducts([])
+          setTotal(0)
+          setLoading(false)
+        }
       })
 
     return () => { mounted = false }

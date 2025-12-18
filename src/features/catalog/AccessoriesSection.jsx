@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ACCESSORIES_PRODUCTS, WOMENS_PRODUCTS } from '../../constants/products'
 import ProductCard from './ProductCard'
 import { apiGet } from '../../services/apiClient'
 
 export default function AccessoriesSection() {
-  const [products, setProducts] = useState([...ACCESSORIES_PRODUCTS, ...WOMENS_PRODUCTS].slice(0, 8))
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -17,7 +16,9 @@ export default function AccessoriesSection() {
         const apiProducts = res.data || []
         
         // Filter accessories category
-        const accessories = apiProducts.filter(p => p.category === 'Accessories')
+        const accessories = apiProducts.filter(p => 
+          p.category?.toLowerCase() === 'accessories'
+        )
         
         // Sort by creation date (newest first)
         accessories.sort((a, b) => {
@@ -26,24 +27,11 @@ export default function AccessoriesSection() {
           return dateB - dateA
         })
         
-        // Combine: API products first, then static
-        const combinedProducts = [...accessories, ...ACCESSORIES_PRODUCTS, ...WOMENS_PRODUCTS]
-        
-        // Remove duplicates
-        const uniqueProducts = combinedProducts.reduce((acc, product) => {
-          const exists = acc.find(p => 
-            (p.slug && product.slug && p.slug === product.slug) || 
-            (p._id && product._id && p._id.toString() === product._id.toString())
-          )
-          if (!exists) acc.push(product)
-          return acc
-        }, [])
-        
-        setProducts(uniqueProducts.slice(0, 8))
+        setProducts(accessories.slice(0, 8))
       })
       .catch(err => {
         console.error('Failed to fetch accessories:', err)
-        if (mounted) setProducts([...ACCESSORIES_PRODUCTS, ...WOMENS_PRODUCTS].slice(0, 8))
+        if (mounted) setProducts([])
       })
       .finally(() => mounted && setLoading(false))
     

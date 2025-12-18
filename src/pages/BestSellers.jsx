@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiGet } from '../services/apiClient'
 import { ProductCard } from '../features/catalog'
-import { TOP_SELLING } from '../constants/products'
 
 export default function BestSellersPage() {
   const [products, setProducts] = useState([])
@@ -11,34 +10,27 @@ export default function BestSellersPage() {
     let mounted = true
     setLoading(true)
     
-    // Fetch from API for products marked as Top Selling
+    // Fetch from API for products marked as Best Seller
     apiGet('/products?page=1&limit=100')
       .then(res => {
         if (!mounted) return
         const apiProducts = res.data || []
-        // Filter products where isBestSeller is true (Top Selling)
+        // Filter products where isBestSeller is true
         const bestSellers = apiProducts.filter(p => p.isBestSeller === true)
         
-        // Combine with static TOP_SELLING products
-        const combinedProducts = [...TOP_SELLING, ...bestSellers]
+        // Sort by creation date (newest first)
+        bestSellers.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0)
+          const dateB = new Date(b.createdAt || 0)
+          return dateB - dateA
+        })
         
-        // Remove duplicates based on slug or _id
-        const uniqueProducts = combinedProducts.reduce((acc, product) => {
-          const exists = acc.find(p => 
-            (p.slug && product.slug && p.slug === product.slug) || 
-            (p._id && product._id && p._id.toString() === product._id.toString())
-          )
-          if (!exists) acc.push(product)
-          return acc
-        }, [])
-        
-        setProducts(uniqueProducts)
+        setProducts(bestSellers)
       })
       .catch(err => {
         console.error(err)
-        // Fallback to static products on error
         if (mounted) {
-          setProducts(TOP_SELLING)
+          setProducts([])
         }
       })
       .finally(() => mounted && setLoading(false))

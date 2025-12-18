@@ -1,7 +1,6 @@
 import { useState, useEffect, useLayoutEffect } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { Star, StarHalf, Heart, Share2, ChevronLeft, ChevronRight, Plus, Minus, ShoppingCart, Check, User } from 'lucide-react'
-import { ALL_PRODUCTS } from '../constants/products'
 import { useCart } from '../context/CartContext'
 import { ProductCard } from '../features/catalog'
 import api from '../services/api'
@@ -141,23 +140,14 @@ export default function ProductDetail() {
     rating: 5,
     review: ''
   })
+  const [recommendedProducts, setRecommendedProducts] = useState([])
   
-  // Find product by ID - check static products first, then fetch from API
+  // Find product by ID - fetch from API
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true)
       
-      // First, try to find in static products
-      const staticProduct = ALL_PRODUCTS.find(p => p.id === id)
-      if (staticProduct) {
-        setProduct(staticProduct)
-        setSelectedColor(staticProduct.colors?.[0] || '')
-        setSelectedSize(staticProduct.sizes?.[0] || '')
-        setLoading(false)
-        return
-      }
-      
-      // If not found in static products, fetch from database
+      // Fetch from database
       try {
         const response = await api.get(`/products/${id}`)
         const dbProduct = response.data
@@ -195,6 +185,26 @@ export default function ProductDetail() {
     fetchProduct()
   }, [id])
 
+  // Fetch recommended products from API
+  useEffect(() => {
+    const fetchRecommended = async () => {
+      if (!product?.category) return
+      try {
+        const response = await api.get('/products', {
+          params: { category: product.category, limit: 5 }
+        })
+        const products = response.data.products || response.data || []
+        // Filter out current product and limit to 4
+        setRecommendedProducts(
+          products.filter(p => (p._id || p.id) !== id).slice(0, 4)
+        )
+      } catch (error) {
+        console.error('Error fetching recommended products:', error)
+      }
+    }
+    fetchRecommended()
+  }, [product?.category, id])
+
   // If navigation provided an initial image index (via Link state), set it
   const location = useLocation()
   useEffect(() => {
@@ -203,11 +213,6 @@ export default function ProductDetail() {
       setSelectedImage(idx)
     }
   }, [location.state])
-  
-  // Get recommended products (exclude current product)
-  const recommendedProducts = ALL_PRODUCTS.filter(p => 
-    p.id !== id && p.category === product?.category
-  ).slice(0, 4)
   
   if (loading) {
     return (

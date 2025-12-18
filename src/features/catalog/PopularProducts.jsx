@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ACCESSORIES_PRODUCTS, FOOTWEAR_PRODUCTS } from '../../constants/products'
 import ProductCard from './ProductCard'
 import { apiGet } from '../../services/apiClient'
 
 export default function PopularProducts() {
-  const [products, setProducts] = useState([...ACCESSORIES_PRODUCTS, ...FOOTWEAR_PRODUCTS].slice(0, 8))
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -26,24 +25,11 @@ export default function PopularProducts() {
           return dateB - dateA
         })
         
-        // Combine: API products first, then static
-        const combinedProducts = [...featured, ...ACCESSORIES_PRODUCTS, ...FOOTWEAR_PRODUCTS]
-        
-        // Remove duplicates
-        const uniqueProducts = combinedProducts.reduce((acc, product) => {
-          const exists = acc.find(p => 
-            (p.slug && product.slug && p.slug === product.slug) || 
-            (p._id && product._id && p._id.toString() === product._id.toString())
-          )
-          if (!exists) acc.push(product)
-          return acc
-        }, [])
-        
-        setProducts(uniqueProducts.slice(0, 8))
+        setProducts(featured.slice(0, 8))
       })
       .catch(err => {
         console.error('Failed to fetch featured products:', err)
-        if (mounted) setProducts([...ACCESSORIES_PRODUCTS, ...FOOTWEAR_PRODUCTS].slice(0, 8))
+        if (mounted) setProducts([])
       })
       .finally(() => mounted && setLoading(false))
     

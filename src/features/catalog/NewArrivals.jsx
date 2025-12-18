@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { NEW_ARRIVALS, TOP_SELLING } from '../../constants/products'
 import ProductCard from './ProductCard'
 import { apiGet } from '../../services/apiClient'
 
 export default function NewArrivals() {
-  const [products, setProducts] = useState(NEW_ARRIVALS.slice(0, 8))
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,26 +26,12 @@ export default function NewArrivals() {
           return dateB - dateA // Newest first
         })
         
-        // Combine: API products first (newest), then static products
-        const combinedProducts = [...newArrivals, ...NEW_ARRIVALS]
-        
-        // Remove duplicates based on slug
-        const uniqueProducts = combinedProducts.reduce((acc, product) => {
-          const exists = acc.find(p => 
-            (p.slug && product.slug && p.slug === product.slug) || 
-            (p._id && product._id && p._id.toString() === product._id.toString())
-          )
-          if (!exists) acc.push(product)
-          return acc
-        }, [])
-        
         // Show first 8 products
-        setProducts(uniqueProducts.slice(0, 8))
+        setProducts(newArrivals.slice(0, 8))
       })
       .catch(err => {
         console.error('Failed to fetch new arrivals:', err)
-        // Fallback to static products on error
-        if (mounted) setProducts(NEW_ARRIVALS.slice(0, 8))
+        if (mounted) setProducts([])
       })
       .finally(() => mounted && setLoading(false))
     
