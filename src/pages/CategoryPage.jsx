@@ -467,12 +467,12 @@ export default function CategoryPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
+              <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {paginatedProducts.map((product) => (
                   <ProductCard 
                     key={product._id || product.id} 
                     product={product} 
-                    className="h-full"
+                    className="mx-auto w-full"
                   />
                 ))}
               </div>
