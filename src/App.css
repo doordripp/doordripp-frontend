@@ -37,3 +37,49 @@
 .card { padding: 0; }
 
 .read-the-docs { color: #888; }
+/* Improved product grid layout for category page */
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2.5rem;
+  align-items: stretch;
+  margin-bottom: 2.5rem;
+  padding: 0 2rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.product-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 420px;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  transition: box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.product-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+@media (max-width: 768px) {
+  .product-list {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    padding: 0 0.5rem;
+  }
+  .product-card {
+    min-height: 260px;
+    padding: 1rem;
+  }
+}
+
+/* Category page background - global, not inside media query */
+.category-page-bg {
+  background: #f7f8fa; /* Soft gray, matches home page */
+  min-height: 100vh;
+}

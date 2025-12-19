@@ -229,7 +229,7 @@ export default function ProductCard({
   }
 
   return (
-    <div className={`group cursor-pointer transition-all duration-500 hover:-translate-y-2 ${className}`} style={{ minHeight: 420, minWidth: 260, maxWidth: 320, width: '100%' }}>
+    <div className={`group cursor-pointer transition-all duration-500 hover:-translate-y-2 w-full min-h-[420px] box-border ${className}`}>
       {/* Product Card - Image Container with Info Box Below */}
       <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-200 hover:border-gray-300 flex flex-col h-full">
         {/* Image Container */}

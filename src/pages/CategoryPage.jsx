@@ -270,7 +270,7 @@ export default function CategoryPage() {
         
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters Sidebar */}
-          <div className={`lg:w-72 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+          <div className={`lg:w-72 ${showFilters ? 'block' : 'hidden lg:block'}`}> 
             <div className="bg-white border border-gray-200 rounded-2xl p-5 sticky top-4">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold">Filters</h2>
@@ -467,12 +467,12 @@ export default function CategoryPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 px-2 md:px-4 lg:px-6">
                 {paginatedProducts.map((product) => (
                   <ProductCard 
                     key={product._id || product.id} 
                     product={product} 
-                    className="mx-auto w-full"
+                    className="w-full min-h-[420px] box-border"
                   />
                 ))}
               </div>
