@@ -19,6 +19,8 @@ import VerifyEmail from './pages/VerifyEmail'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Profile from './pages/Profile'
+import Checkout from './pages/Checkout'
+import OrderConfirmation from './pages/OrderConfirmation'
 import NewArrivalsPage from './pages/NewArrivals'
 import BestSellersPage from './pages/BestSellers'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
@@ -137,6 +139,8 @@ function App() {
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/orders/:id" element={<OrderConfirmation />} />
                   </Routes>
                 </main>
                 {/* Global Newsletter Section - Appears on all pages */}

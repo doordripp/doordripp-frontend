@@ -185,25 +185,42 @@ export default function ProductDetail() {
     fetchProduct()
   }, [id])
 
-  // Fetch recommended products from API
+  // Fetch recommended products from API (match category + subcategory)
   useEffect(() => {
     const fetchRecommended = async () => {
       if (!product?.category) return
       try {
-        const response = await api.get('/products', {
-          params: { category: product.category, limit: 5 }
+        // Ask backend for products matching category and subcategory if available
+        const params = { category: product.category, limit: 12 }
+        if (product.subcategory) params.subcategory = product.subcategory
+
+        const response = await api.get('/products', { params })
+        // backend returns { data: [products], total, ... } — be resilient
+        let products = []
+        if (Array.isArray(response.data)) products = response.data
+        else if (Array.isArray(response.data.data)) products = response.data.data
+        else if (Array.isArray(response.data.products)) products = response.data.products
+        else products = []
+
+        // Prefer same-subcategory products first, then fill with same-category
+        const candidates = products
+          .filter(p => (p._id || p.id) !== id)
+          .map(p => ({ ...p, id: p._id || p.id }))
+
+        // sort so subcategory matches come first
+        candidates.sort((a, b) => {
+          const aMatch = (a.subcategory || '').toLowerCase() === (product.subcategory || '').toLowerCase() ? 0 : 1
+          const bMatch = (b.subcategory || '').toLowerCase() === (product.subcategory || '').toLowerCase() ? 0 : 1
+          return aMatch - bMatch
         })
-        const products = response.data.products || response.data || []
-        // Filter out current product and limit to 4
-        setRecommendedProducts(
-          products.filter(p => (p._id || p.id) !== id).slice(0, 4)
-        )
+
+        setRecommendedProducts(candidates.slice(0, 8))
       } catch (error) {
         console.error('Error fetching recommended products:', error)
       }
     }
     fetchRecommended()
-  }, [product?.category, id])
+  }, [product?.category, product?.subcategory, id])
 
   // If navigation provided an initial image index (via Link state), set it
   const location = useLocation()
@@ -694,16 +711,23 @@ export default function ProductDetail() {
         {/* You Might Also Like */}
         {recommendedProducts.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-2xl font-bold text-center mb-12">You might also like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {recommendedProducts.map((relatedProduct) => (
-                <ProductCard 
-                  key={relatedProduct.id}
-                  product={relatedProduct}
-                  className="hover:scale-105 transition-transform duration-300"
-                  initialImageIndex={1}
-                />
-              ))}
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-2xl font-bold mb-2">You might also like</h2>
+              <p className="text-sm text-gray-500">Products from the same category and subcategory you might find interesting.</p>
+            </div>
+
+            <div className="mt-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                {recommendedProducts.map((relatedProduct) => (
+                  <div key={relatedProduct.id} className="transform transition duration-300 hover:scale-105">
+                    <ProductCard 
+                      product={relatedProduct}
+                      className=""
+                      initialImageIndex={0}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

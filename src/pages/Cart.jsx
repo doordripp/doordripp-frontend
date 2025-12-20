@@ -271,10 +271,10 @@ export default function Cart() {
               </div>
 
               {/* Checkout Button */}
-              <button className="w-full bg-black text-white py-4 px-6 rounded-xl font-semibold text-lg hover:bg-gray-800 transition-colors duration-200 flex items-center justify-center gap-2 group">
+              <Link to="/checkout" className="w-full inline-flex bg-black text-white py-4 px-6 rounded-xl font-semibold text-lg hover:bg-gray-800 transition-colors duration-200 items-center justify-center gap-2 group">
                 Go to Checkout
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-              </button>
+              </Link>
             </div>
           </div>
         </div>

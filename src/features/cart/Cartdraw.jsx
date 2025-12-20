@@ -262,12 +262,14 @@ export default function CartDrawer() {
                   >
                     View Cart
                   </Link>
-                  <button 
-                    className="w-full bg-black text-white py-3 px-4 rounded-xl font-medium hover:bg-gray-800 transition-colors duration-200 flex items-center justify-center gap-2 group"
-                  >
-                    Checkout
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
-                  </button>
+                    <Link
+                      to="/checkout"
+                      onClick={() => toggleDrawer(false)}
+                      className="w-full inline-flex bg-black text-white py-3 px-4 rounded-xl font-medium hover:bg-gray-800 transition-colors duration-200 items-center justify-center gap-2 group"
+                    >
+                      Checkout
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                    </Link>
                 </div>
               </div>
             </Fragment>
