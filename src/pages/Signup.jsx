@@ -150,25 +150,14 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="text-3xl font-extrabold text-black tracking-wide">
-            DOORDRIPP
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Create your account
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Join DOORDRIPP and start shopping today
-          </p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-lg">
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900">Sign up</h2>
+          <p className="mt-2 text-sm text-gray-600">Fill in your details to get started</p>
         </div>
-
-        {/* Signup Form */}
-        <div className="bg-white py-8 px-6 shadow-lg rounded-2xl border border-gray-100">
+        <div className="auth-card p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name Input */}
             <AuthInput
               type="text"
               name="fullName"
@@ -179,8 +168,6 @@ export default function Signup() {
               error={errors.fullName}
               required
             />
-
-            {/* Email Input */}
             <AuthInput
               type="email"
               name="email"
@@ -191,8 +178,6 @@ export default function Signup() {
               error={errors.email}
               required
             />
-
-            {/* Phone Input */}
             <AuthInput
               type="tel"
               name="phone"
@@ -203,13 +188,32 @@ export default function Signup() {
               error={errors.phone}
               required
             />
-            
-
-
-            
-            
-
-            {/* Password Input */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm text-gray-600">Gender</label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                    className="w-full h-12 px-4 border rounded-xl bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/20 border-gray-200 hover:border-gray-300"
+                >
+                  <option value="">Select</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-gray-600">Date of Birth</label>
+                <input
+                  type="date"
+                  name="dob"
+                  value={formData.dob}
+                  onChange={handleChange}
+                    className="w-full h-12 px-4 border rounded-xl bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/20 border-gray-200 hover:border-gray-300"
+                />
+              </div>
+            </div>
             <AuthInput
               type="password"
               name="password"
@@ -220,8 +224,6 @@ export default function Signup() {
               error={errors.password}
               required
             />
-
-            {/* Confirm Password Input */}
             <AuthInput
               type="password"
               name="confirmPassword"
@@ -232,8 +234,6 @@ export default function Signup() {
               error={errors.confirmPassword}
               required
             />
-
-            {/* Terms and Conditions */}
             <div className="space-y-2">
               <div className="flex items-start gap-3">
                 <input
@@ -256,69 +256,54 @@ export default function Signup() {
                 </label>
               </div>
               {errors.agreeToTerms && (
-                <p className="text-sm text-red-500 flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-red-500"></span>
-                  {errors.agreeToTerms}
-                </p>
+                <p className="text-sm text-red-500">{errors.agreeToTerms}</p>
               )}
             </div>
-
-            {/* Submit Error */}
             {errors.submit && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-600">{errors.submit}</p>
               </div>
             )}
-
-            {/* Create Account Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-black text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="auth-btn-primary"
             >
               {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Creating account...
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Creating account...</span>
                 </div>
               ) : (
                 'Create Account'
               )}
             </button>
-
-            {/* Divider */}
+            <div className="text-center text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link 
+                to="/login" 
+                className="text-black font-semibold hover:text-gray-700 transition-colors"
+              >
+                Sign in
+              </Link>
+            </div>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">or</span>
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
-
-            {/* Google Signup */}
             <button
               type="button"
               onClick={handleGoogleSignup}
-              className="w-full bg-white border border-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-3"
+              className="w-full bg-white border border-gray-200 text-gray-700 py-3 px-4 rounded-2xl font-semibold transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-3"
             >
               <GoogleIcon />
               Continue with Google
             </button>
           </form>
-        </div>
-
-        {/* Sign In Link */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Already have an account?{' '}
-            <Link 
-              to="/login" 
-              className="text-black font-semibold hover:text-gray-700 transition-colors duration-200"
-            >
-              Sign in
-            </Link>
-          </p>
         </div>
       </div>
     </div>

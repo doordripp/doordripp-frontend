@@ -203,7 +203,6 @@ export default function Navbar() {
 
 					{user ? (
 						<div className="flex items-center gap-3">
-							<button onClick={() => logout()} className="text-sm text-gray-700 hover:text-black">Logout</button>
 							<Link to="/profile" className="p-1 hover:opacity-70 transition-opacity duration-200 group">
 								{user.avatar ? (
 									<img src={user.avatar} alt="avatar" className="h-7 w-7 rounded-full object-cover" />

@@ -83,3 +83,113 @@
   background: #f7f8fa; /* Soft gray, matches home page */
   min-height: 100vh;
 }
+
+/* Profile card improvements */
+.profile-card {
+  transform: translateZ(0);
+}
+
+.hover-lift {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.hover-lift:hover { transform: translateY(-6px); box-shadow: 0 8px 30px rgba(20,20,30,0.08); }
+
+.avatar-shell {
+  width: 96px;
+  height: 96px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: linear-gradient(135deg,#e6eefb,#f3f5ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(40,40,60,0.06);
+}
+
+.info-item-label { font-size: 0.75rem; color: #6b7280; margin-bottom: 0.35rem; }
+.info-item-value { font-weight: 600; color: #111827; }
+
+.btn-upload { background: transparent; padding: 6px 10px; border-radius: 999px; }
+
+.btn-danger { background: #ef4444; color: white; padding: 0.6rem 1rem; border-radius: 10px; }
+
+.profile-sidebar { border: 1px solid rgba(15,23,42,0.03); }
+
+.menu-item { padding: 0.6rem 0.6rem; border-radius: 8px; color: #374151; display: inline-block; width: 100%; }
+.menu-item:hover { background: rgba(15,23,42,0.03); color: #111827; }
+
+/* Form tweaks inside profile card */
+.profile-card input[type="text"],
+.profile-card input[type="password"],
+.profile-card input[type="tel"] {
+  border: 1px solid rgba(15,23,42,0.06);
+  padding: 8px 10px;
+}
+
+.profile-card .btn-danger { background: #111827; color: #fff; display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 10px; min-width: 120px; white-space: nowrap; }
+.profile-card .btn-danger:active { transform: translateY(1px); }
+.profile-card .menu-item { background: transparent; border: 1px solid transparent; padding: 8px 12px; display: inline-flex; align-items: center; gap: 10px; width: auto; }
+.profile-card .menu-item:hover { border-color: rgba(15,23,42,0.04); }
+
+/* Sidebar styling improvements */
+.profile-sidebar {
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  padding: 20px;
+  box-shadow: 0 6px 18px rgba(20,24,36,0.04);
+  border: 1px solid rgba(15,23,42,0.04);
+}
+.profile-sidebar .menu-item { width: 100%; justify-content: flex-start; padding: 10px 12px; border-radius: 8px; color: #374151; }
+.profile-sidebar .menu-item:hover { background: rgba(59,130,246,0.06); color: #0f172a; }
+
+/* Logout button standout */
+.menu-logout {
+  background: #ef4444; /* red */
+  color: #fff !important;
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.menu-logout:hover { filter: brightness(0.95); }
+
+/* Ensure menu items have icon spacing */
+.profile-sidebar .menu-item::before { display: inline-block; width: 22px; margin-right: 8px; text-align: center; }
+
+/* Adjust layout so action buttons don't overlap on small widths */
+.profile-card .space-x-2 { display: flex; gap: 10px; flex-wrap: nowrap; }
+.profile-card .space-y-2 { display: flex; flex-direction: column; gap: 10px; }
+
+/* Centered logout button inside profile card */
+.profile-logout-centered { display: flex; justify-content: center; padding: 18px 0 8px 0; }
+.profile-logout-centered .logout-btn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(239,68,68,0.12);
+}
+.profile-logout-centered .logout-btn:hover { filter: brightness(0.95); }
+
+/* Position logout at the bottom of the sidebar */
+.profile-sidebar { display: block; }
+.profile-sidebar .menu-item.menu-logout { width: 100%; margin-top: 8px; }
+.profile-sidebar .menu-item.menu-logout {
+  background: #ef4444;
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 6px 18px rgba(239,68,68,0.12);
+  padding: 10px 12px;
+  text-align: center;
+  display: block;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.profile-sidebar .menu-item.menu-logout:active { transform: translateY(1px); }

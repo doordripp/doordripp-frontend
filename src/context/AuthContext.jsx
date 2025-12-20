@@ -15,7 +15,17 @@ export function AuthProvider({ children }) {
   const fetchMe = async (attemptRefresh = true) => {
     try {
       const data = await apiGet('/auth/me')
-      const minimal = { _id: data._id, name: data.name, email: data.email, roles: data.role || data.roles || [], avatar: data.avatar }
+      const minimal = {
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        roles: data.role || data.roles || [],
+        avatar: data.avatar,
+        phone: data.phone || null,
+        address: data.address || null,
+        gender: data.gender || null,
+        dob: data.dob || null,
+      }
       setUser(minimal)
       authStorage.setUser(minimal)
       return data

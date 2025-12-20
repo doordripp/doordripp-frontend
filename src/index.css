@@ -4,6 +4,74 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .auth-card {
+    @apply bg-white rounded-3xl border border-gray-300 shadow-xl ring-1 ring-gray-300/60;
+    box-shadow: 0 18px 52px rgba(0,0,0,0.10);
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
+  .auth-card:hover {
+    box-shadow: 0 22px 60px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+  }
+  .auth-btn-primary {
+    @apply w-full h-12 bg-black text-white rounded-2xl font-semibold transition-all duration-200 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .brand-title {
+    @apply font-extrabold tracking-tight;
+    background: linear-gradient(90deg, #0f172a, #334155, #0f172a);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: brandShift 6s linear infinite;
+  }
+  .auth-entry {
+    animation: fadeUp 600ms ease 1;
+  }
+  .profile-card {
+    @apply bg-white rounded-3xl border border-gray-200 shadow-xl ring-1 ring-gray-200/60;
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
+  .profile-card:hover {
+    box-shadow: 0 22px 60px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+  }
+  .hover-lift {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+  .btn-danger {
+    @apply h-12 bg-red-600 text-white rounded-2xl font-semibold transition-all duration-200 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2;
+  }
+  .btn-upload {
+    @apply inline-flex items-center justify-center gap-2 bg-black text-white px-4 py-2 rounded-2xl font-semibold transition-all duration-200 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black/20;
+  }
+  .info-item-label {
+    @apply text-xs uppercase tracking-wide text-gray-500;
+  }
+  .info-item-value {
+    @apply text-lg font-medium text-gray-900;
+  }
+  .avatar-shell {
+    @apply w-28 h-28 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center ring-2 ring-gray-300;
+    background: radial-gradient(120% 120% at 50% 0%, #f8fafc 0%, #e2e8f0 100%);
+  }
+}
+
+@keyframes brandShift {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* Custom utilities */
 @layer utilities {
   .line-clamp-1 {
