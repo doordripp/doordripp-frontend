@@ -467,12 +467,12 @@ export default function CategoryPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 px-2 md:px-4 lg:px-6">
+              <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 px-2 md:px-4 lg:px-6 items-stretch auto-rows-[520px]">
                 {paginatedProducts.map((product) => (
                   <ProductCard 
                     key={product._id || product.id} 
                     product={product} 
-                    className="w-full min-h-[420px] box-border"
+                    className="w-full h-full"
                   />
                 ))}
               </div>

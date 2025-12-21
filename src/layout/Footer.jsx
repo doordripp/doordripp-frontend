@@ -54,10 +54,10 @@ const PAYMENT_METHODS = [
 
 // Social media links
 const SOCIAL_LINKS = [
-  { name: 'Twitter', icon: Twitter, href: 'https://twitter.com', color: 'hover:text-blue-400' },
-  { name: 'Facebook', icon: Facebook, href: 'https://facebook.com', color: 'hover:text-blue-600' },
-  { name: 'Instagram', icon: Instagram, href: 'https://instagram.com', color: 'hover:text-pink-600' },
-  { name: 'Github', icon: Github, href: 'https://github.com', color: 'hover:text-gray-800' }
+  { name: 'Twitter', icon: Twitter, href: 'https://x.com/doordripp?t=C3ZAb5wjDvzzHv_kq7MV9A&s=08', color: 'hover:text-blue-400' },
+  { name: 'Facebook', icon: Facebook, href: 'https://www.facebook.com/share/17LxQTctXf/', color: 'hover:text-blue-600' },
+  { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/doordripp?igsh=MXI3MXJibjUweWx1YQ==&utm_source=ig_contact_invite', color: 'hover:text-pink-600' },
+  { name: 'Github', icon: Github, href: ' https://share.google/In9Ewu4VEMQjnJolv', color: 'hover:text-gray-800' }
 ]
 
 function FooterColumn({ title, links }) {

@@ -64,7 +64,7 @@ export default function NewArrivals() {
             <p className="text-gray-600">Loading new arrivals...</p>
           </div>
         ) : (
-          <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto">
+          <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto items-stretch auto-rows-[520px]">
             {displayProducts.map((product) => (
               <ProductCard 
                 key={product._id || product.id} 

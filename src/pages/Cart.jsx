@@ -151,7 +151,7 @@ export default function Cart() {
             {recommendedProducts.length > 0 && (
               <div className="mt-8">
                 <h3 className="text-xl font-semibold mb-4">You might also like</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 items-stretch auto-rows-[520px]">
                   {recommendedProducts.map((p) => (
                     <div key={p.id} className="col-span-1 h-full">
                       <ProductCard product={p} showAddToCart={true} className="h-full" initialImageIndex={0} />

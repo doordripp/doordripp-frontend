@@ -55,7 +55,7 @@ export default function NewArrivalsPage() {
         ) : products.length === 0 ? (
           <p>No new arrivals found.</p>
         ) : (
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch auto-rows-[520px]">
             {products.map(p => (
               <ProductCard key={p._id || p.slug} product={p} initialImageIndex={1} />
             ))}
