@@ -3,43 +3,7 @@ import { Star, StarHalf, ShoppingCart, Check, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { optimizeImage } from '../../config/imagekit'
-
-// Star Rating Component
-function StarRating({ rating, reviews, showReviews = true, className = '' }) {
-  const renderStars = () => {
-    const stars = []
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 !== 0
-    
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)
-    }
-    
-    if (hasHalfStar) {
-      stars.push(<StarHalf key="half" className="h-4 w-4 fill-yellow-400 text-yellow-400" />)
-    }
-    
-    const emptyStars = 5 - Math.ceil(rating)
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(<Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />)
-    }
-    
-    return stars
-  }
-
-  return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className="flex items-center">
-        {renderStars()}
-      </div>
-      {showReviews && (
-        <span className="text-sm text-gray-500">
-          {rating}/5 ({reviews})
-        </span>
-      )}
-    </div>
-  )
-}
+import clsx from 'clsx'
 
 // Add to Cart Button Component
 function AddToCartButton({ product, className = '', variant = 'default', size = 'M', color = 'default' }) {
@@ -229,36 +193,30 @@ export default function ProductCard({
   }
 
   return (
-    <div className={`group cursor-pointer transition-all duration-500 hover:-translate-y-2 w-full min-h-[420px] box-border ${className}`}>
+    <div className={`group cursor-pointer transition-all duration-300 hover:-translate-y-1 w-full h-[520px] box-border flex ${className}`}>
       {/* Product Card - Image Container with Info Box Below */}
       <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-200 hover:border-gray-300 flex flex-col h-full">
         {/* Image Container */}
         <div 
-          className="relative bg-gray-100 overflow-hidden aspect-[4/5] w-full min-h-[260px] max-h-[320px] flex-shrink-0"
+          className="relative bg-gray-100 overflow-hidden w-full h-64 flex-shrink-0"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
           <Link to={`/product/${id}`} state={{ imageIndex: 0 }} onClick={scrollToTop} className="block h-full w-full">
             {/* First Image */}
             <img
-              src={optimizeImage(image, { width: 400, height: 500, quality: 85 })}
+              src={optimizeImage(image, { width: 800, height: 800, quality: 85 })}
               alt={name}
-              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${
-                isOutOfStock ? 'opacity-60 grayscale' : ''
-              } ${isHovered && images.length > 1 ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}
+              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-105 ${isOutOfStock ? 'opacity-60 grayscale' : ''} ${isHovered && images.length > 1 ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}
               loading="lazy"
-              style={{ minHeight: 260, maxHeight: 320 }}
             />
             {/* Second Image - Shows on Hover */}
             {images.length > 1 && (
               <img
-                src={optimizeImage(secondImage, { width: 400, height: 500, quality: 85 })}
+                src={optimizeImage(secondImage, { width: 800, height: 800, quality: 85 })}
                 alt={`${name} - view 2`}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${
-                  isOutOfStock ? 'opacity-60 grayscale' : ''
-                } ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-105 ${isOutOfStock ? 'opacity-60 grayscale' : ''} ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
                 loading="lazy"
-                style={{ minHeight: 260, maxHeight: 320 }}
               />
             )}
           </Link>
@@ -288,7 +246,7 @@ export default function ProductCard({
           </div>
         </div>
         {/* Product Info Box - Clean Separation */}
-        <div className="p-2.5 bg-white border-t-2 border-gray-100 flex-1 flex flex-col justify-between">
+        <div className="p-2.5 bg-white border-t-2 border-gray-100 flex-1 flex flex-col justify-between min-h-[160px]">
           <Link to={`/product/${id}`} state={{ imageIndex: 0 }} onClick={scrollToTop}>
             {/* Price - Bold and Clear */}
             <div className="flex items-baseline gap-2 mb-1">
@@ -325,7 +283,7 @@ export default function ProductCard({
                 }
               }}
               disabled={isOutOfStock}
-              className={`w-full flex items-center justify-center gap-2 py-2 mt-2 font-semibold text-xs border-2 rounded-lg transition-all duration-300 ${
+              className={`w-full flex items-center justify-center gap-2 py-2 mt-auto font-semibold text-xs border-2 rounded-lg transition-all duration-300 ${
                 isOutOfStock
                   ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed'
                   : 'bg-white hover:bg-black text-black hover:text-white border-black transform hover:scale-105'

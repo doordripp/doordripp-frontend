@@ -48,8 +48,8 @@ const cartReducer = (state, action) => {
           selectedSize: size,
           selectedColor: color,
           quantity,
-          category: product.category,
-          subcategory: product.subcategory
+          category: product.category || product.categoryName || product.type || product.cat || null,
+          subcategory: product.subcategory || product.subCategory || product.subcategoryName || null
         }
         newItems = [...state.items, cartItem]
       }

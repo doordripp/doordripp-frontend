@@ -346,7 +346,9 @@ function ProductModal({ product, onSave, onClose, saving }) {
     stock: product?.stock || '',
     category: product?.category || 'Men',
     subcategory: product?.subcategory || '',
+    dressStyle: product?.dressStyle || '',
     description: product?.description || '',
+    details: product?.details || '',
     images: product?.images || [],
     colors: product?.colors || [],
     sizes: product?.sizes || [],
@@ -359,6 +361,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
   const categories = ['Men', 'Women', 'Accessories', 'Footwear']
   const subcategories = ['T-shirts', 'Shirts', 'Jeans', 'Shorts', 'Hoodies', 'Jackets', 'Dresses', 'Tops', 'Suits', 'Outfits', 'Kurtis', 'Casual Partywear', 'Bags', 'Watches', 'Belts', 'Sunglasses', 'Wallets', 'Caps', 'Sneakers', 'Boots', 'Formal Shoes', 'Sports Shoes', 'Casual Shoes', 'Sandals']
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34', '36', '38', '40', '42']
+  const shoeSizes = ['3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13']
   const availableColors = [
     { name: 'Black', hex: '#000000' },
     { name: 'White', hex: '#FFFFFF' },
@@ -389,7 +392,9 @@ function ProductModal({ product, onSave, onClose, saving }) {
       discount: discount,
       stock: parseInt(formData.stock),
       image: formData.images[0] || '', // First image as main image
-      rating: formData.rating
+      rating: formData.rating,
+      details: formData.details,
+      dressStyle: formData.dressStyle || ''
     })
   }
   
@@ -468,6 +473,18 @@ function ProductModal({ product, onSave, onClose, saving }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Dress Style <span className="text-gray-400 text-xs">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={formData.dressStyle}
+                onChange={(e) => setFormData({...formData, dressStyle: e.target.value})}
+                placeholder="e.g., A-line, Maxi, Bodycon"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Stock Quantity *
               </label>
               <div className="flex gap-2">
@@ -527,7 +544,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
               Available Sizes *
             </label>
             <div className="flex flex-wrap gap-2">
-              {availableSizes.map(size => (
+              {(formData.category === 'Footwear' ? shoeSizes : availableSizes).map(size => (
                 <button
                   key={size}
                   type="button"
@@ -639,6 +656,19 @@ function ProductModal({ product, onSave, onClose, saving }) {
               onChange={(e) => setFormData({...formData, description: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               placeholder="Product description..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product Details (long / rich text)
+            </label>
+            <textarea
+              rows={6}
+              value={formData.details}
+              onChange={(e) => setFormData({...formData, details: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Detailed product information, specs, materials, care instructions..."
             />
           </div>
 

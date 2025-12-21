@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShoppingCart, Minus, Plus, X, ArrowRight, Tag } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import ProductCard from '../features/catalog/ProductCard'
+import api from '../services/api'
 
 export default function Cart() {
   const { 
@@ -16,6 +18,80 @@ export default function Cart() {
   
   const [promoInput, setPromoInput] = useState('')
   const [promoMessage, setPromoMessage] = useState('')
+  const [recommendedProducts, setRecommendedProducts] = useState([])
+  const [debugInfo, setDebugInfo] = useState(null)
+
+  // Fetch recommended products based on categories/subcategories in cart
+  useEffect(() => {
+    const fetchRecommended = async () => {
+      if (!items || items.length === 0) return
+
+      // Tally categories and subcategories to pick the most relevant
+      const catCounts = {}
+      const subCounts = {}
+      items.forEach(it => {
+        if (it.category) catCounts[it.category] = (catCounts[it.category] || 0) + 1
+        if (it.subcategory) subCounts[it.subcategory] = (subCounts[it.subcategory] || 0) + 1
+      })
+
+      let topCategory = Object.keys(catCounts).sort((a,b) => (catCounts[b]||0) - (catCounts[a]||0))[0]
+      let topSubcategory = Object.keys(subCounts).sort((a,b) => (subCounts[b]||0) - (subCounts[a]||0))[0]
+
+      // If no category/subcategory present on cart items, try fetching product details
+      if (!topCategory && !topSubcategory) {
+        try {
+          const ids = [...new Set(items.map(it => String(it.id || it._id || it.productId)))].slice(0, 3)
+          const detailPromises = ids.map(pid => api.get(`/products/${pid}`).then(r => r.data).catch(() => null))
+          const details = await Promise.all(detailPromises)
+          details.forEach(p => {
+            if (!p) return
+            const cat = p.category || p.categoryName || p.type
+            const sub = p.subcategory || p.subCategory || p.subcategoryName
+            if (cat) catCounts[cat] = (catCounts[cat] || 0) + 1
+            if (sub) subCounts[sub] = (subCounts[sub] || 0) + 1
+          })
+
+          topCategory = Object.keys(catCounts).sort((a,b) => (catCounts[b]||0) - (catCounts[a]||0))[0]
+          topSubcategory = Object.keys(subCounts).sort((a,b) => (subCounts[b]||0) - (subCounts[a]||0))[0]
+        } catch (err) {
+          console.error('Failed to fetch product details for cart items:', err)
+          setDebugInfo(prev => ({ ...prev, error: String(err) }))
+        }
+      }
+
+      if (!topCategory && !topSubcategory) {
+        setDebugInfo({ topCategory: null, topSubcategory: null, reason: 'no category found' })
+        return
+      }
+
+      try {
+        const params = { limit: 12 }
+        if (topCategory) params.category = topCategory
+        if (topSubcategory) params.subcategory = topSubcategory
+
+        const response = await api.get('/products', { params })
+        let products = []
+        if (Array.isArray(response.data)) products = response.data
+        else if (Array.isArray(response.data.data)) products = response.data.data
+        else if (Array.isArray(response.data.products)) products = response.data.products
+        else products = []
+
+        // Remove products already in cart
+        const cartIds = new Set(items.map(it => String(it.id || it._id || it.productId)))
+        const candidates = products
+          .map(p => ({ ...p, id: p._id || p.id }))
+          .filter(p => !cartIds.has(String(p.id)))
+
+        setRecommendedProducts(candidates.slice(0, 6))
+        setDebugInfo({ topCategory, topSubcategory, fetched: candidates.length, sampleIds: candidates.slice(0,6).map(p => p._id || p.id) })
+      } catch (err) {
+        console.error('Failed to fetch recommended products for cart:', err)
+        setDebugInfo({ error: String(err) })
+      }
+    }
+
+    fetchRecommended()
+  }, [items])
 
   const handlePromoSubmit = (e) => {
     e.preventDefault()
@@ -70,6 +146,20 @@ export default function Cart() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
+            
+            {/* Recommendations based on cart */}
+            {recommendedProducts.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold mb-4">You might also like</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {recommendedProducts.map((p) => (
+                    <div key={p.id} className="col-span-1 h-full">
+                      <ProductCard product={p} showAddToCart={true} className="h-full" initialImageIndex={0} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </div>

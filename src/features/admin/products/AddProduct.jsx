@@ -31,8 +31,13 @@ export default function AddProduct() {
     fd.append("description", vals.description || "");
     fd.append("category", vals.category || "");
     fd.append("subcategory", vals.subcategory || "");
+    // Optional dress style (not mandatory)
+    fd.append("dressStyle", vals.dressStyle || "");
     fd.append("price", vals.price);
     fd.append("stock", vals.stock || 0);
+    // sizes: optional comma-separated input (convert to array)
+    const sizesArr = vals.sizes ? vals.sizes.split(',').map(s=>s.trim()).filter(Boolean) : []
+    fd.append('sizes', JSON.stringify(sizesArr))
     
     // Collection flags
     fd.append("isNewArrival", vals.isNewArrival || false);
@@ -138,6 +143,23 @@ export default function AddProduct() {
             <option value="Sandals">Sandals</option>
           </select>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Dress Style (optional)</label>
+          <input
+            {...register("dressStyle")}
+            className="w-full border p-2 rounded"
+            placeholder="e.g., A-line, Maxi, Bodycon"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm">Sizes (optional, comma separated)</label>
+        <input
+          {...register("sizes")}
+          className="w-full border p-2 rounded"
+          placeholder="e.g., S,M,L or 6,7,8,9"
+        />
       </div>
 
       {/* Collection Flags */}

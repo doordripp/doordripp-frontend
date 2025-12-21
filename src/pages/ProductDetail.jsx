@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { Star, StarHalf, Heart, Share2, ChevronLeft, ChevronRight, Plus, Minus, ShoppingCart, Check, User } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { ProductCard } from '../features/catalog'
@@ -14,6 +15,7 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedColor, setSelectedColor] = useState('')
   const [selectedSize, setSelectedSize] = useState('')
+  const [sizeError, setSizeError] = useState(false)
   const [quantity, setQuantity] = useState(1)
   const [activeTab, setActiveTab] = useState('details')
   const [isWishlisted, setIsWishlisted] = useState(false)
@@ -135,11 +137,13 @@ export default function ProductDetail() {
     }
   ])
   const [showWriteReview, setShowWriteReview] = useState(false)
+  const { user } = useAuth()
+
   const [newReview, setNewReview] = useState({
-    userName: '',
-    rating: 5,
+    rating: 0,
     review: ''
   })
+  const [descExpanded, setDescExpanded] = useState(false)
   const [recommendedProducts, setRecommendedProducts] = useState([])
   
   // Find product by ID - fetch from API
@@ -162,16 +166,29 @@ export default function ProductDetail() {
           price: dbProduct.price || 0,
           originalPrice: dbProduct.originalPrice || null,
           discount: dbProduct.discount || null,
-          rating: dbProduct.rating || { rating: 4.5, reviews: 0 },
+          rating: dbProduct.rating || { rating: 0, reviews: 0 },
           category: dbProduct.category || 'casual',
           subcategory: dbProduct.subcategory || 'Other',
           colors: dbProduct.colors || ['#000000'],
           sizes: dbProduct.sizes || ['M', 'L', 'XL'],
           description: dbProduct.description || 'No description available.',
+          details: dbProduct.details || '' ,
           stock: dbProduct.stock || 0
         }
         
         setProduct(formattedProduct)
+        // If backend provided persisted reviews, use them (map to UI shape)
+        if (dbProduct.reviews && Array.isArray(dbProduct.reviews)) {
+          const mapped = dbProduct.reviews.map((r, idx) => ({
+            id: r._id || idx,
+            userName: r.userName || 'Customer',
+            rating: r.rating || 0,
+            date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString(),
+            review: r.review || '',
+            verified: !!r.verified
+          }))
+          setReviews(mapped)
+        }
         setSelectedColor(formattedProduct.colors[0])
         setSelectedSize(formattedProduct.sizes[0])
       } catch (error) {
@@ -257,52 +274,46 @@ export default function ProductDetail() {
   
   const renderStars = (rating, interactive = false, onRatingChange = null) => {
     const stars = []
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 !== 0
-    
-    for (let i = 0; i < fullStars; i++) {
+    // Render 5 stars consistently. For interactive mode, clicking sets that star number,
+    // double-clicking will remove that star (decrease by 1) if it was already selected.
+    for (let i = 1; i <= 5; i++) {
+      const filled = rating >= i
+      const key = `star-${i}`
       stars.push(
-        <Star 
-          key={i} 
-          className={`h-5 w-5 fill-yellow-400 text-yellow-400 ${
-            interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''
-          }`}
-          onClick={() => interactive && onRatingChange && onRatingChange(i + 1)}
+        <Star
+          key={key}
+          className={`${filled ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} h-5 w-5 ${interactive ? 'cursor-pointer transition-transform duration-150 transform hover:scale-110' : ''}`}
+          onClick={() => interactive && onRatingChange && onRatingChange(i)}
+          onDoubleClick={() => {
+            if (!interactive || !onRatingChange) return
+            // If the current rating equals this star, reduce by one (remove this star), else clear all
+            if (Math.floor(rating) === i) onRatingChange(i - 1)
+            else onRatingChange(0)
+          }}
         />
       )
     }
-    
-    if (hasHalfStar && !interactive) {
-      stars.push(<StarHalf key="half" className="h-5 w-5 fill-yellow-400 text-yellow-400" />)
-    }
-    
-    const emptyStars = interactive ? 5 - fullStars : 5 - Math.ceil(rating)
-    for (let i = 0; i < emptyStars; i++) {
-      const starIndex = fullStars + i + (hasHalfStar && !interactive ? 1 : 0)
-      stars.push(
-        <Star 
-          key={`empty-${i}`} 
-          className={`h-5 w-5 text-gray-300 ${
-            interactive ? 'cursor-pointer hover:text-yellow-400 hover:scale-110 transition-all' : ''
-          }`}
-          onClick={() => interactive && onRatingChange && onRatingChange(starIndex + 1)}
-        />
-      )
-    }
-    
+
     return stars
   }
   
   const handleAddToCart = () => {
+    const requiresSize = product.sizes && product.sizes.length > 0
+    if (requiresSize && !selectedSize) {
+      setSizeError(true)
+      return
+    }
+
+    setSizeError(false)
     setIsAddedToCart(true)
-    
+
     // Add to cart using the context
     addToCart(product, {
       size: selectedSize,
       color: selectedColor,
       quantity: quantity
     })
-    
+
     setTimeout(() => setIsAddedToCart(false), 2000)
     console.log('Added to cart:', { product, selectedColor, selectedSize, quantity })
   }
@@ -328,23 +339,67 @@ export default function ProductDetail() {
   
   const handleSubmitReview = (e) => {
     e.preventDefault()
-    if (newReview.userName.trim() && newReview.review.trim()) {
-      const review = {
-        id: reviews.length + 1,
-        userName: newReview.userName,
-        rating: newReview.rating,
-        date: new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }),
-        review: newReview.review,
-        verified: false
-      }
-      setReviews([review, ...reviews])
-      setNewReview({ userName: '', rating: 5, review: '' })
-      setShowWriteReview(false)
+    // Determine reviewer name: prefer logged-in user
+    const reviewerName = user?.name || (newReview.userName || '').trim()
+    const reviewText = (newReview.review || '').trim()
+    if (!reviewerName) {
+      alert('Please login or enter your name to submit a review.')
+      return
     }
+    if (!reviewText) {
+      alert('Please write a short review before submitting.')
+      return
+    }
+
+    (async () => {
+      try {
+        const payload = {
+          userName: user?.name || newReview.userName || 'Customer',
+          rating: newReview.rating,
+          review: newReview.review
+        }
+        const resp = await api.post(`/products/${id}/reviews`, payload)
+
+        // resp returns { review, rating, reviews }
+        const added = resp.data?.review || null
+        const updatedRating = resp.data?.rating || null
+        const allReviews = resp.data?.reviews || null
+
+        if (added) {
+          // format date for UI if not present
+          const formatted = {
+            id: Date.now(),
+            userName: added.userName,
+            rating: added.rating,
+            date: new Date(added.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            review: added.review,
+            verified: !!added.verified
+          }
+          setReviews(prev => [formatted, ...prev])
+        } else if (allReviews) {
+          // fallback: replace reviews list
+          const formattedList = allReviews.map((r, idx) => ({
+            id: r._id || idx,
+            userName: r.userName,
+            rating: r.rating,
+            date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString(),
+            review: r.review,
+            verified: !!r.verified
+          }))
+          setReviews(formattedList)
+        }
+
+        if (updatedRating) {
+          setProduct(prev => ({ ...prev, rating: updatedRating }))
+        }
+
+        setNewReview({ rating: 0, review: '' })
+        setShowWriteReview(false)
+      } catch (err) {
+        console.error('Failed to submit review', err)
+        alert('Failed to submit review. Please try again.')
+      }
+    })()
   }
 
 
@@ -418,12 +473,9 @@ export default function ProductDetail() {
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-1">
-                  {renderStars(product.rating.rating)}
+                  {renderStars(product.rating?.rating || 0)}
                 </div>
-                <span className="text-sm font-medium">{product.rating.rating}/5</span>
-                {product.rating.reviews && (
-                  <span className="text-sm text-gray-600">({product.rating.reviews} reviews)</span>
-                )}
+                <span className="text-sm font-medium">{(Number(product.rating?.rating) || 0).toFixed(1)}/5</span>
               </div>
             </div>
             
@@ -442,10 +494,26 @@ export default function ProductDetail() {
               )}
             </div>
             
-            {/* Description */}
-            <p className="text-gray-600 leading-relaxed">
-              {product.description || 'This product is crafted with attention to detail and quality. Made from premium materials, it offers both comfort and durability.'}
-            </p>
+            {/* Description (clamped to 3 lines with toggle) */}
+            <div>
+              <p
+                className="text-gray-600 leading-relaxed"
+                style={
+                  descExpanded
+                    ? {}
+                    : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
+                }
+              >
+                {product.description || 'This product is crafted with attention to detail and quality. Made from premium materials, it offers both comfort and durability.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setDescExpanded(prev => !prev)}
+                className="mt-2 text-sm text-blue-600 hover:underline"
+              >
+                {descExpanded ? 'See less' : 'See more'}
+              </button>
+            </div>
             
             {/* Colors */}
             {product.colors && product.colors.length > 0 && (
@@ -486,6 +554,9 @@ export default function ProductDetail() {
                     </button>
                   ))}
                 </div>
+                  {sizeError && !selectedSize && (
+                    <p className="text-sm text-red-600 mt-2">Please select a size before adding to cart.</p>
+                  )}
               </div>
             )}
             
@@ -510,9 +581,10 @@ export default function ProductDetail() {
                 
                 <button
                   onClick={handleAddToCart}
-                  className={`flex-1 flex items-center justify-center space-x-2 py-4 px-6 rounded-full font-semibold transition-all duration-300 ${
-                    isAddedToCart
-                      ? 'bg-green-600 text-white'
+                  disabled={(product.sizes && product.sizes.length > 0 && !selectedSize) || isAddedToCart}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-5 rounded-full font-semibold transition-all duration-300 ${
+                    (product.sizes && product.sizes.length > 0 && !selectedSize) || isAddedToCart
+                      ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
                       : 'bg-black text-white hover:bg-gray-800 hover:scale-[1.02]'
                   }`}
                 >
@@ -550,6 +622,31 @@ export default function ProductDetail() {
           </div>
         </div>
         
+        {/* You Might Also Like (moved above details/reviews) */}
+        {recommendedProducts.length > 0 && (
+          <div className="mt-12">
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-2xl font-bold mb-2">You might also like</h2>
+            </div>
+
+            <div className="mt-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                {recommendedProducts.map((relatedProduct) => (
+                  <div key={relatedProduct.id} className="transform transition duration-300 hover:scale-105 h-[520px] flex">
+                    <div className="w-full flex-1 flex flex-col">
+                      <ProductCard 
+                        product={relatedProduct}
+                        className="h-full w-full"
+                        initialImageIndex={0}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Product Details Tabs */}
         <div className="mt-16">
           <div className="border-b border-gray-200">
@@ -572,22 +669,25 @@ export default function ProductDetail() {
               ))}
             </nav>
           </div>
-          
+
           <div className="py-8">
             {activeTab === 'details' && (
               <div className="prose max-w-none">
                 <div className="text-gray-600 whitespace-pre-line leading-relaxed">
-                  {product.description || `This ${product.name.toLowerCase()} is crafted with attention to detail and quality. Made from premium materials, it offers both comfort and durability. Perfect for casual wear or dressing up for special occasions.`}
+                  {product.details ? (
+                    <div dangerouslySetInnerHTML={{ __html: product.details }} />
+                  ) : (
+                    product.description || `This ${product.name.toLowerCase()} is crafted with attention to detail and quality. Made from premium materials, it offers both comfort and durability. Perfect for casual wear or dressing up for special occasions.`
+                  )}
                 </div>
               </div>
             )}
-            
+
             {activeTab === 'reviews' && (
               <div className="space-y-6">
-                {/* Reviews Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <h3 className="text-xl font-semibold">All Reviews ({reviews.length})</h3>
+                    <h3 className="text-xl font-semibold">All Reviews</h3>
                     <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black">
                       <option>Latest</option>
                       <option>Highest Rating</option>
@@ -605,35 +705,41 @@ export default function ProductDetail() {
 
                 {/* Write Review Form */}
                 {showWriteReview && (
-                  <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <div className="bg-gray-100 p-6 rounded-xl border border-gray-200">
                     <h4 className="text-lg font-semibold mb-4">Write a Review</h4>
                     <form onSubmit={handleSubmitReview} className="space-y-4">
+                      {user ? (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium text-white">
+                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium">{user.name}</div>
+                            <div className="text-xs text-gray-500">Posting as your account</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Your Name *</label>
+                          <input
+                            type="text"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                            value={newReview.userName || ''}
+                            onChange={(e) => setNewReview({...newReview, userName: e.target.value})}
+                            placeholder="Enter your name"
+                            required
+                          />
+                        </div>
+                      )}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Your Name *
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                          value={newReview.userName}
-                          onChange={(e) => setNewReview({...newReview, userName: e.target.value})}
-                          placeholder="Enter your name"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Rating *
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Rating *</label>
                         <div className="flex items-center space-x-1">
                           {renderStars(newReview.rating, true, (rating) => setNewReview({...newReview, rating}))}
                           <span className="ml-2 text-sm text-gray-600">({newReview.rating}/5)</span>
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Your Review *
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Your Review *</label>
                         <textarea
                           rows={4}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
@@ -646,16 +752,16 @@ export default function ProductDetail() {
                       <div className="flex space-x-3">
                         <button
                           type="submit"
-                          className="bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors"
+                          className="bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-gray-900 transition-colors"
                         >
                           Submit Review
                         </button>
                         <button
                           type="button"
-                          className="bg-gray-200 text-gray-800 px-6 py-3 rounded-full font-medium hover:bg-gray-300 transition-colors"
+                          className="bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-gray-900 transition-colors"
                           onClick={() => {
                             setShowWriteReview(false)
-                            setNewReview({ userName: '', rating: 5, review: '' })
+                            setNewReview({ userName: '', rating: 0, review: '' })
                           }}
                         >
                           Cancel
@@ -679,15 +785,11 @@ export default function ProductDetail() {
                           <div className="flex items-center space-x-3 mb-2">
                             <h5 className="font-semibold text-gray-900">{review.userName}</h5>
                             {review.verified && (
-                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-                                ✓ Verified
-                              </span>
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">✓ Verified</span>
                             )}
                           </div>
                           <div className="flex items-center space-x-2 mb-3">
-                            <div className="flex items-center space-x-1">
-                              {renderStars(review.rating)}
-                            </div>
+                            <div className="flex items-center space-x-1">{renderStars(review.rating)}</div>
                             <span className="text-sm text-gray-500">Posted on {review.date}</span>
                           </div>
                           <p className="text-gray-700 leading-relaxed">{review.review}</p>
@@ -699,38 +801,14 @@ export default function ProductDetail() {
 
                 {/* Load More Reviews */}
                 <div className="text-center pt-6">
-                  <button className="text-gray-600 hover:text-black font-medium transition-colors">
-                    Load More Reviews
-                  </button>
+                  <button className="text-gray-600 hover:text-black font-medium transition-colors">Load More Reviews</button>
                 </div>
               </div>
             )}
           </div>
         </div>
         
-        {/* You Might Also Like */}
-        {recommendedProducts.length > 0 && (
-          <div className="mt-16">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-2xl font-bold mb-2">You might also like</h2>
-              <p className="text-sm text-gray-500">Products from the same category and subcategory you might find interesting.</p>
-            </div>
-
-            <div className="mt-8">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                {recommendedProducts.map((relatedProduct) => (
-                  <div key={relatedProduct.id} className="transform transition duration-300 hover:scale-105">
-                    <ProductCard 
-                      product={relatedProduct}
-                      className=""
-                      initialImageIndex={0}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        
       </div>
     </div>
   )
