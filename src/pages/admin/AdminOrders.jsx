@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Package, Search, Filter, Eye, Truck, CheckCircle, X } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
+import { apiGet, apiPut } from '../../services/apiClient'
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([])
@@ -11,57 +12,16 @@ export default function AdminOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
 
-  // Mock order data
-  const mockOrders = [
-    {
-      id: '#ORD-001',
-      customer: { name: 'John Doe', email: 'john.doe@email.com' },
-      date: '2024-01-15',
-      total: 129.99,
-      status: 'pending',
-      items: [
-        { name: 'Premium Cotton T-Shirt', quantity: 2, price: 29.99 },
-        { name: 'Wireless Headphones', quantity: 1, price: 69.99 }
-      ],
-      shipping: {
-        address: '123 Main St, City, State 12345',
-        method: 'Standard Delivery'
-      }
-    },
-    {
-      id: '#ORD-002',
-      customer: { name: 'Jane Smith', email: 'jane.smith@email.com' },
-      date: '2024-01-14',
-      total: 89.99,
-      status: 'shipped',
-      items: [
-        { name: 'Leather Wallet', quantity: 1, price: 49.99 },
-        { name: 'Phone Case', quantity: 1, price: 39.99 }
-      ],
-      shipping: {
-        address: '456 Oak Ave, City, State 54321',
-        method: 'Express Delivery'
-      }
-    },
-    {
-      id: '#ORD-003',
-      customer: { name: 'Mike Johnson', email: 'mike.johnson@email.com' },
-      date: '2024-01-13',
-      total: 199.99,
-      status: 'delivered',
-      items: [
-        { name: 'Smart Watch', quantity: 1, price: 199.99 }
-      ],
-      shipping: {
-        address: '789 Pine Rd, City, State 98765',
-        method: 'Same Day Delivery'
-      }
-    }
-  ]
+  const toAddressLine = (addr) => {
+    if (!addr) return ''
+    const parts = [addr.name, addr.line1, addr.line2, addr.city, addr.state, addr.zip, addr.phone].filter(Boolean)
+    return parts.join(', ')
+  }
 
   const statusOptions = [
     { value: 'all', label: 'All Orders' },
     { value: 'pending', label: 'Pending' },
+    { value: 'confirmed', label: 'Confirmed' },
     { value: 'processing', label: 'Processing' },
     { value: 'shipped', label: 'Shipped' },
     { value: 'delivered', label: 'Delivered' },
@@ -69,17 +29,37 @@ export default function AdminOrders() {
   ]
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setOrders(mockOrders)
-      setLoading(false)
-    }, 500)
-  }, [])
+    const load = async () => {
+      setLoading(true)
+      try {
+        const query = statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : ''
+        const res = await apiGet(`/admin/orders${query}`)
+        const mapped = (res.orders || []).map(o => ({
+          id: o.id || o._id,
+          customer: { name: o.customer || 'Unknown', email: o.customerEmail || '' },
+          date: o.date || o.createdAt,
+          total: o.total || 0,
+          status: o.status || 'pending',
+          items: o.items || [],
+          shipping: { address: toAddressLine(o.shippingAddress), method: 'Standard Delivery' }
+        }))
+        setOrders(mapped)
+      } catch (e) {
+        console.error('Failed to load admin orders:', e)
+        setOrders([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [statusFilter])
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800'
+      case 'confirmed':
+        return 'bg-indigo-100 text-indigo-800'
       case 'processing':
         return 'bg-blue-100 text-blue-800'
       case 'shipped':
@@ -97,6 +77,8 @@ export default function AdminOrders() {
     switch (status) {
       case 'pending':
         return <Package size={14} />
+      case 'confirmed':
+        return <CheckCircle size={14} />
       case 'processing':
         return <Package size={14} />
       case 'shipped':
@@ -192,10 +174,16 @@ export default function AdminOrders() {
     setShowOrderDetails(true)
   }
 
-  const handleStatusChange = (orderId, newStatus) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ))
+  const handleStatusChange = async (orderId, newStatus) => {
+    // Admin backend allows: pending, processing, shipped, delivered, cancelled
+    try {
+      await apiPut(`/admin/orders/${orderId}/status`, { status: newStatus })
+      setOrders(orders.map(order => 
+        order.id === orderId ? { ...order, status: newStatus } : order
+      ))
+    } catch (e) {
+      console.error('Failed to update order status:', e)
+    }
   }
 
   if (loading) {

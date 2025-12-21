@@ -3,6 +3,7 @@ import { useParams, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Star, StarHalf, Heart, Share2, ChevronLeft, ChevronRight, Plus, Minus, ShoppingCart, Check, User } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useWishlist } from '../context/WishlistContext'
 import { ProductCard } from '../features/catalog'
 import api from '../services/api'
 import { optimizeImage } from '../config/imagekit'
@@ -10,6 +11,7 @@ import { optimizeImage } from '../config/imagekit'
 export default function ProductDetail() {
   const { id } = useParams()
   const { addToCart } = useCart()
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
@@ -247,6 +249,13 @@ export default function ProductDetail() {
       setSelectedImage(idx)
     }
   }, [location.state])
+
+  // Sync wishlist status when product loads
+  useEffect(() => {
+    if (product) {
+      setIsWishlisted(isInWishlist(product._id || product.id))
+    }
+  }, [product, isInWishlist])
   
   if (loading) {
     return (
@@ -319,7 +328,25 @@ export default function ProductDetail() {
   }
   
   const handleWishlist = () => {
-    setIsWishlisted(!isWishlisted)
+    if (!product) return
+    
+    if (isInWishlist(product._id || product.id)) {
+      removeFromWishlist(product._id || product.id)
+      setIsWishlisted(false)
+    } else {
+      addToWishlist({
+        id: product._id || product.id,
+        name: product.name,
+        image: product.images?.[0] || product.image,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        discount: product.discount,
+        category: product.category,
+        colors: product.colors,
+        sizes: product.sizes
+      })
+      setIsWishlisted(true)
+    }
   }
 
   const handleMouseMove = (e) => {

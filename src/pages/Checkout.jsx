@@ -47,7 +47,6 @@ export default function Checkout() {
   const handlePlaceOrder = async () => {
     if (!hasItems) return
     if (!user) {
-      // require login before placing order
       navigate('/login', { state: { from: '/checkout' } })
       return
     }
@@ -60,10 +59,73 @@ export default function Checkout() {
         shippingAddress: ship
       }
       const res = await apiPost('/orders', payload)
-      // On success, clear cart and navigate to confirmation
-      clearCart()
-      const orderId = res?.order?._id || res?.order?.id || res?.order?._doc?._id || res?.order?._id
-      navigate(`/orders/${orderId}`, { state: { order: res.order, razorOrder: res.razorOrder } })
+      const orderId = res?.order?._id || res?.order?.id
+      const razorOrder = res?.razorOrder
+      
+      // Initialize Razorpay payment
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID
+      
+      if (!razorpayKey) {
+        console.error('❌ Razorpay key not configured in environment')
+        setError('Payment system not configured')
+        setPlacing(false)
+        return
+      }
+      
+      if (razorOrder && window.Razorpay) {
+        try {
+          console.log('✅ Initializing Razorpay with order:', razorOrder.id)
+          const options = {
+            key: razorpayKey,
+            order_id: razorOrder.id,
+            amount: razorOrder.amount,
+            currency: 'INR',
+            name: 'DOORDRIPP',
+            description: 'Order Payment',
+            handler: async (response) => {
+              // Payment successful - verify signature
+              try {
+                console.log('✅ Payment handler called, verifying signature...')
+                const verifyRes = await apiPost(`/orders/${orderId}/verify-payment`, {
+                  orderId,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature
+                })
+                console.log('✅ Payment verified successfully')
+                clearCart()
+                navigate(`/orders/${orderId}`, { state: { order: verifyRes.order } })
+              } catch (verifyErr) {
+                console.error('❌ Payment verification failed:', verifyErr)
+                setError('Payment verification failed: ' + (verifyErr?.message || 'Unknown error'))
+                setPlacing(false)
+              }
+            },
+            modal: {
+              ondismiss: () => {
+                console.log('⚠️ Payment modal dismissed by user')
+                setPlacing(false)
+              }
+            },
+            prefill: {
+              name: user?.name || '',
+              email: user?.email || '',
+              contact: user?.phone || ''
+            }
+          }
+          console.log('✅ Opening Razorpay checkout...')
+          const rzp = new window.Razorpay(options)
+          rzp.open()
+        } catch (rzpErr) {
+          console.error('❌ Razorpay error:', rzpErr)
+          setError('Failed to open payment gateway: ' + (rzpErr?.message || 'Unknown error'))
+          setPlacing(false)
+        }
+      } else {
+        // Fallback: navigate to order confirmation (Razorpay not available)
+        console.warn('⚠️ Razorpay not available, using fallback', { razorOrder, razorpayAvailable: !!window.Razorpay })
+        clearCart()
+        navigate(`/orders/${orderId}`, { state: { order: res.order, razorOrder } })
+      }
     } catch (e) {
       setError(e?.error || e?.message || 'Failed to place order')
     } finally {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { apiPost, apiPut } from '../services/apiClient'
 
@@ -15,7 +16,8 @@ export default function Profile() {
   
   const [editingPassword, setEditingPassword] = useState(false)
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirm: '' })
-  const formatDob = user?.dob ? new Date(user.dob).toLocaleDateString() : '—'
+  const [passwordVisibility, setPasswordVisibility] = useState({ current: false, new: false, confirm: false })
+  const [passwordModal, setPasswordModal] = useState({ open: false, type: 'success', message: '' })
   const addressText = '—'
 
   // Check if user is admin
@@ -96,16 +98,22 @@ export default function Profile() {
   }
 
   const savePassword = async () => {
-    if (!passwords.currentPassword || !passwords.newPassword) return alert('Please fill both fields')
-    if (passwords.newPassword !== passwords.confirm) return alert('New passwords do not match')
+    if (!passwords.currentPassword || !passwords.newPassword) {
+      setPasswordModal({ open: true, type: 'error', message: 'Please fill both fields.' })
+      return
+    }
+    if (passwords.newPassword !== passwords.confirm) {
+      setPasswordModal({ open: true, type: 'error', message: 'New passwords do not match.' })
+      return
+    }
     try {
       await apiPut('/auth/change-password', { currentPassword: passwords.currentPassword, newPassword: passwords.newPassword })
       setEditingPassword(false)
       setPasswords({ currentPassword: '', newPassword: '', confirm: '' })
-      alert('Password changed successfully')
+      setPasswordModal({ open: true, type: 'success', message: 'Password changed successfully.' })
     } catch (e) {
       console.error('Failed to change password', e)
-      alert(e?.error || e?.message || 'Failed to change password')
+      setPasswordModal({ open: true, type: 'error', message: e?.error || e?.message || 'Failed to change password.' })
     }
   }
 
@@ -127,8 +135,9 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-6 py-12">
+    <>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="mb-8 auth-entry">
           <h1 className="brand-title text-4xl">My Account</h1>
           <p className="text-sm text-gray-600 mt-1">Manage your profile and preferences</p>
@@ -236,10 +245,55 @@ export default function Profile() {
                   <div className="info-item-label">Account Security</div>
                   <div>
                     {editingPassword ? (
-                      <div className="space-y-2">
-                        <input type="password" placeholder="Current password" className="w-full border px-2 py-1 rounded-md" value={passwords.currentPassword} onChange={e => setPasswords(p => ({ ...p, currentPassword: e.target.value }))} />
-                        <input type="password" placeholder="New password" className="w-full border px-2 py-1 rounded-md" value={passwords.newPassword} onChange={e => setPasswords(p => ({ ...p, newPassword: e.target.value }))} />
-                        <input type="password" placeholder="Confirm new password" className="w-full border px-2 py-1 rounded-md" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} />
+                      <div className="space-y-3">
+                        <div className="relative max-w-xs">
+                          <input
+                            type={passwordVisibility.current ? 'text' : 'password'}
+                            placeholder="Current password"
+                            className="w-full h-9 border px-3 pr-10 rounded-md text-sm"
+                            value={passwords.currentPassword}
+                            onChange={e => setPasswords(p => ({ ...p, currentPassword: e.target.value }))}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setPasswordVisibility(v => ({ ...v, current: !v.current }))}
+                          >
+                            {passwordVisibility.current ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
+                        <div className="relative max-w-xs">
+                          <input
+                            type={passwordVisibility.new ? 'text' : 'password'}
+                            placeholder="New password"
+                            className="w-full h-9 border px-3 pr-10 rounded-md text-sm"
+                            value={passwords.newPassword}
+                            onChange={e => setPasswords(p => ({ ...p, newPassword: e.target.value }))}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setPasswordVisibility(v => ({ ...v, new: !v.new }))}
+                          >
+                            {passwordVisibility.new ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
+                        <div className="relative max-w-xs">
+                          <input
+                            type={passwordVisibility.confirm ? 'text' : 'password'}
+                            placeholder="Confirm new password"
+                            className="w-full h-9 border px-3 pr-10 rounded-md text-sm"
+                            value={passwords.confirm}
+                            onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setPasswordVisibility(v => ({ ...v, confirm: !v.confirm }))}
+                          >
+                            {passwordVisibility.confirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
                         <div className="flex gap-2 mt-2">
                           <button className="btn-danger" onClick={savePassword}>Save Password</button>
                           <button className="menu-item" onClick={() => { setEditingPassword(false); setPasswords({ currentPassword: '', newPassword: '', confirm: '' }) }}>Cancel</button>
@@ -257,6 +311,25 @@ export default function Profile() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      {passwordModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4">
+            <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${passwordModal.type === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              {passwordModal.type === 'success' ? '✓' : '!'}
+            </div>
+            <div className="text-lg font-semibold text-gray-900">{passwordModal.type === 'success' ? 'Password Updated' : 'Action Needed'}</div>
+            <p className="text-sm text-gray-600">{passwordModal.message}</p>
+            <button
+              className="w-full btn-danger"
+              onClick={() => setPasswordModal({ open: false, type: 'success', message: '' })}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

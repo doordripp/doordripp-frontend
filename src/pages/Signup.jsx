@@ -3,8 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, Phone } from 'lucide-react'
 import { AuthInput, GoogleIcon } from '../features/auth'
 import { apiPost } from '../services/apiClient'
-import { authStorage } from '../utils/auth'
-import { useAuth } from '../context/AuthContext'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -14,8 +12,6 @@ export default function Signup() {
     phone: '',
     password: '',
     confirmPassword: '',
-    gender: '',
-    dob: '',
     
     
     profileImage: null,
@@ -23,16 +19,7 @@ export default function Signup() {
   })
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-  const [otpSent, setOtpSent] = useState(false)
-  const [otpCode, setOtpCode] = useState('')
-  const [otpVerified, setOtpVerified] = useState(false)
-  const [otpToken, setOtpToken] = useState(null)
-  const { fetchMe } = useAuth()
-
-  const handleFileChange = (e) => {
-    const file = e.target.files && e.target.files[0]
-    setFormData(prev => ({ ...prev, profileImage: file }))
-  }
+  
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -114,18 +101,12 @@ export default function Signup() {
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
-        gender: formData.gender || undefined,
-        dob: formData.dob || undefined,
-        
         termsAccepted: formData.agreeToTerms
       }
-      // include verification token if available
-      if (otpToken) payload.verificationToken = otpToken
-      console.log('Submitting register payload', payload)
-      const data = await apiPost('/auth/register-initiate', payload)
+      await apiPost('/auth/register-initiate', payload)
 
       // Persist email for the verification page as a fallback
-      try { localStorage.setItem('pending_email', formData.email) } catch (_) {}
+      try { localStorage.setItem('pending_email', formData.email) } catch (err) { console.warn('pending_email store failed', err) }
 
       // Always move to email verification step on success
       navigate('/verify-email', { 
@@ -136,7 +117,13 @@ export default function Signup() {
       
       // The rest of this flow occurs after verification
     } catch (error) {
-      const msg = error?.message || 'Registration failed. Please try again.'
+      let msg = error?.message || 'Registration failed. Please try again.'
+      
+      // Handle rate limiting error
+      if (error?.status === 429 || msg.includes('429') || msg.includes('Too many')) {
+        msg = 'Too many registration attempts. Please try again later or use a different email.'
+      }
+      
       setErrors({ submit: msg })
     } finally {
       setIsLoading(false)
@@ -188,32 +175,6 @@ export default function Signup() {
               error={errors.phone}
               required
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm text-gray-600">Gender</label>
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                    className="w-full h-12 px-4 border rounded-xl bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/20 border-gray-200 hover:border-gray-300"
-                >
-                  <option value="">Select</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-gray-600">Date of Birth</label>
-                <input
-                  type="date"
-                  name="dob"
-                  value={formData.dob}
-                  onChange={handleChange}
-                    className="w-full h-12 px-4 border rounded-xl bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/20 border-gray-200 hover:border-gray-300"
-                />
-              </div>
-            </div>
             <AuthInput
               type="password"
               name="password"

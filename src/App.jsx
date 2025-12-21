@@ -1,15 +1,17 @@
 import './App.css'
-import { useLayoutEffect } from 'react'
+import { useLayoutEffect, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Navbar } from './components/navigation'
 import { Footer, Newsletter } from './layout'
 import { CartDrawer } from './features/cart'
 import { CartProvider } from './context/CartContext'
-import { AuthProvider } from './context/AuthContext'
+import { WishlistProvider, useWishlist } from './context/WishlistContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { AdminProvider } from './context/AdminContext'
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Cart from './pages/Cart'
+import Wishlist from './pages/Wishlist'
 import Products from './pages/Products'
 import CategoryPage from './pages/CategoryPage'
 import ProductDetail from './pages/ProductDetail'
@@ -28,6 +30,24 @@ import AdminLayout from './layout/AdminLayout'
 import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers } from './pages/admin'
 import AddProduct from './features/admin/products/AddProduct'
 import { ROLES } from './utils/roleUtils'
+
+// Component to sync wishlist when user logs in/out
+function WishlistSyncHandler() {
+  const { user } = useAuth()
+  const { syncWishlist, clearWishlist } = useWishlist()
+
+  useEffect(() => {
+    if (user) {
+      // Sync wishlist when user logs in
+      syncWishlist()
+    } else {
+      // Clear wishlist when user logs out
+      clearWishlist()
+    }
+  }, [user, syncWishlist, clearWishlist])
+
+  return null
+}
 
 // ULTRA-AGGRESSIVE Scroll to top - FORCES page to absolute top
 function ScrollToTop() {
@@ -104,7 +124,9 @@ function App() {
     <AuthProvider>
       <AdminProvider>
         <CartProvider>
-          <ScrollToTop />
+          <WishlistProvider>
+            <ScrollToTop />
+            <WishlistSyncHandler />
           <Routes>
             {/* Admin Routes - Separate layout */}
             <Route path="/admin" element={
@@ -141,6 +163,7 @@ function App() {
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/orders/:id" element={<OrderConfirmation />} />
+                    <Route path="/wishlist" element={<Wishlist />} />
                   </Routes>
                 </main>
                 {/* Global Newsletter Section - Appears on all pages */}
@@ -153,6 +176,7 @@ function App() {
               </div>
             } />
           </Routes>
+        </WishlistProvider>
         </CartProvider>
       </AdminProvider>
     </AuthProvider>
