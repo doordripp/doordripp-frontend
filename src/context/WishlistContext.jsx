@@ -17,16 +17,14 @@ const wishlistReducer = (state, action) => {
   switch (action.type) {
     case WISHLIST_ACTIONS.ADD_ITEM: {
       const product = action.payload
-      // Check if item already exists
-      const existingItem = state.items.find(item => item.id === product.id)
-      
-      if (existingItem) {
-        return state // Already in wishlist
-      }
-
+      // Check if item already exists (by normalized id)
+      const pid = product._id || product.id
+      const exists = state.items.some(item => (item._id || item.id) == pid)
+      if (exists) return state
+      // Prepend so newest items appear first
       return {
         ...state,
-        items: [...state.items, product]
+        items: [product, ...state.items]
       }
     }
 
@@ -72,7 +70,15 @@ export function WishlistProvider({ children }) {
     try {
       setLoading(true)
       const data = await apiGet('/wishlist')
-      dispatch({ type: WISHLIST_ACTIONS.LOAD_WISHLIST, payload: data.items })
+      // normalize ids to prefer _id then id
+      let items = (data?.items || []).map(it => ({ ...it, _id: it._id || it.id || it.productId || it.product?._id }))
+      // ensure newest-first ordering: if backend provided timestamps, sort by createdAt desc, otherwise reverse array
+      if (items.length && (items[0].createdAt || items[0].addedAt)) {
+        items.sort((a, b) => new Date(b.createdAt || b.addedAt) - new Date(a.createdAt || a.addedAt))
+      } else {
+        items = items.slice().reverse()
+      }
+      dispatch({ type: WISHLIST_ACTIONS.LOAD_WISHLIST, payload: items })
       setSynced(true)
     } catch (err) {
       console.error('Failed to sync wishlist:', err)
@@ -81,7 +87,9 @@ export function WishlistProvider({ children }) {
       if (savedWishlist) {
         try {
           const parsedWishlist = JSON.parse(savedWishlist)
-          dispatch({ type: WISHLIST_ACTIONS.LOAD_WISHLIST, payload: parsedWishlist.items })
+          // ensure normalized ids
+          const items = (parsedWishlist.items || []).map(it => ({ ...it, _id: it._id || it.id }))
+          dispatch({ type: WISHLIST_ACTIONS.LOAD_WISHLIST, payload: items })
         } catch (e) {
           console.error('Failed to load wishlist from localStorage:', e)
         }
@@ -98,38 +106,54 @@ export function WishlistProvider({ children }) {
   }, [])
 
   const addToWishlist = useCallback(async (product) => {
+    // normalize product object
+    const p = { ...product, _id: product._id || product.id }
     try {
-      await apiPost('/wishlist/add', { productId: product.id })
-      dispatch({ type: WISHLIST_ACTIONS.ADD_ITEM, payload: product })
+      await apiPost('/wishlist/add', { productId: p._id })
+      // add newest-first
+      dispatch({ type: WISHLIST_ACTIONS.ADD_ITEM, payload: p })
     } catch (err) {
       console.error('Failed to add to wishlist:', err)
       // Still add locally if backend fails
-      dispatch({ type: WISHLIST_ACTIONS.ADD_ITEM, payload: product })
+      dispatch({ type: WISHLIST_ACTIONS.ADD_ITEM, payload: p })
     }
   }, [])
 
   const removeFromWishlist = useCallback(async (productId) => {
+    const id = typeof productId === 'string' || typeof productId === 'number' ? productId : (productId._id || productId.id)
     try {
-      await apiPost('/wishlist/remove', { productId })
-      dispatch({ type: WISHLIST_ACTIONS.REMOVE_ITEM, payload: productId })
+      await apiPost('/wishlist/remove', { productId: id })
+      dispatch({ type: WISHLIST_ACTIONS.REMOVE_ITEM, payload: id })
     } catch (err) {
       console.error('Failed to remove from wishlist:', err)
       // Still remove locally if backend fails
-      dispatch({ type: WISHLIST_ACTIONS.REMOVE_ITEM, payload: productId })
+      dispatch({ type: WISHLIST_ACTIONS.REMOVE_ITEM, payload: id })
     }
   }, [])
 
   const isInWishlist = useCallback((productId) => {
-    return state.items.some(item => item.id === productId)
+    const id = productId?._id || productId?.id || productId
+    return state.items.some(item => (item._id || item.id) == id)
+  }, [state.items])
+
+  // persist local copy on change
+  useEffect(() => {
+    try {
+      localStorage.setItem('doordripp-wishlist', JSON.stringify({ items: state.items }))
+    } catch (e) {
+      // ignore
+    }
   }, [state.items])
 
   const clearWishlist = useCallback(async () => {
     try {
-      await apiPost('/wishlist', null)
+      await apiPost('/wishlist/clear', null)
       dispatch({ type: WISHLIST_ACTIONS.CLEAR_WISHLIST })
+      localStorage.removeItem('doordripp-wishlist')
     } catch (err) {
       console.error('Failed to clear wishlist:', err)
       dispatch({ type: WISHLIST_ACTIONS.CLEAR_WISHLIST })
+      localStorage.removeItem('doordripp-wishlist')
     }
   }, [])
 

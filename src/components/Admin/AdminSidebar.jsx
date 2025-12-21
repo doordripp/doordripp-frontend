@@ -22,7 +22,7 @@ export default function AdminSidebar() {
         <Item to="/admin/dashboard">Dashboard</Item>
         <Item to="/admin/products">Products</Item>
         <Item to="/admin/orders">Orders</Item>
-        <Item to="/admin/customers">Customers</Item>
+          <Item to="/admin/customers">Customers</Item>
         <Item to="/admin/reports">Reports</Item>
       </nav>
     </aside>

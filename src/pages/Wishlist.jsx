@@ -9,6 +9,7 @@ export default function Wishlist() {
   const { items, removeFromWishlist, totalItems } = useWishlist()
   const { addToCart } = useCart()
   const [selectedItems, setSelectedItems] = useState({})
+  const [sortNewest, setSortNewest] = useState(true)
 
   const handleRemoveFromWishlist = (productId) => {
     removeFromWishlist(productId)
@@ -27,12 +28,21 @@ export default function Wishlist() {
   }
 
   const selectedCount = Object.values(selectedItems).filter(Boolean).length
-  const selectedProducts = items.filter(item => selectedItems[item.id])
+  const selectedProducts = items.filter(item => {
+    const pid = item._id || item.id || item.productId
+    return selectedItems[pid]
+  })
 
   const handleAddSelectedToCart = () => {
     selectedProducts.forEach(product => {
       handleAddToCart(product)
     })
+    setSelectedItems({})
+  }
+
+  const handleRemoveSelected = () => {
+    const toRemove = Object.keys(selectedItems).filter(k => selectedItems[k])
+    toRemove.forEach(id => removeFromWishlist(id))
     setSelectedItems({})
   }
 
@@ -76,13 +86,21 @@ export default function Wishlist() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Wishlist</h1>
-          <p className="text-gray-600">{totalItems} item{totalItems !== 1 ? 's' : ''} saved</p>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-gray-600">{totalItems} item{totalItems !== 1 ? 's' : ''} saved</p>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setSortNewest(s => !s)} className="text-sm text-gray-600 underline">{sortNewest ? 'Newest first' : 'Oldest first'}</button>
+              <div className="text-sm text-gray-600">{selectedCount} selected</div>
+              <button onClick={handleAddSelectedToCart} disabled={selectedCount===0} className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded">Add selected</button>
+              <button onClick={handleRemoveSelected} disabled={selectedCount===0} className="text-sm bg-red-50 text-red-600 px-3 py-1 rounded">Remove selected</button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               {/* Header with Select All */}
               <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -93,7 +111,8 @@ export default function Wishlist() {
                       if (e.target.checked) {
                         const newSelected = {}
                         items.forEach(item => {
-                          newSelected[item.id] = true
+                          const pid = item._id || item.id || item.productId
+                          newSelected[pid] = true
                         })
                         setSelectedItems(newSelected)
                       } else {
@@ -116,35 +135,27 @@ export default function Wishlist() {
 
               {/* Wishlist Items */}
               <div className="divide-y divide-gray-200">
-                {items.map((product) => (
-                  <div key={product.id} className="p-4 hover:bg-gray-50 transition">
-                    <div className="flex gap-4">
+                {(sortNewest ? items : items.slice().reverse()).map((product) => {
+                  const pid = product._id || product.id || product.productId
+                  return (
+                  <div key={pid} className="p-4 hover:bg-gray-50 transition">
+                    <div className="flex gap-4 items-center">
                       {/* Checkbox */}
                       <input
                         type="checkbox"
-                        checked={selectedItems[product.id] || false}
-                        onChange={() => handleSelectItem(product.id)}
+                        checked={selectedItems[pid] || false}
+                        onChange={() => handleSelectItem(pid)}
                         className="w-5 h-5 rounded border-gray-300 mt-1"
                       />
 
                       {/* Product Image */}
-                      <Link
-                        to={`/product/${product.id}`}
-                        className="flex-shrink-0"
-                      >
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-24 h-24 object-cover rounded-lg"
-                        />
+                      <Link to={`/product/${pid}`} className="flex-shrink-0">
+                        <img src={product.image} alt={product.name} className="w-24 h-24 object-cover rounded-lg" />
                       </Link>
 
                       {/* Product Details */}
                       <div className="flex-1">
-                        <Link
-                          to={`/product/${product.id}`}
-                          className="block mb-1"
-                        >
+                        <Link to={`/product/${pid}`} className="block mb-1">
                           <h3 className="font-semibold text-gray-900 hover:text-blue-600">
                             {product.name}
                           </h3>
@@ -152,7 +163,7 @@ export default function Wishlist() {
                         <p className="text-sm text-gray-600 mb-2">{product.category}</p>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-lg font-bold text-gray-900">
-                            ₹{product.price?.toFixed(2)}
+                            ₹{typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
                           </span>
                           {product.originalPrice && (
                             <>
@@ -176,7 +187,7 @@ export default function Wishlist() {
                             Add to Cart
                           </button>
                           <button
-                            onClick={() => handleRemoveFromWishlist(product.id)}
+                            onClick={() => handleRemoveFromWishlist(pid)}
                             className="flex items-center gap-2 px-3 py-1 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
                           >
                             <Heart size={16} fill="currentColor" />
@@ -192,8 +203,9 @@ export default function Wishlist() {
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { apiPost, apiPut } from '../services/apiClient'
+import { apiPost, apiPut, apiGet } from '../services/apiClient'
+import { useWishlist } from '../context/WishlistContext'
 
 export default function Profile() {
   const { user, logout, fetchMe } = useAuth()
@@ -42,6 +43,38 @@ export default function Profile() {
     await logout()
     navigate('/')
   }
+
+  const { items: wishlistItems, totalItems: wishlistCount, syncWishlist } = useWishlist()
+  const [ordersCount, setOrdersCount] = useState(0)
+  const [recentOrders, setRecentOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+
+  useEffect(() => {
+    // fetch orders count for badge
+    let mounted = true
+    const load = async () => {
+      try {
+        setOrdersLoading(true)
+        const data = await apiGet('/orders')
+        const list = Array.isArray(data) ? data : (data?.orders || data?.data || [])
+        if (mounted) {
+              setOrdersCount(list.length)
+              // sort orders newest-first by createdAt / placedAt
+              const sorted = list.slice().sort((a, b) => new Date(b.createdAt || b.placedAt || b.orderDate || 0) - new Date(a.createdAt || a.placedAt || a.orderDate || 0))
+              // show most recent 3 orders
+              setRecentOrders(sorted.slice(0, 3))
+            }
+      } catch (e) {
+        // ignore
+      } finally {
+        setOrdersLoading(false)
+      }
+    }
+    load()
+    // also ensure wishlist is synced
+    syncWishlist().catch(() => {})
+    return () => { mounted = false }
+  }, [syncWishlist])
 
   const handleFileChange = (e) => {
     const file = e.target.files && e.target.files[0]
@@ -173,13 +206,22 @@ export default function Profile() {
               <nav className="mt-6">
                 <ul className="space-y-2">
                   <li>
-                    <Link to="/profile" className="menu-item block">📋 My Profile</Link>
+                    <Link to="/profile" className="menu-item block flex justify-between items-center">
+                      <span>📋 My Profile</span>
+                      <span className="text-xs text-gray-500"> </span>
+                    </Link>
                   </li>
                   <li>
-                    <Link to="/wishlist" className="menu-item block">♡ My List</Link>
+                    <Link to="/wishlist" className="menu-item block flex justify-between items-center">
+                      <span>♡ My Wishlist</span>
+                      <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-50 text-red-600">{wishlistCount || 0}</span>
+                    </Link>
                   </li>
                   <li>
-                    <Link to="/orders" className="menu-item block">🧾 My Orders</Link>
+                    <Link to="/orders" className="menu-item block flex justify-between items-center">
+                      <span>🧾 My Orders</span>
+                      <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-600">{ordersCount || 0}</span>
+                    </Link>
                   </li>
                   <li>
                     <button onClick={handleLogout} className="menu-item menu-logout block text-left w-full">⎋ Logout</button>
@@ -305,6 +347,71 @@ export default function Profile() {
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+              {/* Wishlist preview & recent orders */}
+              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white border rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-lg">My Wishlist</h3>
+                    <Link to="/wishlist" className="text-sm text-blue-600">View all</Link>
+                  </div>
+                  {wishlistItems && wishlistItems.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {wishlistItems.slice(0,6).map((w, idx) => {
+                        const pid = w._id || w.id || w.productId || (w.product && (w.product._id || w.product.id))
+                        const img = w.image || w.imageUrl || w.imageURL || (w.product && (w.product.image || (w.product.images && w.product.images[0])))
+                        return (
+                          <Link key={pid || idx} to={`/product/${pid}`} className="group block">
+                            <div className="w-full h-20 bg-gray-50 rounded-md overflow-hidden border flex items-center justify-center">
+                              {img ? <img src={img} alt={w.name || 'wish'} className="w-full h-full object-cover" /> : <div className="text-xs text-gray-400">No image</div>}
+                            </div>
+                            <div className="text-xs mt-2 line-clamp-2 text-gray-700">{w.name || (w.product && w.product.name) || 'Product'}</div>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-sm text-gray-600">No items in your wishlist yet.</div>
+                  )}
+                </div>
+
+                <div className="bg-white border rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-lg">Recent Orders</h3>
+                    <Link to="/orders" className="text-sm text-blue-600">View all</Link>
+                  </div>
+                  {ordersLoading ? (
+                    <div className="p-6 text-sm text-gray-600">Loading recent orders...</div>
+                  ) : recentOrders && recentOrders.length ? (
+                    <ul className="space-y-3">
+                      {recentOrders.map(o => (
+                        <li key={o._id || o.id} className="flex items-center gap-3 p-3 border rounded-md">
+                          <div className="flex -space-x-2">
+                            {(o.items || []).slice(0,3).map((it, i) => {
+                              const prod = it.product || {}
+                              const thumb = it.image || it.imageUrl || prod.image || (prod.images && prod.images[0])
+                              return (
+                                <div key={i} className="w-10 h-10 bg-gray-50 rounded overflow-hidden border">
+                                  {thumb ? <img src={thumb} alt={it.name} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400">No</div>}
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">Order <span className="font-mono text-xs">{o._id || o.id}</span></div>
+                            <div className="text-xs text-gray-500 truncate">{new Date(o.createdAt || o.orderDate || o.placedAt || Date.now()).toLocaleDateString()} • {o.items?.length || 0} items</div>
+                          </div>
+                          <div className="w-28 flex-shrink-0 text-right">
+                            <div className="text-sm font-semibold">{typeof (o.total || o.totalAmount || o.orderTotal) === 'number' ? `₹${(o.total || o.totalAmount || o.orderTotal).toFixed(2)}` : `₹${o.total || o.totalAmount || o.orderTotal || 0}`}</div>
+                            <Link to={`/orders/${o._id || o.id}`} className="text-xs text-blue-600">View</Link>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="p-6 text-sm text-gray-600">No recent orders found.</div>
+                  )}
                 </div>
               </div>
             </section>

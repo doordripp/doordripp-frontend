@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Star, StarHalf, ShoppingCart, Check, Plus } from 'lucide-react'
+import { Star, StarHalf, ShoppingCart, Check, Plus, Heart } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
+import { useWishlist } from '../../context/WishlistContext'
 import { optimizeImage } from '../../config/imagekit'
 import clsx from 'clsx'
 
@@ -100,6 +101,7 @@ export default function ProductCard({
   initialImageIndex = 0,
 }) {
   const { addToCart } = useCart()
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
   const [isHovered, setIsHovered] = useState(false)
   const id = product.id || product._id || product.slug
   const name = product.name
@@ -235,7 +237,7 @@ export default function ProductCard({
             </div>
           )}
           {/* Three Dots Menu */}
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-500 z-20">
+          <div className="absolute top-3 right-3 flex gap-2 items-start opacity-0 group-hover:opacity-100 transition-all duration-500 z-20">
             <div className="w-9 h-9 bg-white backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl hover:bg-gray-50 transition-colors duration-300">
               <div className="flex flex-col gap-0.5">
                 <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
@@ -243,6 +245,20 @@ export default function ProductCard({
                 <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
               </div>
             </div>
+            {/* Wishlist toggle */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const pid = id
+                if (isInWishlist(pid)) removeFromWishlist(pid)
+                else addToWishlist({ ...product, id: pid })
+              }}
+              aria-label={isInWishlist(id) ? 'Remove from wishlist' : 'Add to wishlist'}
+              className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-xl hover:bg-gray-50 transition-colors duration-300"
+            >
+              <Heart className={`${isInWishlist(id) ? 'text-red-500 fill-current' : 'text-gray-500' } h-4 w-4`} />
+            </button>
           </div>
         </div>
         {/* Product Info Box - Clean Separation */}

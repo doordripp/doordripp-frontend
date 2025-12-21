@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -28,14 +28,66 @@ export default function Checkout() {
 
   const hasItems = items && items.length > 0
 
+  // Local persistence key so selected address survives page refresh
+  const LOCAL_CHECKOUT_ADDRESS_KEY = 'checkout_selected_address_v1'
+
+  const isValidField = v => typeof v === 'string' && v.trim().length > 0
+  const validateAddress = (a) => {
+    if (!a) return ['address']
+    const missing = []
+    if (!isValidField(a.line1)) missing.push('Address line 1')
+    if (!isValidField(a.city)) missing.push('City')
+    if (!isValidField(a.state)) missing.push('State')
+    if (!isValidField(a.zip)) missing.push('ZIP')
+    if (!isValidField(a.phone)) missing.push('Phone')
+    return missing
+  }
+
+  // Load persisted address (localStorage) or sync with user profile on mount/user change
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_CHECKOUT_ADDRESS_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        setAddress(parsed)
+        setSelectedAddress(parsed)
+        return
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+    if (user?.address) {
+      setAddress(user.address)
+      setSelectedAddress(user.address)
+    }
+  }, [user])
+
+  // Keep localStorage updated when selectedAddress or address changes
+  useEffect(() => {
+    const toSave = selectedAddress || address
+    try {
+      if (toSave && toSave.line1) localStorage.setItem(LOCAL_CHECKOUT_ADDRESS_KEY, JSON.stringify(toSave))
+    } catch (e) {
+      // ignore storage errors (e.g., denied)
+    }
+  }, [selectedAddress, address])
+
   const handleSaveAddress = async () => {
-    setSaving(true)
     setError('')
+    // Validate address fields before saving
+    const missing = validateAddress(address)
+    if (missing.length) {
+      setError('Please complete address: ' + missing.join(', '))
+      return
+    }
+    setSaving(true)
     try {
       // persist address (includes phone)
       await apiPut('/auth/profile', { address })
       await fetchMe()
       setSelectedAddress(address)
+      // persist locally so refresh keeps selection
+      try { localStorage.setItem(LOCAL_CHECKOUT_ADDRESS_KEY, JSON.stringify(address)) } catch (e) { /* ignore */ }
       setShowAddressModal(false)
     } catch (e) {
       setError(e?.error || e?.message || 'Failed to save address')
@@ -48,6 +100,16 @@ export default function Checkout() {
     if (!hasItems) return
     if (!user) {
       navigate('/login', { state: { from: '/checkout' } })
+      return
+    }
+    // Ensure a valid shipping address exists before initiating payment
+    const shipCheck = selectedAddress || address
+    const missing = validateAddress(shipCheck)
+    if (missing.length) {
+      setError('Please provide a valid delivery address before placing the order.')
+      // open address modal to help user quickly fix address
+      setAddress(shipCheck || { name: user?.name || '', line1: '', line2: '', city: '', state: '', zip: '', phone: user?.phone || '' })
+      setShowAddressModal(true)
       return
     }
     setPlacing(true)
@@ -222,21 +284,18 @@ export default function Checkout() {
 
               <style>{`.fade-in{animation:fadeIn 360ms ease-out;}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
+              {/* Combined action: Place order and open payment. Requires a valid address. */}
+              {error && <div className="mb-3 text-sm text-red-600">{error}</div>}
               <button
-                disabled={!hasItems || placing}
+                disabled={!hasItems || placing || !( (selectedAddress || address)?.line1 )}
                 onClick={handlePlaceOrder}
-                className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transform transition duration-200 ease-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mb-4"
+                aria-disabled={!hasItems || placing || !( (selectedAddress || address)?.line1 )}
+                className={`w-full py-3 rounded-lg font-semibold shadow-md transform transition duration-200 ease-out mb-4 ${(!hasItems || placing || !( (selectedAddress || address)?.line1 )) ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800 hover:scale-105'}`}
               >
-                {placing ? 'Placing order...' : 'CHECKOUT'}
+                {placing ? 'Placing order...' : 'Place Order & Pay Now'}
               </button>
-
-              <button
-                disabled={!hasItems || placing}
-                onClick={handlePlaceOrder}
-                className="w-full bg-gray-200 text-gray-900 py-3 rounded-lg font-semibold shadow-sm hover:shadow-md transform transition duration-200 ease-out hover:scale-102 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300"
-              >
-                Pay Now
-              </button>
+              {!hasItems && <div className="text-sm text-gray-500">Your cart is empty.</div>}
+              {(hasItems && !( (selectedAddress || address)?.line1 )) && <div className="text-sm text-gray-600">Please add a delivery address to proceed.</div>}
             </div>
           </div>
         </div>

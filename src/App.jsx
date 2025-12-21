@@ -23,11 +23,12 @@ import ResetPassword from './pages/ResetPassword'
 import Profile from './pages/Profile'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
+import Orders from './pages/Orders'
 import NewArrivalsPage from './pages/NewArrivals'
 import BestSellersPage from './pages/BestSellers'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AdminLayout from './layout/AdminLayout'
-import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers } from './pages/admin'
+import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers, AdminCustomers, AdminReports } from './pages/admin'
 import AddProduct from './features/admin/products/AddProduct'
 import { ROLES } from './utils/roleUtils'
 
@@ -140,6 +141,8 @@ function App() {
               <Route path="products/add" element={<AddProduct />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="customers" element={<AdminCustomers />} />
+              <Route path="reports" element={<AdminReports />} />
             </Route>
 
             {/* Main App Routes */}
@@ -162,6 +165,7 @@ function App() {
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/orders" element={<Orders />} />
                     <Route path="/orders/:id" element={<OrderConfirmation />} />
                     <Route path="/wishlist" element={<Wishlist />} />
                   </Routes>
