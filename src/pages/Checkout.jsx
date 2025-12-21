@@ -93,7 +93,7 @@ export default function Checkout() {
                 })
                 console.log('✅ Payment verified successfully')
                 clearCart()
-                navigate(`/order-confirmation`, { state: { order: verifyRes.order } })
+                navigate(`/orders/${orderId}`, { state: { order: verifyRes.order } })
               } catch (verifyErr) {
                 console.error('❌ Payment verification failed:', verifyErr)
                 setError('Payment verification failed: ' + (verifyErr?.message || 'Unknown error'))
@@ -124,7 +124,7 @@ export default function Checkout() {
         // Fallback: navigate to order confirmation (Razorpay not available)
         console.warn('⚠️ Razorpay not available, using fallback', { razorOrder, razorpayAvailable: !!window.Razorpay })
         clearCart()
-        navigate(`/order-confirmation`, { state: { order: res.order, razorOrder } })
+        navigate(`/orders/${orderId}`, { state: { order: res.order, razorOrder } })
       }
     } catch (e) {
       setError(e?.error || e?.message || 'Failed to place order')

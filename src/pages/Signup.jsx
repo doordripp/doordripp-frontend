@@ -117,7 +117,13 @@ export default function Signup() {
       
       // The rest of this flow occurs after verification
     } catch (error) {
-      const msg = error?.message || 'Registration failed. Please try again.'
+      let msg = error?.message || 'Registration failed. Please try again.'
+      
+      // Handle rate limiting error
+      if (error?.status === 429 || msg.includes('429') || msg.includes('Too many')) {
+        msg = 'Too many registration attempts. Please try again later or use a different email.'
+      }
+      
       setErrors({ submit: msg })
     } finally {
       setIsLoading(false)
