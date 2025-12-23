@@ -31,6 +31,7 @@ export default function Checkout() {
   // Local persistence key so selected address survives page refresh
   const LOCAL_CHECKOUT_ADDRESS_KEY = 'checkout_selected_address_v1'
 
+  const currentUserId = user?._id || user?.id || null
   const isValidField = v => typeof v === 'string' && v.trim().length > 0
   const validateAddress = (a) => {
     if (!a) return ['address']
@@ -44,33 +45,50 @@ export default function Checkout() {
   }
 
   // Load persisted address (localStorage) or sync with user profile on mount/user change
+  // Store local address along with userId to avoid leaking one user's address to another
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LOCAL_CHECKOUT_ADDRESS_KEY)
       if (raw) {
         const parsed = JSON.parse(raw)
-        setAddress(parsed)
-        setSelectedAddress(parsed)
-        return
+        // parsed shape: { userId, address }
+        if (parsed && parsed.userId && parsed.userId === currentUserId) {
+          setAddress(parsed.address)
+          setSelectedAddress(parsed.address)
+          return
+        }
+        // If stored address belongs to different user, clear it so it doesn't persist across accounts
+        localStorage.removeItem(LOCAL_CHECKOUT_ADDRESS_KEY)
       }
     } catch (e) {
       // ignore parse errors
     }
+
+    // If user has an address in profile, use it
     if (user?.address) {
       setAddress(user.address)
       setSelectedAddress(user.address)
+      return
     }
-  }, [user])
 
-  // Keep localStorage updated when selectedAddress or address changes
+    // No stored or profile address: reset local state when user changes
+    setAddress({ name: user?.name || '', line1: '', line2: '', city: '', state: '', zip: '', phone: user?.phone || '' })
+    setSelectedAddress(null)
+  }, [user, currentUserId])
+
+  // Keep localStorage updated when selectedAddress or address changes.
+  // Save with the current userId so address isn't re-used by another account.
   useEffect(() => {
     const toSave = selectedAddress || address
     try {
-      if (toSave && toSave.line1) localStorage.setItem(LOCAL_CHECKOUT_ADDRESS_KEY, JSON.stringify(toSave))
+      if (toSave && toSave.line1) {
+        const payload = { userId: currentUserId, address: toSave }
+        localStorage.setItem(LOCAL_CHECKOUT_ADDRESS_KEY, JSON.stringify(payload))
+      }
     } catch (e) {
       // ignore storage errors (e.g., denied)
     }
-  }, [selectedAddress, address])
+  }, [selectedAddress, address, currentUserId])
 
   const handleSaveAddress = async () => {
     setError('')
@@ -86,8 +104,8 @@ export default function Checkout() {
       await apiPut('/auth/profile', { address })
       await fetchMe()
       setSelectedAddress(address)
-      // persist locally so refresh keeps selection
-      try { localStorage.setItem(LOCAL_CHECKOUT_ADDRESS_KEY, JSON.stringify(address)) } catch (e) { /* ignore */ }
+      // persist locally with userId so it's scoped to this user
+      try { localStorage.setItem(LOCAL_CHECKOUT_ADDRESS_KEY, JSON.stringify({ userId: currentUserId, address })) } catch (e) { /* ignore */ }
       setShowAddressModal(false)
     } catch (e) {
       setError(e?.error || e?.message || 'Failed to save address')
