@@ -27,6 +27,15 @@ const adminAPI = {
 
   // Reports (best sellers)
   getBestSellers: async (q = {}) => (await api.get("/admin/reports/best-sellers", { params: q })).data,
+
+  // Delivery Zones
+  getDeliveryZones: async (q = {}) => (await api.get("/admin/delivery-zones", { params: q })).data,
+  getDeliveryZone: async (id) => (await api.get(`/admin/delivery-zones/${id}`)).data,
+  createDeliveryZone: async (data) => (await api.post("/admin/delivery-zones", data)).data,
+  updateDeliveryZone: async (id, data) => (await api.put(`/admin/delivery-zones/${id}`, data)).data,
+  deleteDeliveryZone: async (id) => (await api.delete(`/admin/delivery-zones/${id}`)).data,
+  toggleDeliveryZoneStatus: async (id) => (await api.patch(`/admin/delivery-zones/${id}/toggle`)).data,
+  getDeliveryZoneStats: async () => (await api.get("/admin/delivery-zones/stats")).data,
 };
 
 export default adminAPI;

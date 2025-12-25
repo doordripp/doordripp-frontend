@@ -28,7 +28,7 @@ import NewArrivalsPage from './pages/NewArrivals'
 import BestSellersPage from './pages/BestSellers'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AdminLayout from './layout/AdminLayout'
-import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers, AdminCustomers, AdminReports } from './pages/admin'
+import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers, AdminCustomers, AdminReports, AdminDeliveryZones } from './pages/admin'
 import AddProduct from './features/admin/products/AddProduct'
 import { ROLES } from './utils/roleUtils'
 
@@ -143,6 +143,7 @@ function App() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="reports" element={<AdminReports />} />
+              <Route path="delivery-zones" element={<AdminDeliveryZones />} />
             </Route>
 
             {/* Main App Routes */}
