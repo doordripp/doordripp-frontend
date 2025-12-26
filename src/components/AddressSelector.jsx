@@ -3,6 +3,31 @@ import { validateWithGoogleMaps } from '../utils/deliveryZoneUtils';
 import { toast } from 'react-hot-toast';
 import './AddressSelector.css';
 
+// Extract common address fields from a Google geocoder result
+const extractAddressFields = (result) => {
+  const components = result?.address_components || [];
+  const pick = (type) => {
+    const part = components.find((c) => c.types.includes(type));
+    return part ? part.long_name : '';
+  };
+
+  const streetNumber = pick('street_number');
+  const route = pick('route');
+  const city = pick('locality') || pick('sublocality_level_1') || pick('administrative_area_level_2');
+  const state = pick('administrative_area_level_1');
+  const zip = pick('postal_code');
+
+  const line1 = [streetNumber, route].filter(Boolean).join(' ').trim() || result?.formatted_address || '';
+
+  return {
+    line1,
+    line2: '',
+    city,
+    state,
+    zip
+  };
+};
+
 /**
  * AddressSelector Component
  * Complete address selection with Google Maps, autocomplete, and delivery zone validation
@@ -23,6 +48,7 @@ const AddressSelector = ({
   const [isInDeliveryZone, setIsInDeliveryZone] = useState(false);
   const [currentZone, setCurrentZone] = useState(null);
   const [formattedAddress, setFormattedAddress] = useState('');
+  const [addressFields, setAddressFields] = useState({ line1: '', line2: '', city: '', state: '', zip: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
 
@@ -173,20 +199,45 @@ const AddressSelector = ({
       geocoder.geocode({ location }, (results, status) => {
         if (status === 'OK' && results[0]) {
           setFormattedAddress(results[0].formatted_address);
+          setAddressFields(extractAddressFields(results[0]));
         }
       });
 
-      // Validate against delivery zones
-      const validation = validateWithGoogleMaps(
+      // Client-side validation (fast)
+      const localValidation = validateWithGoogleMaps(
         location,
         deliveryZones,
         window.google
       );
 
-      setIsInDeliveryZone(validation.isInZone);
-      setCurrentZone(validation.zone);
+      let finalIsInZone = localValidation.isInZone;
+      let finalZone = localValidation.zone;
 
-      if (!validation.isInZone) {
+      // Server-side validation (authoritative)
+      try {
+        const response = await fetch('/api/validate-location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ latitude: location.lat, longitude: location.lng })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.success) {
+            finalIsInZone = !!data.isInDeliveryZone;
+            finalZone = data.zone || finalZone;
+          }
+        }
+      } catch (serverErr) {
+        console.warn('Delivery zone server validation failed, using local result', serverErr);
+      }
+
+      setIsInDeliveryZone(finalIsInZone);
+      setCurrentZone(finalZone);
+
+      // Only show out-of-zone warning if we actually have zones to validate against
+      const hasZones = Array.isArray(deliveryZones) && deliveryZones.length > 0;
+      if (!finalIsInZone && hasZones) {
         toast('🚀 We are coming soon in your area!', {
           icon: '📍',
           duration: 4000,
@@ -196,7 +247,7 @@ const AddressSelector = ({
             border: '1px solid #FFEAA7'
           }
         });
-      } else {
+      } else if (finalIsInZone) {
         toast.success('✅ This location is in our delivery area!');
       }
     } catch (error) {
@@ -213,6 +264,14 @@ const AddressSelector = ({
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
       toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+
+    // Browser blocks geolocation on non-secure origins (except localhost)
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isSecure = window.location.protocol === 'https:';
+    if (!isSecure && !isLocalhost) {
+      toast.error('Enable HTTPS to use current location, or search manually.');
       return;
     }
 
@@ -286,8 +345,13 @@ const AddressSelector = ({
         toast.success('Address saved successfully!');
         if (onAddressSelect) {
           onAddressSelect({
-            ...selectedLocation,
+            location: selectedLocation,
             formattedAddress,
+            line1: addressFields.line1 || formattedAddress,
+            line2: addressFields.line2 || '',
+            city: addressFields.city || '',
+            state: addressFields.state || '',
+            zip: addressFields.zip || '',
             zone: currentZone,
             addressId: data.address.id
           });

@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { apiPost, apiPut } from '../services/apiClient'
+import { loadGoogleMaps } from '../utils/googleMapsLoader'
+import AddressSelector from '../components/AddressSelector'
 import addressIllustration from '../assets/map.png'
 
 export default function Checkout() {
@@ -22,6 +24,10 @@ export default function Checkout() {
   })
   const [selectedAddress, setSelectedAddress] = useState(address)
   const [showAddressModal, setShowAddressModal] = useState(false)
+  const [showMapSelector, setShowMapSelector] = useState(false)
+  const [mapsReady, setMapsReady] = useState(false)
+  const [mapsError, setMapsError] = useState('')
+  const [mapsLoading, setMapsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
@@ -89,6 +95,42 @@ export default function Checkout() {
       // ignore storage errors (e.g., denied)
     }
   }, [selectedAddress, address, currentUserId])
+
+  // Lazy-load Google Maps when the map selector is opened
+  useEffect(() => {
+    if (!showMapSelector) return
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+    if (!apiKey) {
+      setMapsError('Google Maps API key is missing.')
+      return
+    }
+    setMapsLoading(true)
+    loadGoogleMaps(apiKey)
+      .then(() => {
+        setMapsReady(true)
+        setMapsError('')
+      })
+      .catch((err) => setMapsError(err?.message || 'Failed to load map'))
+      .finally(() => setMapsLoading(false))
+  }, [showMapSelector])
+
+  const handleMapAddressSelect = (mapAddress) => {
+    if (!mapAddress) return
+    const mapped = {
+      name: user?.name || '',
+      line1: mapAddress.line1 || mapAddress.formattedAddress || '',
+      line2: mapAddress.line2 || '',
+      city: mapAddress.city || '',
+      state: mapAddress.state || '',
+      zip: mapAddress.zip || '',
+      phone: user?.phone || '',
+      location: mapAddress.location
+    }
+    setAddress(mapped)
+    setSelectedAddress(mapped)
+    setShowMapSelector(false)
+    setShowAddressModal(false)
+  }
 
   const handleSaveAddress = async () => {
     setError('')
@@ -230,18 +272,41 @@ export default function Checkout() {
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Select Delivery Address</h2>
-                <button onClick={() => { setAddress({ name: user?.name || '', line1: '', line2: '', city: '', state: '', zip: '', phone: user?.phone || '' }); setShowAddressModal(true) }} className="px-3 py-2 text-sm font-medium text-blue-600 border border-blue-100 rounded-md">+ADD NEW ADDRESS</button>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => { setShowMapSelector(true); setShowAddressModal(false) }} className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50">Select on Map</button>
+                  <button onClick={() => { setAddress({ name: user?.name || '', line1: '', line2: '', city: '', state: '', zip: '', phone: user?.phone || '' }); setShowAddressModal(true) }} className="px-3 py-2 text-sm font-medium text-blue-600 border border-blue-100 rounded-md">+ADD NEW ADDRESS</button>
+                </div>
               </div>
 
               {/* If no address show empty state */}
-              {(!selectedAddress || !selectedAddress.line1) ? (
+              {showMapSelector ? (
+                <div className="border rounded-xl overflow-hidden shadow-sm">
+                  {mapsError && (
+                    <div className="p-4 text-sm text-red-700 bg-red-50 border-b border-red-100">
+                      {mapsError}
+                    </div>
+                  )}
+                  {mapsLoading && !mapsError && (
+                    <div className="p-6 text-center text-gray-600">Loading map...</div>
+                  )}
+                  {mapsReady && !mapsLoading && !mapsError && (
+                    <AddressSelector
+                      onAddressSelect={handleMapAddressSelect}
+                      onClose={() => setShowMapSelector(false)}
+                    />
+                  )}
+                </div>
+              ) : (!selectedAddress || !selectedAddress.line1) ? (
                 <div className="p-8 text-center border rounded-xl bg-white shadow-sm">
                   <div className="mx-auto w-40 h-40 flex items-center justify-center mb-6 bg-white rounded-full overflow-hidden">
                     <img src={addressIllustration} alt="no addresses" className="w-full h-full object-contain" />
                   </div>
                   <h3 className="text-lg font-semibold">No Addresses found in your account!</h3>
                   <p className="text-sm text-gray-500 mb-4">Add a delivery address.</p>
-                  <button onClick={() => { setAddress({ name: user?.name || '', line1: '', line2: '', city: '', state: '', zip: '', phone: user?.phone || '' }); setShowAddressModal(true) }} className="px-6 py-2 rounded-lg bg-black text-white font-semibold hover:bg-gray-800">ADD ADDRESS</button>
+                  <div className="flex items-center justify-center gap-3">
+                    <button onClick={() => { setShowAddressModal(true); setAddress({ name: user?.name || '', line1: '', line2: '', city: '', state: '', zip: '', phone: user?.phone || '' }) }} className="px-6 py-2 rounded-lg bg-black text-white font-semibold hover:bg-gray-800">ADD ADDRESS</button>
+                    <button onClick={() => { setShowMapSelector(true); setShowAddressModal(false) }} className="px-6 py-2 rounded-lg border border-gray-200 text-gray-800 font-semibold hover:bg-gray-50">Use Map</button>
+                  </div>
                 </div>
               ) : (
                 <div className="p-4">
@@ -341,12 +406,14 @@ export default function Checkout() {
             {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
 
             <div className="mt-4 flex items-center gap-3 justify-end">
+              <button className="px-4 py-2 border rounded-lg" onClick={() => { setShowAddressModal(false); setShowMapSelector(true) }}>Pick on Map</button>
               <button className="px-4 py-2 border rounded-lg" onClick={() => setShowAddressModal(false)}>Cancel</button>
               <button className="px-4 py-2 bg-black text-white rounded-lg" onClick={handleSaveAddress}>{saving ? 'Saving...' : 'Save Address'}</button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   )
 }
