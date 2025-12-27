@@ -61,7 +61,8 @@ const AddressSelector = ({
   useEffect(() => {
     const loadDeliveryZones = async () => {
       try {
-        const response = await fetch('/api/delivery-settings');
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+        const response = await fetch(`${API_BASE}/delivery-settings`);
         const data = await response.json();
         
         if (data.success) {
@@ -215,7 +216,8 @@ const AddressSelector = ({
 
       // Server-side validation (authoritative)
       try {
-        const response = await fetch('/api/validate-location', {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+        const response = await fetch(`${API_BASE}/validate-location`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ latitude: location.lat, longitude: location.lng })
@@ -324,16 +326,23 @@ const AddressSelector = ({
     try {
       toast.loading('Saving address...');
 
-      const response = await fetch('/api/save-address', {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+      const response = await fetch(`${API_BASE}/save-address`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           latitude: selectedLocation.lat,
           longitude: selectedLocation.lng,
           formattedAddress,
+          addressLine1: addressFields.line1,
+          addressLine2: addressFields.line2,
+          city: addressFields.city,
+          state: addressFields.state,
+          postalCode: addressFields.zip,
           label: 'Home'
         })
       });

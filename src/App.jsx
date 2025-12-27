@@ -26,6 +26,7 @@ import OrderConfirmation from './pages/OrderConfirmation'
 import Orders from './pages/Orders'
 import NewArrivalsPage from './pages/NewArrivals'
 import BestSellersPage from './pages/BestSellers'
+import About from './pages/About'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AdminLayout from './layout/AdminLayout'
 import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers, AdminCustomers, AdminReports, AdminDeliveryZones } from './pages/admin'
@@ -169,6 +170,7 @@ function App() {
                     <Route path="/orders" element={<Orders />} />
                     <Route path="/orders/:id" element={<OrderConfirmation />} />
                     <Route path="/wishlist" element={<Wishlist />} />
+                    <Route path="/about" element={<About />} />
                   </Routes>
                 </main>
                 {/* Global Newsletter Section - Appears on all pages */}

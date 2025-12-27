@@ -35,12 +35,7 @@ const FOOTER_LINKS = {
     { name: 'Orders', href: '/orders' },
     { name: 'Payments', href: '/payments' }
   ],
-  RESOURCES: [
-    { name: 'Free eBooks', href: '/ebooks' },
-    { name: 'Development Tutorial', href: '/tutorials' },
-    { name: 'How to - Blog', href: '/blog' },
-    { name: 'Youtube Playlist', href: '/youtube' }
-  ]
+ 
 }
 
 // Payment method icons
@@ -118,7 +113,7 @@ export default function Footer() {
           <FooterColumn title="COMPANY" links={FOOTER_LINKS.COMPANY} />
           <FooterColumn title="CATEGORIES" links={FOOTER_LINKS.CATEGORIES} />
           <FooterColumn title="HELP" links={FOOTER_LINKS.HELP} />
-          <FooterColumn title="RESOURCES" links={FOOTER_LINKS.RESOURCES} />
+          
         </div>
       </div>
 

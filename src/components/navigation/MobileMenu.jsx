@@ -23,6 +23,7 @@ export default function MobileMenu() {
         { name: 'All Products', href: '/products' },
         { name: 'New Arrivals', href: '/#new-arrivals' },
         { name: 'Best Sellers', href: '/#top-selling' },
+        { name: 'About', href: '/about' },
         { name: 'Under ₹100', href: '/category?category=casual&priceRange=50-100' }
       ]
     }
