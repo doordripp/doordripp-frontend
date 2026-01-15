@@ -177,8 +177,7 @@ export default function Navbar() {
 					<Link to="/products" className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>All Products</Link>
 					<button onClick={() => scrollToSection('new-arrivals')} className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>New Arrivals</button>
 					<button onClick={() => scrollToSection('top-selling')} className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>Best Sellers</button>
-					<Link to="/about" className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>About</Link>
-				</nav>
+			</nav>
 
 				{/* Search */}
 				<div className="flex-1" onMouseEnter={closeAllDropdowns} />

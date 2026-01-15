@@ -27,6 +27,9 @@ import Orders from './pages/Orders'
 import NewArrivalsPage from './pages/NewArrivals'
 import BestSellersPage from './pages/BestSellers'
 import About from './pages/About'
+import Careers from './pages/Careers'
+import Features from './pages/Features'
+import HowItWorks from './pages/HowItWorks'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AdminLayout from './layout/AdminLayout'
 import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers, AdminCustomers, AdminReports, AdminDeliveryZones } from './pages/admin'
@@ -171,6 +174,9 @@ function App() {
                     <Route path="/orders/:id" element={<OrderConfirmation />} />
                     <Route path="/wishlist" element={<Wishlist />} />
                     <Route path="/about" element={<About />} />
+                    <Route path="/career" element={<Careers />} />
+                    <Route path="/features" element={<Features />} />
+                    <Route path="/works" element={<HowItWorks />} />
                   </Routes>
                 </main>
                 {/* Global Newsletter Section - Appears on all pages */}
