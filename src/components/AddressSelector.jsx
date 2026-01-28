@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useLoadScript, StandaloneSearchBox } from '@react-google-maps/api';
 import { validateWithGoogleMaps } from '../utils/deliveryZoneUtils';
 import { toast } from 'react-hot-toast';
 import './AddressSelector.css';
+
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing', 'marker'];
 
 // Extract common address fields from a Google geocoder result
 const extractAddressFields = (result) => {
@@ -31,6 +34,7 @@ const extractAddressFields = (result) => {
 /**
  * AddressSelector Component
  * Complete address selection with Google Maps, autocomplete, and delivery zone validation
+ * Uses modern Google Maps APIs: AdvancedMarkerElement and Places API
  */
 const AddressSelector = ({ 
   onAddressSelect, 
@@ -40,8 +44,7 @@ const AddressSelector = ({
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
-  const autocompleteRef = useRef(null);
-  const searchInputRef = useRef(null);
+  const searchBoxRef = useRef(null);
 
   const [deliveryZones, setDeliveryZones] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(initialLocation);
@@ -49,11 +52,18 @@ const AddressSelector = ({
   const [currentZone, setCurrentZone] = useState(null);
   const [formattedAddress, setFormattedAddress] = useState('');
   const [addressFields, setAddressFields] = useState({ line1: '', line2: '', city: '', state: '', zip: '' });
-  const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
 
   // Default center (you can change this to your city)
   const defaultCenter = { lat: 28.6139, lng: 77.2090 }; // New Delhi
+
+  // Load Google Maps with proper async/defer handling
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES,
+    preventGoogleFontsLoading: true,
+    id: 'google-maps-address-selector',
+  });
 
   /**
    * Load delivery zones from backend
@@ -78,14 +88,14 @@ const AddressSelector = ({
   }, []);
 
   /**
-   * Initialize Google Map
+   * Initialize Google Map with AdvancedMarkerElement
    */
   useEffect(() => {
-    if (!window.google || !mapRef.current) return;
+    if (!isLoaded || !window.google || !mapRef.current) return;
 
     const center = selectedLocation || defaultCenter;
 
-    // Create map
+    // Create map with Map ID (required for AdvancedMarkerElement)
     const map = new window.google.maps.Map(mapRef.current, {
       center,
       zoom: 13,
@@ -93,6 +103,7 @@ const AddressSelector = ({
       streetViewControl: false,
       fullscreenControl: false,
       zoomControl: true,
+      mapId: 'DOORDRIPP_MAP', // Required for AdvancedMarkerElement
       styles: [
         {
           featureType: 'poi',
@@ -104,57 +115,34 @@ const AddressSelector = ({
 
     mapInstanceRef.current = map;
 
-    // Create draggable marker
-    const marker = new window.google.maps.Marker({
-      position: center,
+    // Create draggable marker using modern AdvancedMarkerElement
+    // Note: AdvancedMarkerElement requires google.maps.marker namespace
+    const { AdvancedMarkerElement, PinElement } = window.google.maps.marker;
+    
+    // Create custom pin with better styling
+    const pin = new PinElement({
+      background: '#000000',
+      borderColor: '#ffffff',
+      glyphColor: '#ffffff',
+      scale: 1.2,
+    });
+
+    const marker = new AdvancedMarkerElement({
       map,
-      draggable: true,
-      animation: window.google.maps.Animation.DROP,
-      title: 'Drag to adjust location'
+      position: center,
+      gmpDraggable: true,
+      title: 'Drag to adjust location',
+      content: pin.element,
     });
 
     markerRef.current = marker;
 
-    // Initialize autocomplete
-    if (searchInputRef.current) {
-      const autocomplete = new window.google.maps.places.Autocomplete(
-        searchInputRef.current,
-        {
-          fields: ['formatted_address', 'geometry', 'name'],
-          componentRestrictions: { country: 'in' } // Restrict to India
-        }
-      );
-
-      autocomplete.bindTo('bounds', map);
-      autocompleteRef.current = autocomplete;
-
-      // Handle place selection
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-
-        if (!place.geometry || !place.geometry.location) {
-          toast.error('No details available for the selected place');
-          return;
-        }
-
-        const location = {
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng()
-        };
-
-        map.setCenter(location);
-        map.setZoom(15);
-        marker.setPosition(location);
-        handleLocationChange(location);
-      });
-    }
-
     // Handle marker drag
     marker.addListener('dragend', () => {
-      const position = marker.getPosition();
+      const position = marker.position;
       const location = {
-        lat: position.lat(),
-        lng: position.lng()
+        lat: position.lat,
+        lng: position.lng
       };
       
       map.panTo(location);
@@ -168,7 +156,7 @@ const AddressSelector = ({
         lng: event.latLng.lng()
       };
       
-      marker.setPosition(location);
+      marker.position = location;
       handleLocationChange(location);
     });
 
@@ -177,15 +165,41 @@ const AddressSelector = ({
       handleLocationChange(selectedLocation);
     }
 
-    setIsLoading(false);
-
     // Cleanup
     return () => {
-      if (autocompleteRef.current) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      if (marker) {
+        marker.map = null;
       }
     };
-  }, []);
+  }, [isLoaded]);
+
+  /**
+   * Handle places selection from search box
+   */
+  const handlePlacesChanged = () => {
+    const places = searchBoxRef.current?.getPlaces();
+    if (!places || places.length === 0) return;
+
+    const place = places[0];
+    
+    if (!place.geometry || !place.geometry.location) {
+      toast.error('No details available for the selected place');
+      return;
+    }
+
+    const location = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng()
+    };
+
+    if (mapInstanceRef.current && markerRef.current) {
+      mapInstanceRef.current.setCenter(location);
+      mapInstanceRef.current.setZoom(15);
+      markerRef.current.position = location;
+    }
+
+    handleLocationChange(location);
+  };
 
   /**
    * Handle location change (from marker drag, map click, or autocomplete)
@@ -378,43 +392,93 @@ const AddressSelector = ({
     }
   };
 
+  // Handle loading and error states
+  if (loadError) {
+    return (
+      <div className="address-selector-overlay">
+        <div className="address-selector-container">
+          <div className="p-8 text-center">
+            <p className="text-red-600 mb-4">Error loading Google Maps</p>
+            <button onClick={onClose} className="confirm-button">Close</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="address-selector-overlay">
+        <div className="address-selector-container">
+          <div className="map-loader">
+            <div className="spinner"></div>
+            <p className="loader-text">Loading map...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="address-selector-overlay">
       <div className="address-selector-container">
         {/* Header */}
         <div className="address-selector-header">
-          <h2>Select Delivery Address</h2>
+          <div>
+            <h2>Select Delivery Address</h2>
+            <p className="header-subtitle">Choose your location for accurate delivery</p>
+          </div>
           {onClose && (
-            <button className="close-button" onClick={onClose}>
-              ✕
+            <button className="close-button" onClick={onClose} aria-label="Close">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           )}
         </div>
 
-        {/* Search Box */}
+        {/* Search Box with StandaloneSearchBox */}
         <div className="address-search-box">
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search for your address..."
-            className="address-search-input"
-          />
+          <StandaloneSearchBox
+            onLoad={ref => searchBoxRef.current = ref}
+            onPlacesChanged={handlePlacesChanged}
+            options={{
+              componentRestrictions: { country: 'in' }
+            }}
+          >
+            <div className="search-input-wrapper">
+              <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search for your address..."
+                className="address-search-input"
+              />
+            </div>
+          </StandaloneSearchBox>
           <button
             className="current-location-button"
             onClick={handleGetCurrentLocation}
             title="Use current location"
           >
-            📍 Current Location
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Current Location</span>
           </button>
         </div>
 
         {/* Map Container */}
         <div className="map-container">
           <div ref={mapRef} className="google-map"></div>
-          {isLoading && (
-            <div className="map-loader">
-              <div className="spinner"></div>
-              <p>Loading map...</p>
+          {isValidating && (
+            <div className="validating-overlay">
+              <div className="validating-badge">
+                <div className="pulse-dot"></div>
+                <span>Validating location...</span>
+              </div>
             </div>
           )}
         </div>
@@ -423,19 +487,39 @@ const AddressSelector = ({
         {formattedAddress && (
           <div className={`address-display ${isInDeliveryZone ? 'in-zone' : 'out-zone'}`}>
             <div className="address-icon">
-              {isInDeliveryZone ? '✅' : '📍'}
+              {isInDeliveryZone ? (
+                <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
             </div>
             <div className="address-details">
               <p className="address-text">{formattedAddress}</p>
-              {currentZone && (
-                <p className="zone-info">
-                  {currentZone.name} • 
-                  {currentZone.deliveryFee > 0 
-                    ? ` ₹${currentZone.deliveryFee} delivery` 
-                    : ' Free delivery'}
-                  {currentZone.estimatedDeliveryTime && 
-                    ` • ${currentZone.estimatedDeliveryTime} mins`
-                  }
+              {currentZone && isInDeliveryZone && (
+                <div className="zone-info">
+                  <span className="zone-badge">{currentZone.name}</span>
+                  <span className="zone-divider">•</span>
+                  <span className="delivery-fee">
+                    {currentZone.deliveryFee > 0 
+                      ? `₹${currentZone.deliveryFee} delivery` 
+                      : 'Free delivery'}
+                  </span>
+                  {currentZone.estimatedDeliveryTime && (
+                    <>
+                      <span className="zone-divider">•</span>
+                      <span className="delivery-time">{currentZone.estimatedDeliveryTime} mins</span>
+                    </>
+                  )}
+                </div>
+              )}
+              {!isInDeliveryZone && selectedLocation && (
+                <p className="out-zone-text">
+                  We're not delivering here yet, but we're expanding soon!
                 </p>
               )}
             </div>
@@ -449,21 +533,28 @@ const AddressSelector = ({
             onClick={handleConfirmAddress}
             disabled={!isInDeliveryZone || isValidating}
           >
-            {isValidating ? 'Validating...' : 'Confirm Address'}
+            {isValidating ? (
+              <>
+                <div className="button-spinner"></div>
+                <span>Validating...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Confirm Address</span>
+              </>
+            )}
           </button>
-          
-          {!isInDeliveryZone && selectedLocation && (
-            <p className="out-zone-message">
-              🚀 We are coming soon in your area! 
-              <br />
-              Please select a location within our delivery zone.
-            </p>
-          )}
         </div>
 
         {/* Instructions */}
         <div className="address-instructions">
-          <p>💡 Tip: Drag the marker or search for your exact location</p>
+          <svg className="instruction-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p>Drag the marker or search for your exact location</p>
         </div>
       </div>
     </div>

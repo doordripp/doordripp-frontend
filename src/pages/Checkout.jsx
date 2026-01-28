@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { apiPost, apiPut } from '../services/apiClient'
-import { loadGoogleMaps } from '../utils/googleMapsLoader'
 import AddressSelector from '../components/AddressSelector'
 import addressIllustration from '../assets/map.png'
 
@@ -20,13 +19,29 @@ export default function Checkout() {
   const [selectedAddress, setSelectedAddress] = useState(null)
   
   const [showMapSelector, setShowMapSelector] = useState(false)
-  const [mapsReady, setMapsReady] = useState(false)
-  const [mapsError, setMapsError] = useState('')
-  const [mapsLoading, setMapsLoading] = useState(false)
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false)
 
   const hasItems = items && items.length > 0
+
+  // Load Razorpay script on mount
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async = true
+    script.onload = () => setRazorpayLoaded(true)
+    script.onerror = () => {
+      console.error('Failed to load Razorpay')
+      setRazorpayLoaded(false)
+    }
+    document.body.appendChild(script)
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
+    }
+  }, [])
 
   // Load pre-saved addresses from backend
   useEffect(() => {
@@ -46,24 +61,6 @@ export default function Checkout() {
     loadSavedAddresses()
   }, [user?._id])
 
-  // Lazy-load Google Maps when the map selector is opened
-  useEffect(() => {
-    if (!showMapSelector) return
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-    if (!apiKey) {
-      setMapsError('Google Maps API key is missing.')
-      return
-    }
-    setMapsLoading(true)
-    loadGoogleMaps(apiKey)
-      .then(() => {
-        setMapsReady(true)
-        setMapsError('')
-      })
-      .catch((err) => setMapsError(err?.message || 'Failed to load map'))
-      .finally(() => setMapsLoading(false))
-  }, [showMapSelector])
-
   const handleMapAddressSelect = (mapAddress) => {
     if (!mapAddress) return
     const mapped = {
@@ -74,7 +71,8 @@ export default function Checkout() {
       state: mapAddress.state || '',
       zip: mapAddress.zip || '',
       phone: user?.phone || '',
-      location: mapAddress.location,
+      latitude: mapAddress.location?.lat || mapAddress.latitude,
+      longitude: mapAddress.location?.lng || mapAddress.longitude,
       isMapSelected: true
     }
     setMapSelectedAddress(mapped)
@@ -112,11 +110,16 @@ export default function Checkout() {
           selectedColor: i.selectedColor
         })),
         shippingAddress: {
+          name: selectedAddress.name || user?.name || '',
+          phone: selectedAddress.phone || user?.phone || '',
           street: selectedAddress.line1,
           city: selectedAddress.city,
           state: selectedAddress.state,
           zip: selectedAddress.zip,
-          country: 'India'
+          country: 'India',
+          // Include coordinates for zone matching
+          latitude: selectedAddress.latitude,
+          longitude: selectedAddress.longitude
         }
       }
       
@@ -125,9 +128,75 @@ export default function Checkout() {
       const response = await apiPost('/orders', orderData)
       console.log('Order response:', response)
       
-      if (response && response.orderId) {
-        clearCart()
-        navigate(`/orders/${response.orderId}`)
+      if (response && response.order && response.razorOrder) {
+        const { order, razorOrder } = response
+        
+        // Open Razorpay payment gateway
+        if (razorOrder && window.Razorpay) {
+          console.log('✅ Initializing Razorpay with order:', razorOrder.id)
+          
+          const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_key',
+            order_id: razorOrder.id,
+            amount: razorOrder.amount,
+            currency: razorOrder.currency || 'INR',
+            name: 'DOORDRIPP',
+            description: `Order #${order._id}`,
+            customer_notification: 1,
+            prefill: {
+              name: user?.name || '',
+              email: user?.email || '',
+              contact: user?.phone || ''
+            },
+            handler: async (response) => {
+              console.log('✅ Payment successful:', response)
+              try {
+                // Verify payment on backend
+                const verifyResponse = await apiPost(`/orders/${order._id}/verify-payment`, {
+                  orderId: order._id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature
+                })
+                
+                if (verifyResponse?.success || verifyResponse?.message) {
+                  console.log('✅ Payment verified:', verifyResponse)
+                  // Payment verified - clear cart and navigate
+                  clearCart()
+                  navigate(`/orders/${order._id}`, { 
+                    state: { 
+                      order, 
+                      payment: response,
+                      paymentSuccess: true 
+                    } 
+                  })
+                } else {
+                  console.error('Payment verification failed:', verifyResponse)
+                  setError('Payment verification failed. Please contact support.')
+                  setPlacing(false)
+                }
+              } catch (verifyError) {
+                console.error('Payment verification error:', verifyError)
+                setError('Failed to verify payment. Please contact support.')
+                setPlacing(false)
+              }
+            },
+            modal: {
+              ondismiss: () => {
+                console.warn('⚠️ Payment cancelled by user')
+                setError('Payment was cancelled. Please try again.')
+                setPlacing(false)
+              }
+            }
+          }
+          
+          const rzp = new window.Razorpay(options)
+          rzp.open()
+        } else {
+          console.warn('⚠️ Razorpay not available, using fallback', { razorOrder, razorpayAvailable: !!window.Razorpay })
+          // Fallback if Razorpay not loaded - just confirm order
+          clearCart()
+          navigate(`/orders/${order._id}`, { state: { order, paymentSuccess: true } })
+        }
       } else {
         setError(response?.error || response?.message || 'Failed to place order')
       }
@@ -160,33 +229,23 @@ export default function Checkout() {
               {!mapSelectedAddress ? (
                 <div>
                   {showMapSelector && (
-                    <div className="border rounded-xl overflow-hidden shadow-sm mb-4">
-                      {mapsError && (
-                        <div className="p-4 text-sm text-red-700 bg-red-50 border-b border-red-100">
-                          {mapsError}
-                        </div>
-                      )}
-                      {mapsLoading && !mapsError && (
-                        <div className="p-6 text-center text-gray-600">Loading map...</div>
-                      )}
-                      {mapsReady && !mapsLoading && !mapsError && (
-                        <AddressSelector
-                          onAddressSelect={handleMapAddressSelect}
-                          onClose={() => setShowMapSelector(false)}
-                        />
-                      )}
+                    <AddressSelector
+                      onAddressSelect={handleMapAddressSelect}
+                      onClose={() => setShowMapSelector(false)}
+                    />
+                  )}
+                  {!showMapSelector && (
+                    <div className="p-8 text-center border rounded-xl bg-yellow-50 shadow-sm border-yellow-200">
+                      <h3 className="text-lg font-semibold text-yellow-800 mb-2">📍 Delivery Address Required</h3>
+                      <p className="text-sm text-yellow-700 mb-4">Please select your delivery location on the map to proceed with your order.</p>
+                      <button 
+                        onClick={() => setShowMapSelector(true)} 
+                        className="px-6 py-2 rounded-lg bg-yellow-600 text-white font-semibold hover:bg-yellow-700"
+                      >
+                        Select on Map
+                      </button>
                     </div>
                   )}
-                  <div className="p-8 text-center border rounded-xl bg-yellow-50 shadow-sm border-yellow-200">
-                    <h3 className="text-lg font-semibold text-yellow-800 mb-2">📍 Delivery Address Required</h3>
-                    <p className="text-sm text-yellow-700 mb-4">Please select your delivery location on the map to proceed with your order.</p>
-                    <button 
-                      onClick={() => setShowMapSelector(true)} 
-                      className="px-6 py-2 rounded-lg bg-yellow-600 text-white font-semibold hover:bg-yellow-700"
-                    >
-                      Select on Map
-                    </button>
-                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">

@@ -25,6 +25,18 @@ const adminAPI = {
   updateUser: async (id, data) => (await api.put(`/admin/users/${id}`, data)).data,
   deleteUser: async (id) => (await api.delete(`/admin/users/${id}`)).data,
 
+  // User Management - New Functions
+  getAllUsers: async (q = {}) => (await api.get("/admin/users", { params: q })).data,
+  getUserDetails: async (userId) => (await api.get(`/admin/users/${userId}`)).data,
+  changeUserRole: async (userId, roles) => (await api.put(`/admin/users/${userId}/role`, { roles })).data,
+  banUser: async (userId, reason) => (await api.post(`/admin/users/${userId}/ban`, { reason })).data,
+  unbanUser: async (userId) => (await api.post(`/admin/users/${userId}/unban`, {})).data,
+
+  // Area Manager Assignment
+  assignManagerToArea: async (data) => (await api.post("/admin/area-managers", data)).data,
+  removeManagerFromArea: async (assignmentId) => (await api.delete(`/admin/area-managers/${assignmentId}`)).data,
+  getAreaManagerAssignments: async (q = {}) => (await api.get("/admin/area-managers", { params: q })).data,
+
   // Reports (best sellers)
   getBestSellers: async (q = {}) => (await api.get("/admin/reports/best-sellers", { params: q })).data,
 

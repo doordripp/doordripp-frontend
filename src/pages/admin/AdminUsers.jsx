@@ -163,10 +163,15 @@ export default function AdminUsers() {
       header: 'Role',
       accessor: 'role',
       render: (user) => (
-        <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
-          {getRoleIcon(user.role)}
-          <span className="capitalize">{user.role}</span>
-        </span>
+        <select
+          value={user.role || 'customer'}
+          onChange={(e) => handleRoleChange(user._id || user.id, e.target.value)}
+          className={`px-2 py-1 rounded-full text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${getRoleColor(user.role)}`}
+        >
+          <option value="customer">Customer</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+        </select>
       )
     },
     {
@@ -251,6 +256,22 @@ export default function AdminUsers() {
         console.error('Failed to delete user:', err)
         alert('Failed to delete user. Please try again.')
       }
+    }
+  }
+
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      const updated = await adminAPI.changeUserRole(userId, [newRole])
+      
+      setUsers(users.map(u => 
+        u._id === userId || u.id === userId ? {
+          ...u,
+          role: updated.user.roles && updated.user.roles.length > 0 ? updated.user.roles[0] : 'customer'
+        } : u
+      ))
+    } catch (err) {
+      console.error('Failed to update user role:', err)
+      alert('Failed to update user role. Please try again.')
     }
   }
 

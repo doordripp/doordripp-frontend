@@ -123,7 +123,7 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             {/* Copyright */}
             <div className="text-gray-600 text-sm">
-              © 2000-{new Date().getFullYear()}, DOORDRIPP.com, Inc. All rights reserved
+              ©{new Date().getFullYear()}, DOORDRIPP.com, Inc. All rights reserved
             </div>
 
             {/* Payment Methods */}
