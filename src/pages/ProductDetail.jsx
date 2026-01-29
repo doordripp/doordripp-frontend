@@ -10,6 +10,8 @@ import {
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import { ProductCard } from '../features/catalog'
+import { Reviews } from '../components/reviews'
+import StarRating from '../components/ui/StarRating'
 import api from '../services/api'
 import { optimizeImage } from '../config/imagekit'
 import Breadcrumb, { buildProductBreadcrumb } from '../components/ui/Breadcrumb'
@@ -45,6 +47,22 @@ export default function ProductDetail() {
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
   const [recommendedProducts, setRecommendedProducts] = useState([])
+  
+  // Handle review submission to refresh product rating
+  const handleReviewSubmitted = async (review) => {
+    try {
+      // Refresh product data to get updated rating
+      const res = await api.get(`/products/${id}`)
+      const p = res.data
+      
+      setProduct(prev => ({
+        ...prev,
+        rating: p.rating || { rating: 0, reviews: 0 }
+      }))
+    } catch (error) {
+      console.error('Error refreshing product data:', error)
+    }
+  }
   
 
   /* FORCE SCROLL TOP */
@@ -151,9 +169,26 @@ export default function ProductDetail() {
             </h1>
 
             {/* RATING */}
-            <div className="flex items-center gap-2">
-              <Star className="fill-yellow-400 text-yellow-400 h-5 w-5" />
-              <span>{product.rating?.rating || 0}/5</span>
+            <div className="flex items-center gap-3">
+              <StarRating rating={product.rating?.rating || 0} size={20} />
+              <span className="text-lg font-medium">
+                {product.rating?.rating || 0}/5
+              </span>
+              {product.rating?.reviews > 0 && (
+                <>
+                  <span className="text-gray-400">•</span>
+                  <a 
+                    href="#reviews" 
+                    className="text-blue-600 hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                  >
+                    {product.rating.reviews} {product.rating.reviews === 1 ? 'review' : 'reviews'}
+                  </a>
+                </>
+              )}
             </div>
 
             {/* PRICE */}
@@ -206,20 +241,28 @@ export default function ProductDetail() {
           </div>
         </div>
 
-        {/* ================= RECOMMENDED ================= */}
+        {/* ================= RECOMMENDED PRODUCTS ================= */}
         {recommendedProducts.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-2xl font-bold mb-6 text-center">
-              You might also like
+            <h2 className="text-2xl font-bold mb-6">
+              You Might Also Like
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-              {recommendedProducts.map(p => (
+              {recommendedProducts.slice(0, 4).map(p => (
                 <ProductCard key={p._id || p.id} product={p} />
               ))}
             </div>
           </div>
         )}
+
+        {/* ================= REVIEWS SECTION (Bottom) ================= */}
+        <div id="reviews" className="mt-20 pt-10 border-t border-gray-200">
+          <Reviews 
+            productId={product.id} 
+            onReviewSubmitted={handleReviewSubmitted}
+          />
+        </div>
       </div>
     </div>
   )
