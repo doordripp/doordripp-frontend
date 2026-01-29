@@ -57,7 +57,7 @@ const AddressSelector = ({
   // Default center (you can change this to your city)
   const defaultCenter = { lat: 28.6139, lng: 77.2090 }; // New Delhi
 
-  // Load Google Maps with proper async/defer handling
+  // Load Google Maps with proper async/defer handling and React 19 compatibility
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
     libraries: GOOGLE_MAPS_LIBRARIES,

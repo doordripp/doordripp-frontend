@@ -15,6 +15,7 @@ import { optimizeImage } from '../config/imagekit'
 import Breadcrumb, { buildProductBreadcrumb } from '../components/ui/Breadcrumb'
 import { useAuth } from '../context/AuthContext'
 
+
 /* ============================
    TITLE FORMATTERS (UI ONLY)
    ============================ */
@@ -44,6 +45,7 @@ export default function ProductDetail() {
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
   const [recommendedProducts, setRecommendedProducts] = useState([])
+  
 
   /* FORCE SCROLL TOP */
   useLayoutEffect(() => {
