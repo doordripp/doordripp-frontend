@@ -1,33 +1,53 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useRef } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiGet } from '../services/apiClient'
 
 export default function Orders() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const ordersRef = useRef(null) // Cache orders
+  
+  // Get filters from URL
+  const status = searchParams.get('status') || 'all'
+  const sortBy = searchParams.get('sort') || 'recent'
+  const page = parseInt(searchParams.get('page') || '1', 10)
+  
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const navigate = useNavigate()
+  const itemsPerPage = 10
 
+  // Fetch orders - with caching
   useEffect(() => {
     let mounted = true
+    
+    // Use cached data if available
+    if (ordersRef.current) {
+      processOrders(ordersRef.current)
+      setLoading(false)
+      return
+    }
+    
     const load = async () => {
       setLoading(true)
       try {
         const data = await apiGet('/orders')
         // handle common response shapes
         const list = Array.isArray(data) ? data : (data.orders || data.data || data)
-        // some endpoints wrap items under { orders: { data: [...] } }
         const normalized = Array.isArray(list) ? list : (list?.orders || list?.data || [])
+        const ordersList = Array.isArray(normalized) ? normalized : (Array.isArray(list) ? list : [])
+        
         if (!mounted) return
-        setOrders(Array.isArray(normalized) ? normalized : (Array.isArray(list) ? list : []))
+        
+        // Cache the orders
+        ordersRef.current = ordersList
+        processOrders(ordersList)
       } catch (e) {
         console.error('Failed to load orders', e)
-        // If unauthorized, redirect to login
         if (e && (e.status === 401 || e.code === 'UNAUTHORIZED')) {
           navigate('/login')
           return
         }
-        // show backend error message when available
         const msg = e?.error || e?.message || JSON.stringify(e)
         setError(msg || 'Failed to load orders')
       } finally {
@@ -37,6 +57,42 @@ export default function Orders() {
     load()
     return () => { mounted = false }
   }, [navigate])
+
+  // Process and filter orders based on URL params
+  const processOrders = (allOrders) => {
+    let filtered = allOrders
+    
+    // Filter by status
+    if (status && status !== 'all') {
+      filtered = filtered.filter(o => (o.status || 'pending').toLowerCase() === status.toLowerCase())
+    }
+    
+    // Sort
+    if (sortBy === 'recent') {
+      filtered.sort((a, b) => new Date(b.createdAt || b.orderDate) - new Date(a.createdAt || a.orderDate))
+    } else if (sortBy === 'oldest') {
+      filtered.sort((a, b) => new Date(a.createdAt || a.orderDate) - new Date(b.createdAt || b.orderDate))
+    } else if (sortBy === 'price-high') {
+      filtered.sort((a, b) => (b.subtotal || b.total || 0) - (a.subtotal || a.total || 0))
+    } else if (sortBy === 'price-low') {
+      filtered.sort((a, b) => (a.subtotal || a.total || 0) - (b.subtotal || b.total || 0))
+    }
+    
+    setOrders(filtered)
+  }
+
+  // Update URL when filters change
+  const updateFilters = (newFilters) => {
+    const params = new URLSearchParams(searchParams)
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value && value !== 'all') {
+        params.set(key, value)
+      } else {
+        params.delete(key)
+      }
+    })
+    navigate(`?${params.toString()}`, { replace: true })
+  }
 
   if (loading) return <div className="p-8">Loading your orders...</div>
   if (error) return <div className="p-8 text-red-600">{error}</div>
@@ -64,7 +120,52 @@ export default function Orders() {
           </ol>
         </nav>
 
-        <h1 className="text-3xl font-bold mb-6">My Orders</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">My Orders</h1>
+          <p className="text-sm text-gray-500">{orders.length} order(s)</p>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg p-4 mb-6 border border-gray-200 flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Status:</label>
+            <select
+              value={status}
+              onChange={(e) => updateFilters({ status: e.target.value, page: 1 })}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="all">All Orders</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Sort:</label>
+            <select
+              value={sortBy}
+              onChange={(e) => updateFilters({ sort: e.target.value, page: 1 })}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="recent">Most Recent</option>
+              <option value="oldest">Oldest First</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="price-low">Price: Low to High</option>
+            </select>
+          </div>
+
+          {(status !== 'all' || sortBy !== 'recent') && (
+            <button
+              onClick={() => updateFilters({ status: 'all', sort: 'recent' })}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 underline"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
 
         <div className="space-y-6">
           {orders.map(order => {

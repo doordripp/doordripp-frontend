@@ -1,5 +1,5 @@
 import './App.css'
-import { useLayoutEffect, useEffect } from 'react'
+import { useLayoutEffect, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Navbar } from './components/navigation'
 import { Footer, Newsletter } from './layout'
@@ -54,72 +54,47 @@ function WishlistSyncHandler() {
   return null
 }
 
-// ULTRA-AGGRESSIVE Scroll to top - FORCES page to absolute top
+/**
+ * Smart scroll restoration component
+ * - Preserves scroll for back navigation
+ * - Scrolls to top only for forward navigation
+ * - Respects user's scroll intent
+ */
 function ScrollToTop() {
-  const { pathname, search } = useLocation()
+  const { pathname } = useLocation()
+  const lastPathnameRef = useRef(pathname)
+  const scrollPositionsRef = useRef(new Map())
 
-  // Completely disable browser scroll restoration
   useLayoutEffect(() => {
+    // Enable browser's native scroll restoration
     if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual'
+      window.history.scrollRestoration = 'auto'
     }
-    
-    // Disable smooth scrolling globally
-    document.documentElement.style.scrollBehavior = 'auto'
   }, [])
 
+  // Save scroll position before leaving page
+  useEffect(() => {
+    return () => {
+      const scrollPos = window.scrollY
+      scrollPositionsRef.current.set(lastPathnameRef.current, scrollPos)
+    }
+  }, [pathname])
+
+  // Restore or reset scroll on route change
   useLayoutEffect(() => {
-    // FORCE IMMEDIATE SCROLL TO ABSOLUTE TOP - MAXIMUM AGGRESSION
-    const forceScrollToTop = () => {
-      // Method 1: window.scrollTo with multiple signatures
+    // If we have a saved scroll position for this route, restore it (back navigation)
+    const savedPosition = scrollPositionsRef.current.get(pathname)
+    
+    if (savedPosition !== undefined && savedPosition > 0) {
+      // Back navigation - restore scroll position
+      window.scrollTo({ top: savedPosition, left: 0, behavior: 'auto' })
+    } else {
+      // Forward navigation - scroll to top (but only once, not aggressively)
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-      window.scrollTo(0, 0)
-      window.scroll(0, 0)
-      
-      // Method 2: Direct manipulation of scroll properties
-      window.pageXOffset = 0
-      window.pageYOffset = 0
-      document.documentElement.scrollTop = 0
-      document.documentElement.scrollLeft = 0
-      document.body.scrollTop = 0
-      document.body.scrollLeft = 0
-      
-      // Method 3: Force via style
-      document.documentElement.style.scrollBehavior = 'auto'
-      
-      // Method 4: Scroll on main container
-      const root = document.getElementById('root')
-      if (root) {
-        root.scrollTop = 0
-      }
     }
-    
-    // Execute immediately - 10 times to override everything
-    for (let i = 0; i < 10; i++) {
-      forceScrollToTop()
-    }
-    
-    // Execute via requestAnimationFrame - multiple times
-    requestAnimationFrame(forceScrollToTop)
-    requestAnimationFrame(() => requestAnimationFrame(forceScrollToTop))
-    
-    // Execute with multiple delays to catch any layout changes
-    const timers = [
-      setTimeout(forceScrollToTop, 1),
-      setTimeout(forceScrollToTop, 5),
-      setTimeout(forceScrollToTop, 10),
-      setTimeout(forceScrollToTop, 20),
-      setTimeout(forceScrollToTop, 50),
-      setTimeout(forceScrollToTop, 100),
-      setTimeout(forceScrollToTop, 150),
-      setTimeout(forceScrollToTop, 200),
-      setTimeout(forceScrollToTop, 300),
-      setTimeout(forceScrollToTop, 500)
-    ]
-    
-    return () => timers.forEach(clearTimeout)
-  }, [pathname, search])
+
+    lastPathnameRef.current = pathname
+  }, [pathname])
 
   return null
 }

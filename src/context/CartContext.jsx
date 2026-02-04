@@ -181,7 +181,7 @@ export function CartProvider({ children }) {
     }))
   }, [state.items, state.promoCode, state.discount])
 
-  // Calculate cart totals
+  // Calculate cart totals with GST
   const cartTotals = {
     get totalItems() {
       return state.items.reduce((total, item) => total + item.quantity, 0)
@@ -195,8 +195,22 @@ export function CartProvider({ children }) {
     get deliveryFee() {
       return this.subtotal > 0 ? 15 : 0
     },
+    // GST Calculation (12% default for clothing)
+    get cgstAmount() {
+      const gstableAmount = this.subtotal - this.discountAmount; // GST not on delivery
+      const gstRate = 12; // Default 12% for apparel/clothing
+      return Math.round((gstableAmount * (gstRate / 2) / 100) * 100) / 100;
+    },
+    get sgstAmount() {
+      const gstableAmount = this.subtotal - this.discountAmount;
+      const gstRate = 12;
+      return Math.round((gstableAmount * (gstRate / 2) / 100) * 100) / 100;
+    },
+    get totalGST() {
+      return this.cgstAmount + this.sgstAmount;
+    },
     get total() {
-      return this.subtotal - this.discountAmount + this.deliveryFee
+      return this.subtotal - this.discountAmount + this.totalGST + this.deliveryFee
     }
   }
 

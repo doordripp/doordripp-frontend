@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { useSearchParams, Link, useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-dom'
+import { ChevronDown, ChevronRight, SlidersHorizontal, X, ChevronLeft } from 'lucide-react'
 import { FILTER_OPTIONS } from '../constants/products'
 import { apiGet } from '../services/apiClient'
 import { ProductCard } from '../features/catalog'
@@ -8,19 +8,26 @@ import { ProductCard } from '../features/catalog'
 export default function CategoryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const savedScrollRef = useRef(0)
+  
+  // Get filters from URL params
   const category = searchParams.get('category') || searchParams.get('gender') || 'casual'
   const gender = searchParams.get('gender')
   const subcategoryFromUrl = searchParams.get('subcategory')
   const priceRangeFromUrl = searchParams.get('priceRange')
+  const sortFromUrl = searchParams.get('sort') || 'newest'
+  const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   
   // UI states - declare BEFORE useEffect
   const [viewMode, setViewMode] = useState('grid')
-  const [sortBy, setSortBy] = useState('newest')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [sortBy, setSortBy] = useState(sortFromUrl)
+  const [currentPage, setCurrentPage] = useState(pageFromUrl)
   const itemsPerPage = 50
   
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const productsRef = useRef({}) // Cache products by category
   
   // Filter states
   const [showFilters, setShowFilters] = useState(false)
@@ -32,7 +39,10 @@ export default function CategoryPage() {
     size: true,
     dressStyle: true
   })
-  const [priceRange, setPriceRange] = useState([0, 10000])
+  const [priceRange, setPriceRange] = useState(priceRangeFromUrl ? 
+    priceRangeFromUrl.split('-').map(Number) : 
+    [0, 10000]
+  )
   const [selectedFilters, setSelectedFilters] = useState({
     subcategories: subcategoryFromUrl ? [subcategoryFromUrl] : [],
     colors: [],
@@ -40,23 +50,31 @@ export default function CategoryPage() {
     dressStyles: []
   })
   
-  // Initialize filters from URL on mount
+  // Sync state changes to URL
   useEffect(() => {
-    if (priceRangeFromUrl) {
-      const [min, max] = priceRangeFromUrl.split('-').map(Number)
-      if (min && max) setPriceRange([min, max])
+    const params = new URLSearchParams()
+    if (gender) params.set('gender', gender)
+    if (category) params.set('category', category)
+    if (sortBy !== 'newest') params.set('sort', sortBy)
+    if (currentPage > 1) params.set('page', currentPage)
+    if (selectedFilters.subcategories.length > 0) {
+      params.set('subcategory', selectedFilters.subcategories[0])
     }
-  }, [priceRangeFromUrl])
-  
-  // Scroll to top when page loads or category changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' })
-  }, [category, subcategoryFromUrl])
+    if (priceRange[0] > 0 || priceRange[1] < 10000) {
+      params.set('priceRange', `${priceRange[0]}-${priceRange[1]}`)
+    }
+    
+    const newSearch = params.toString()
+    const newPath = `/category${newSearch ? `?${newSearch}` : ''}`
+    
+    if (location.pathname + location.search !== newPath) {
+      navigate(newPath, { replace: true })
+    }
+  }, [gender, category, sortBy, currentPage, selectedFilters, priceRange, navigate, location.pathname, location.search])
 
   // Fetch products for this category whenever category or page changes
   useEffect(() => {
     let mounted = true
-    setLoading(true)
     
     // Determine the category to filter by
     let categoryFilter = null
@@ -69,6 +87,17 @@ export default function CategoryPage() {
     } else if (category === 'footwear') {
       categoryFilter = 'Footwear'
     }
+    
+    const cacheKey = categoryFilter || 'all'
+    
+    // Check if we have cached products for this category
+    if (productsRef.current[cacheKey]) {
+      setProducts(productsRef.current[cacheKey])
+      setLoading(false)
+      return
+    }
+    
+    setLoading(true)
     
     // Fetch products from API - get ALL products
     apiGet(`/products?limit=200`)
@@ -92,19 +121,9 @@ export default function CategoryPage() {
           )
         }
         
-        console.log('Category:', categoryFilter)
-        console.log('Total products loaded:', apiProducts.length)
-        
-        // If subcategory specified, filter
-        if (subcategoryFromUrl) {
-          const filtered = apiProducts.filter(p =>
-            p.subcategory?.toLowerCase() === subcategoryFromUrl.toLowerCase()
-          )
-          setProducts(filtered)
-        } else {
-          setProducts(apiProducts)
-        }
-        
+        // Cache the products
+        productsRef.current[cacheKey] = apiProducts
+        setProducts(apiProducts)
         setLoading(false)
       })
       .catch(err => {
@@ -114,7 +133,7 @@ export default function CategoryPage() {
       })
     
     return () => { mounted = false }
-  }, [category, currentPage, subcategoryFromUrl, gender])
+  }, [category, gender])
 
   // Get products for current category (fetched from backend)
   const categoryProducts = products || []
@@ -179,11 +198,6 @@ export default function CategoryPage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedProducts = sortedProducts.slice(startIndex, startIndex + itemsPerPage)
   
-  // Scroll to products section
-  const scrollToProducts = () => {
-    window.scrollTo({ top: 300, behavior: 'smooth' })
-  }
-  
   // Toggle filter section
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -216,14 +230,12 @@ export default function CategoryPage() {
         : [...prev[filterType], value]
     }))
     setCurrentPage(1) // Reset to first page
-    scrollToProducts()
   }
   
   // Apply price filter
   const handlePriceChange = (newRange) => {
     setPriceRange(newRange)
     setCurrentPage(1)
-    scrollToProducts()
   }
   
   // Clear all filters
@@ -234,9 +246,8 @@ export default function CategoryPage() {
       sizes: [],
       dressStyles: []
     })
-    setPriceRange([0, 100])
+    setPriceRange([0, 10000])
     setCurrentPage(1)
-    scrollToProducts()
   }
   
   // Breadcrumb

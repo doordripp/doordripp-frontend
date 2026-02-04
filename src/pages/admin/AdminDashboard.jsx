@@ -1,56 +1,21 @@
 // src/pages/admin/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, Package, Users, ShoppingCart, TrendingUp, TrendingDown } from "lucide-react";
+import { DollarSign, Package, Users, ShoppingCart, TrendingUp } from "lucide-react";
 import adminAPI from "../../services/adminAPI";
-import { StatsCard } from "../../components/Admin";
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [recentOrders, setRecentOrders] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
-
-  // Mock data for comprehensive dashboard
-  const mockStats = {
-    totalSales: "\u20b945,231.89",
-    totalOrders: "1,429",
-    totalCustomers: "2,350",
-    totalProducts: "847",
-    salesGrowth: "+20.1%",
-    ordersGrowth: "+12.5%",
-    customersGrowth: "+8.7%",
-    productsGrowth: "+5.2%",
-    monthlySales: [
-      { month: "Jan", sales: 12000 },
-      { month: "Feb", sales: 15000 },
-      { month: "Mar", sales: 18000 },
-      { month: "Apr", sales: 22000 },
-      { month: "May", sales: 25000 },
-      { month: "Jun", sales: 28000 }
-    ]
-  };
-
-  const mockRecentOrders = [
-    { id: "#ORD-001", customer: "John Doe", amount: 129.99, status: "pending", date: "2024-01-15" },
-    { id: "#ORD-002", customer: "Jane Smith", amount: 89.99, status: "shipped", date: "2024-01-14" },
-    { id: "#ORD-003", customer: "Mike Johnson", amount: 199.99, status: "delivered", date: "2024-01-13" },
-    { id: "#ORD-004", customer: "Sarah Wilson", amount: 79.99, status: "processing", date: "2024-01-12" },
-    { id: "#ORD-005", customer: "David Brown", amount: 159.99, status: "pending", date: "2024-01-11" }
-  ];
-
-  const mockTopProducts = [
-    { name: "Premium Cotton T-Shirt", sales: 145, revenue: 4350 },
-    { name: "Wireless Headphones", sales: 89, revenue: 8010 },
-    { name: "Leather Wallet", sales: 67, revenue: 3349 },
-    { name: "Smart Watch", sales: 45, revenue: 8995 },
-    { name: "Phone Case", sales: 123, revenue: 4920 }
-  ];
+  const [orderStatus, setOrderStatus] = useState('all');
+  const [bestSellersDays, setBestSellersDays] = useState(30);
 
   // QuickActions component placed here so it's immediately below the welcome header
   const QuickActions = () => {
-    const navigate = useNavigate();
     return (
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
@@ -77,18 +42,78 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      adminAPI.getStats().then(d => {
-        setStats(d);
-      }).catch(() => {
-        setStats(mockStats);
+    let isMounted = true;
+    setLoading(true);
+
+    adminAPI
+      .getStats()
+      .then((statsResponse) => {
+        if (!isMounted) return;
+        setStats({
+          totalSales: statsResponse?.totalSales ?? 0,
+          totalOrders: statsResponse?.totalOrders ?? 0,
+          totalCustomers: statsResponse?.totalCustomers ?? 0,
+          totalProducts: statsResponse?.totalProducts ?? 0,
+          salesGrowth: statsResponse?.salesGrowth ?? '0%',
+          ordersGrowth: statsResponse?.ordersGrowth ?? '0%',
+          customersGrowth: statsResponse?.customersGrowth ?? '0%',
+          productsGrowth: statsResponse?.productsGrowth ?? '0%'
+        });
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setStats({
+          totalSales: 0,
+          totalOrders: 0,
+          totalCustomers: 0,
+          totalProducts: 0,
+          salesGrowth: '0%',
+          ordersGrowth: '0%',
+          customersGrowth: '0%',
+          productsGrowth: '0%'
+        });
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setLoading(false);
       });
-      setRecentOrders(mockRecentOrders);
-      setTopProducts(mockTopProducts);
-      setLoading(false);
-    }, 500);
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([
+      adminAPI.getOrders({ page: 1, limit: 5, status: orderStatus }),
+      adminAPI.getBestSellers({ days: bestSellersDays })
+    ])
+      .then(([ordersResponse, bestSellersResponse]) => {
+        if (!isMounted) return;
+
+        const mappedOrders = (ordersResponse?.orders || []).map((order) => ({
+          id: order.id || order._id,
+          customer: order.customer || 'Unknown',
+          amount: order.total || 0,
+          status: order.status || 'pending',
+          date: order.date
+        }));
+
+        setRecentOrders(mappedOrders);
+        setTopProducts(bestSellersResponse || []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setRecentOrders([]);
+        setTopProducts([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orderStatus, bestSellersDays]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -130,10 +155,10 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Sales</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalSales || mockStats.totalSales)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalSales)}</p>
               <p className="text-sm text-green-600 flex items-center mt-1">
                 <TrendingUp size={16} className="mr-1" />
-                {stats.salesGrowth || mockStats.salesGrowth} from last month
+                {stats.salesGrowth} from last month
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
@@ -146,10 +171,10 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalOrders || mockStats.totalOrders}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
               <p className="text-sm text-green-600 flex items-center mt-1">
                 <TrendingUp size={16} className="mr-1" />
-                {stats.ordersGrowth || mockStats.ordersGrowth} from last month
+                {stats.ordersGrowth} from last month
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
@@ -162,10 +187,10 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Customers</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalCustomers || mockStats.totalCustomers}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalCustomers}</p>
               <p className="text-sm text-green-600 flex items-center mt-1">
                 <TrendingUp size={16} className="mr-1" />
-                {stats.customersGrowth || mockStats.customersGrowth} from last month
+                {stats.customersGrowth} from last month
               </p>
             </div>
             <div className="p-3 bg-purple-100 rounded-full">
@@ -178,10 +203,10 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Products</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalProducts || mockStats.totalProducts}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalProducts}</p>
               <p className="text-sm text-green-600 flex items-center mt-1">
                 <TrendingUp size={16} className="mr-1" />
-                {stats.productsGrowth || mockStats.productsGrowth} from last month
+                {stats.productsGrowth} from last month
               </p>
             </div>
             <div className="p-3 bg-orange-100 rounded-full">
@@ -194,31 +219,58 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Orders</h3>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Status</label>
+              <select
+                value={orderStatus}
+                onChange={(e) => setOrderStatus(e.target.value)}
+                className="border border-gray-200 rounded-md text-sm px-2 py-1"
+              >
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
           <div className="space-y-3">
-            {recentOrders.map((order, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div>
-                          <p className="font-medium text-gray-900">{order.id}</p>
-                            <p className="text-sm text-gray-600">
-                              <button onClick={() => navigate(`/admin/users?q=${encodeURIComponent(order.customer)}`)} className="text-blue-600 hover:underline">
-                                {order.customer}
-                              </button>
-                            </p>
-                        </div>
+            {recentOrders.length === 0 ? (
+              <div className="p-4 text-sm text-gray-600">No recent orders found.</div>
+            ) : (
+              recentOrders.map((order, index) => (
+                <div key={order.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div>
+                      <p className="font-medium text-gray-900">{order.id}</p>
+                      <p className="text-sm text-gray-600">
+                        <button onClick={() => navigate(`/admin/users?q=${encodeURIComponent(order.customer)}`)} className="text-blue-600 hover:underline">
+                          {order.customer}
+                        </button>
+                      </p>
+                      {order.date && (
+                        <p className="text-xs text-gray-500">{formatDate(order.date)}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900">{formatCurrency(order.amount)}</p>
+                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
+                      {order.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium text-gray-900">{formatCurrency(order.amount)}</p>
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
-                    {order.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           <div className="mt-4 text-center">
-            <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            <button
+              onClick={() => navigate('/admin/orders')}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
               View all orders →
             </button>
           </div>
@@ -226,27 +278,48 @@ export default function AdminDashboard() {
 
         {/* Top Products */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Selling Products</h3>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Top Selling Products</h3>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Last</label>
+              <select
+                value={bestSellersDays}
+                onChange={(e) => setBestSellersDays(Number(e.target.value))}
+                className="border border-gray-200 rounded-md text-sm px-2 py-1"
+              >
+                <option value={7}>7 days</option>
+                <option value={30}>30 days</option>
+                <option value={90}>90 days</option>
+              </select>
+            </div>
+          </div>
           <div className="space-y-3">
-            {topProducts.map((product, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-medium text-sm">#{index + 1}</span>
+            {topProducts.length === 0 ? (
+              <div className="p-4 text-sm text-gray-600">No top selling products found.</div>
+            ) : (
+              topProducts.map((product, index) => (
+                <div key={`${product.name}-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-medium text-sm">#{index + 1}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{product.name}</p>
+                      <p className="text-sm text-gray-600">{product.sales} sales</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{product.name}</p>
-                    <p className="text-sm text-gray-600">{product.sales} sales</p>
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900">{formatCurrency(product.revenue)}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium text-gray-900">{formatCurrency(product.revenue)}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           <div className="mt-4 text-center">
-            <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            <button
+              onClick={() => navigate('/admin/products')}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
               View all products →
             </button>
           </div>

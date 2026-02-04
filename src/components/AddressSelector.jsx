@@ -304,7 +304,7 @@ const AddressSelector = ({
         if (mapInstanceRef.current && markerRef.current) {
           mapInstanceRef.current.setCenter(location);
           mapInstanceRef.current.setZoom(15);
-          markerRef.current.setPosition(location);
+          markerRef.current.position = location;
         }
 
         handleLocationChange(location);

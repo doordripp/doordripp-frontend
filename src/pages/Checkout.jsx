@@ -343,6 +343,19 @@ export default function Checkout() {
                   <span>Subtotal</span>
                   <span>₹{cartTotals.subtotal.toFixed(2)}</span>
                 </div>
+                
+                {/* GST Breakdown */}
+                <div className="bg-blue-50 rounded p-2 space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>CGST (6%)</span>
+                    <span>₹{cartTotals.cgstAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>SGST (6%)</span>
+                    <span>₹{cartTotals.sgstAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+                
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
                   <span>₹{cartTotals.deliveryFee.toFixed(2)}</span>

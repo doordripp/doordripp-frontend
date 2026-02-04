@@ -79,40 +79,39 @@ export default function OrderConfirmation() {
     try { return `₹${Number(v).toFixed(2)}` } catch { return `₹${v}` }
   }
 
-  const downloadInvoice = () => {
-    const win = window.open('', '_blank')
-    if (!win) return
-    const itemsHtml = (order.items || []).map(it => `
-      <tr>
-        <td style="padding:8px;border:1px solid #eee">${it.name}</td>
-        <td style="padding:8px;border:1px solid #eee;text-align:center">${it.quantity}</td>
-        <td style="padding:8px;border:1px solid #eee;text-align:right">${formatCurrency(it.price)}</td>
-        <td style="padding:8px;border:1px solid #eee;text-align:right">${formatCurrency(it.price * it.quantity)}</td>
-      </tr>
-    `).join('\n')
+  const downloadInvoice = async () => {
+    try {
+      const orderId = order._id || order.id
+      if (!orderId) return
 
-    win.document.write(`
-      <html><head><title>Invoice - ${order._id || order.id}</title></head><body>
-      <h2>Order Invoice</h2>
-      <p>Order ID: ${order._id || order.id}</p>
-      <table style="border-collapse:collapse;width:100%">
-        <thead>
-          <tr>
-            <th style="padding:8px;border:1px solid #eee;text-align:left">Item</th>
-            <th style="padding:8px;border:1px solid #eee;text-align:center">Qty</th>
-            <th style="padding:8px;border:1px solid #eee;text-align:right">Price</th>
-            <th style="padding:8px;border:1px solid #eee;text-align:right">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-        </tbody>
-      </table>
-      <p style="text-align:right;font-weight:bold">Grand Total: ${formatCurrency(order.total)}</p>
-      </body></html>
-    `)
-    win.document.close()
-    win.print()
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+      const invoiceData = await apiGet(`/invoices/order/${orderId}`)
+      const invoiceId = invoiceData?.invoice?._id
+      if (!invoiceId) {
+        setError('Invoice not found for this order')
+        return
+      }
+
+      const res = await fetch(`${API_BASE}/invoices/${invoiceId}/download`, {
+        credentials: 'include'
+      })
+      if (!res.ok) {
+        setError('Failed to download invoice')
+        return
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Invoice-${invoiceData.invoice.invoiceNumber || orderId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      setError(e?.error || e?.message || 'Failed to download invoice')
+    }
   }
   
 
@@ -210,7 +209,7 @@ export default function OrderConfirmation() {
                 <h4 className="font-semibold mb-2">Shipping</h4>
                 <div className="text-sm text-gray-700">
                   <div>{order.shippingAddress ? [order.shippingAddress.street, order.shippingAddress.city, order.shippingAddress.state, order.shippingAddress.zip].filter(Boolean).join(', ') : (order.address || 'No shipping address')}</div>
-                  <div className="mt-2 text-xs text-gray-500">Estimated delivery: <strong>{order.estimatedDelivery || '3-7 business days'}</strong></div>
+                  <div className="mt-2 text-xs text-gray-500">Estimated delivery: <strong>{order.estimatedDelivery || '20-30 min'}</strong></div>
                 </div>
               </div>
             </div>
