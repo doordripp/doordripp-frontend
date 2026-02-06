@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-import { apiPost, apiPut } from '../services/apiClient'
+import { apiGet, apiPost, apiPut } from '../services/apiClient'
 import AddressSelector from '../components/AddressSelector'
 import addressIllustration from '../assets/map.png'
 
@@ -25,6 +25,11 @@ export default function Checkout() {
 
   const hasItems = items && items.length > 0
 
+  // Ensure checkout opens at top
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [])
+
   // Load Razorpay script on mount
   useEffect(() => {
     const script = document.createElement('script')
@@ -32,7 +37,6 @@ export default function Checkout() {
     script.async = true
     script.onload = () => setRazorpayLoaded(true)
     script.onerror = () => {
-      console.error('Failed to load Razorpay')
       setRazorpayLoaded(false)
     }
     document.body.appendChild(script)
@@ -48,14 +52,10 @@ export default function Checkout() {
     const loadSavedAddresses = async () => {
       if (!user?._id) return
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
-        const response = await fetch(`${API_BASE}/addresses`, { credentials: 'include' })
-        if (response.ok) {
-          const data = await response.json()
-          setSavedAddresses(data.addresses || [])
-        }
+        const data = await apiGet('/addresses')
+        setSavedAddresses(data.addresses || [])
       } catch (e) {
-        console.error('Error loading saved addresses:', e)
+        // Silently handle address loading errors
       }
     }
     loadSavedAddresses()
@@ -123,17 +123,13 @@ export default function Checkout() {
         }
       }
       
-      console.log('Placing order with data:', orderData)
-      
       const response = await apiPost('/orders', orderData)
-      console.log('Order response:', response)
       
       if (response && response.order && response.razorOrder) {
         const { order, razorOrder } = response
         
         // Open Razorpay payment gateway
         if (razorOrder && window.Razorpay) {
-          console.log('✅ Initializing Razorpay with order:', razorOrder.id)
           
           const options = {
             key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_key',
@@ -159,7 +155,6 @@ export default function Checkout() {
                 })
                 
                 if (verifyResponse?.success || verifyResponse?.message) {
-                  console.log('✅ Payment verified:', verifyResponse)
                   // Payment verified - clear cart and navigate
                   clearCart()
                   navigate(`/orders/${order._id}`, { 
@@ -170,19 +165,16 @@ export default function Checkout() {
                     } 
                   })
                 } else {
-                  console.error('Payment verification failed:', verifyResponse)
                   setError('Payment verification failed. Please contact support.')
                   setPlacing(false)
                 }
               } catch (verifyError) {
-                console.error('Payment verification error:', verifyError)
                 setError('Failed to verify payment. Please contact support.')
                 setPlacing(false)
               }
             },
             modal: {
               ondismiss: () => {
-                console.warn('⚠️ Payment cancelled by user')
                 setError('Payment was cancelled. Please try again.')
                 setPlacing(false)
               }
@@ -192,7 +184,6 @@ export default function Checkout() {
           const rzp = new window.Razorpay(options)
           rzp.open()
         } else {
-          console.warn('⚠️ Razorpay not available, using fallback', { razorOrder, razorpayAvailable: !!window.Razorpay })
           // Fallback if Razorpay not loaded - just confirm order
           clearCart()
           navigate(`/orders/${order._id}`, { state: { order, paymentSuccess: true } })
@@ -201,7 +192,6 @@ export default function Checkout() {
         setError(response?.error || response?.message || 'Failed to place order')
       }
     } catch (e) {
-      console.error('Order error:', e)
       setError(e?.error || e?.message || 'Failed to place order')
     } finally {
       setPlacing(false)

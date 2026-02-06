@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useLoadScript, StandaloneSearchBox } from '@react-google-maps/api';
 import { validateWithGoogleMaps } from '../utils/deliveryZoneUtils';
+import { apiGet, apiPost } from '../services/apiClient';
 import { toast } from 'react-hot-toast';
 import './AddressSelector.css';
 
@@ -71,9 +72,7 @@ const AddressSelector = ({
   useEffect(() => {
     const loadDeliveryZones = async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
-        const response = await fetch(`${API_BASE}/delivery-settings`);
-        const data = await response.json();
+        const data = await apiGet('/delivery-settings');
         
         if (data.success) {
           setDeliveryZones(data.zones);
@@ -230,15 +229,12 @@ const AddressSelector = ({
 
       // Server-side validation (authoritative)
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
-        const response = await fetch(`${API_BASE}/validate-location`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude: location.lat, longitude: location.lng })
+        const data = await apiPost('/validate-location', { 
+          latitude: location.lat, 
+          longitude: location.lng 
         });
 
-        if (response.ok) {
-          const data = await response.json();
+        if (data) {
           if (data?.success) {
             finalIsInZone = !!data.isInDeliveryZone;
             finalZone = data.zone || finalZone;
@@ -340,28 +336,18 @@ const AddressSelector = ({
     try {
       toast.loading('Saving address...');
 
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
-      const response = await fetch(`${API_BASE}/save-address`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({
-          latitude: selectedLocation.lat,
-          longitude: selectedLocation.lng,
-          formattedAddress,
-          addressLine1: addressFields.line1,
-          addressLine2: addressFields.line2,
-          city: addressFields.city,
-          state: addressFields.state,
-          postalCode: addressFields.zip,
-          label: 'Home'
-        })
+      const data = await apiPost('/save-address', {
+        latitude: selectedLocation.lat,
+        longitude: selectedLocation.lng,
+        formattedAddress,
+        addressLine1: addressFields.line1,
+        addressLine2: addressFields.line2,
+        city: addressFields.city,
+        state: addressFields.state,
+        postalCode: addressFields.zip,
+        label: 'Home'
       });
 
-      const data = await response.json();
       toast.dismiss();
 
       if (data.success) {

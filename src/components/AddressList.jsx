@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { apiGet, apiPut, apiDelete } from '../services/apiClient';
 import './AddressList.css';
 
 /**
@@ -16,13 +17,7 @@ const AddressList = ({ onSelectAddress, onEditAddress }) => {
 
   const loadAddresses = async () => {
     try {
-      const response = await fetch('/api/addresses', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      const data = await apiGet('/addresses');
 
       if (data.success) {
         setAddresses(data.addresses);
@@ -37,14 +32,7 @@ const AddressList = ({ onSelectAddress, onEditAddress }) => {
 
   const handleSetDefault = async (addressId) => {
     try {
-      const response = await fetch(`/api/addresses/${addressId}/set-default`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      const data = await apiPut(`/addresses/${addressId}/set-default`, {});
 
       if (data.success) {
         toast.success('Default address updated');
@@ -62,14 +50,7 @@ const AddressList = ({ onSelectAddress, onEditAddress }) => {
     }
 
     try {
-      const response = await fetch(`/api/addresses/${addressId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      const data = await apiDelete(`/addresses/${addressId}`);
 
       if (data.success) {
         toast.success('Address deleted');

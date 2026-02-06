@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 /**
  * Hook to preserve page state and scroll position across navigation
@@ -72,7 +72,7 @@ export function usePageState(pageName, initialState = {}) {
  */
 export function useUrlParams(defaultParams = {}) {
   const location = useLocation()
-  const navigate = require('react-router-dom').useNavigate()
+  const navigate = useNavigate()
 
   // Parse URL params into state
   const getParamsFromUrl = () => {

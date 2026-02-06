@@ -34,7 +34,7 @@ export default function AdminProducts() {
           stock: 150,
           category: 'Clothing',
           status: 'Active',
-          images: ['https://via.placeholder.com/150']
+          images: ['https://placeholder.com/150']
         }
       ])
     } finally {
@@ -57,14 +57,14 @@ export default function AdminProducts() {
               product.images.slice(0, 2).map((img, idx) => (
                 <img 
                   key={idx}
-                  src={img || 'https://via.placeholder.com/40'} 
+                  src={img || 'https://placeholder.com/40'} 
                   alt={product.name}
                   className="w-10 h-10 rounded-md object-cover border-2 border-white"
                 />
               ))
             ) : (
               <img 
-                src="https://via.placeholder.com/40" 
+                src="https://placeholder.com/40" 
                 alt={product.name}
                 className="w-10 h-10 rounded-md object-cover"
               />

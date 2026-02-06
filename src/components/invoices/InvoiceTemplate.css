@@ -1,0 +1,830 @@
+/* ====================================
+   Invoice Template - Professional GST Invoice
+   Style: Amazon/Flipkart Inspired
+   ==================================== */
+
+:root {
+  --primary-color: #1f2937;
+  --secondary-color: #0066cc;
+  --accent-color: #ff9800;
+  --border-color: #e5e7eb;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --success-color: #10b981;
+  --light-bg: #f9fafb;
+  --white: #ffffff;
+}
+
+/* ====================================
+   Main Container
+   ==================================== */
+
+.invoice-container {
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: var(--white);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.invoice-container * {
+  box-sizing: border-box;
+}
+
+/* Print Specific Styles */
+@media print {
+  .invoice-print {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+  
+  .invoice-container {
+    max-width: 100%;
+    box-shadow: none;
+    border: none;
+  }
+  
+  .print-footer {
+    display: block;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  
+  /* Hide unnecessary elements for print */
+  .no-print {
+    display: none;
+  }
+}
+
+/* ====================================
+   Header Section
+   ==================================== */
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 30px;
+  border-bottom: 3px solid var(--secondary-color);
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.company-logo-placeholder {
+  font-size: 48px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--secondary-color), #0052a3);
+  border-radius: 8px;
+  color: white;
+}
+
+.company-name {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--primary-color);
+  letter-spacing: -0.5px;
+}
+
+.company-tagline {
+  margin: 5px 0 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.header-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.invoice-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--secondary-color), #0052a3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1px;
+  align-self: flex-end;
+}
+
+.invoice-meta {
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.invoice-meta p {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.invoice-meta strong {
+  color: var(--secondary-color);
+}
+
+/* ====================================
+   Company Details Bar
+   ==================================== */
+
+.company-details-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px 30px;
+  background-color: var(--light-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item .label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-item .value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+/* ====================================
+   Address Section
+   ==================================== */
+
+.address-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 30px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.address-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.address-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.address-content {
+  padding: 12px;
+  background-color: var(--light-bg);
+  border-left: 3px solid var(--secondary-color);
+  border-radius: 4px;
+}
+
+.address-content p {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.address-content p:last-child {
+  margin-bottom: 0;
+}
+
+.customer-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--secondary-color);
+}
+
+.company-address {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* ====================================
+   Items Section
+   ==================================== */
+
+.items-section {
+  padding: 30px;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 25px;
+  font-size: 12px;
+}
+
+.items-table .table-header {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.items-table .table-header th {
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid #374151;
+}
+
+.items-table .table-row td {
+  padding: 12px 8px;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.items-table .table-row:nth-child(odd) {
+  background-color: var(--light-bg);
+}
+
+.items-table .table-row:hover {
+  background-color: #f3f4f6;
+}
+
+.col-sno {
+  width: 6%;
+  text-align: center;
+  font-weight: 600;
+}
+
+.col-product {
+  width: 28%;
+}
+
+.col-hsn {
+  width: 10%;
+  text-align: center;
+}
+
+.col-qty {
+  width: 8%;
+  text-align: center;
+  font-weight: 600;
+}
+
+.col-price {
+  width: 12%;
+  text-align: right;
+}
+
+.col-taxable {
+  width: 12%;
+  text-align: right;
+}
+
+.col-gst {
+  width: 8%;
+  text-align: center;
+  font-weight: 600;
+}
+
+.col-total {
+  width: 14%;
+  text-align: right;
+  font-weight: 600;
+}
+
+.product-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.product-desc {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* GST Breakdown Table */
+.gst-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 11px;
+  background-color: #fafafa;
+  border: 1px solid var(--border-color);
+}
+
+.gst-breakdown-table .table-header {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.gst-breakdown-table .table-header th {
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid #0052a3;
+}
+
+.gst-breakdown-table td {
+  padding: 10px 8px;
+  border: 1px solid var(--border-color);
+  text-align: right;
+}
+
+.gst-breakdown-table td:first-child {
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ====================================
+   Summary Section
+   ==================================== */
+
+.summary-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  padding: 30px;
+  background-color: var(--light-bg);
+  border-top: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.summary-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.payment-details,
+.amount-in-words {
+  padding: 15px;
+  background-color: white;
+  border-radius: 6px;
+  border-left: 3px solid var(--secondary-color);
+}
+
+.payment-details h4,
+.amount-in-words h4 {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  letter-spacing: 0.5px;
+}
+
+.payment-details p,
+.amount-in-words p {
+  margin: 6px 0;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.badge-success {
+  display: inline-block;
+  background-color: var(--success-color);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.amount-text {
+  font-weight: 600;
+  color: var(--secondary-color);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Summary Table */
+.summary-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: white;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.summary-value {
+  font-weight: 600;
+  color: var(--secondary-color);
+  text-align: right;
+}
+
+.summary-row.grand-total {
+  background: linear-gradient(135deg, var(--secondary-color), #0052a3);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 16px 15px;
+}
+
+.summary-row.grand-total .summary-label {
+  color: white;
+}
+
+.summary-row.grand-total .summary-value {
+  color: white;
+  font-size: 16px;
+}
+
+/* ====================================
+   Footer Section
+   ==================================== */
+
+.invoice-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  padding: 30px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.declaration {
+  padding: 15px;
+  background-color: #fef3c7;
+  border-left: 3px solid var(--accent-color);
+  border-radius: 4px;
+}
+
+.declaration p {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.declaration p:first-child {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.return-policy {
+  background-color: #dbeafe;
+  padding: 8px;
+  border-radius: 3px;
+  margin-top: 10px;
+}
+
+.footer-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  text-align: center;
+}
+
+.authorized-by {
+  text-align: center;
+}
+
+.authorized-by p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.authorized-by p:nth-child(2) {
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.company-name-footer {
+  font-weight: 700;
+  color: var(--secondary-color);
+  margin-top: 5px !important;
+}
+
+/* ====================================
+   Support Section
+   ==================================== */
+
+.support-section {
+  padding: 25px 30px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.support-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  letter-spacing: 0.5px;
+}
+
+.support-section p {
+  margin: 6px 0;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.support-section strong {
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+
+.thank-you-message {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--secondary-color);
+  font-style: italic;
+}
+
+/* ====================================
+   Print Footer
+   ==================================== */
+
+.print-footer {
+  display: none;
+  padding: 15px 30px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+/* ====================================
+   Responsive Design
+   ==================================== */
+
+@media (max-width: 768px) {
+  .invoice-header {
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .header-right {
+    width: 100%;
+  }
+
+  .invoice-badge {
+    align-self: flex-start;
+  }
+
+  .company-details-bar {
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding: 15px;
+  }
+
+  .address-section {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 15px;
+  }
+
+  .items-section {
+    padding: 15px;
+    overflow-x: auto;
+  }
+
+  .items-table,
+  .gst-breakdown-table {
+    font-size: 10px;
+  }
+
+  .items-table .table-header th {
+    padding: 8px 4px;
+  }
+
+  .items-table .table-row td {
+    padding: 8px 4px;
+  }
+
+  .summary-section {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .invoice-footer {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .support-section {
+    padding: 20px;
+  }
+
+  .col-product {
+    width: 35%;
+  }
+
+  .col-price,
+  .col-taxable,
+  .col-total {
+    width: 10%;
+  }
+
+  .product-desc {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .company-logo-placeholder {
+    width: 50px;
+    height: 50px;
+    font-size: 32px;
+  }
+
+  .company-name {
+    font-size: 18px;
+  }
+
+  .invoice-meta {
+    font-size: 11px;
+  }
+
+  .items-table {
+    font-size: 9px;
+  }
+
+  .items-table .table-header th {
+    padding: 6px 2px;
+  }
+
+  .items-table .table-row td {
+    padding: 6px 2px;
+  }
+
+  .summary-row {
+    padding: 10px;
+    font-size: 11px;
+  }
+
+  .summary-value {
+    font-size: 12px;
+  }
+}
+
+/* ====================================
+   Print Styles
+   ==================================== */
+
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .invoice-container {
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    max-width: none;
+  }
+
+  .invoice-header,
+  .company-details-bar,
+  .address-section,
+  .items-section,
+  .summary-section,
+  .invoice-footer,
+  .support-section {
+    page-break-inside: avoid;
+  }
+
+  a {
+    text-decoration: none;
+    color: var(--text-primary);
+  }
+
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-footer {
+    display: block;
+  }
+}
+
+/* ====================================
+   Utility Classes
+   ==================================== */
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.text-primary {
+  color: var(--primary-color);
+}
+
+.text-secondary {
+  color: var(--secondary-color);
+}
+
+.mt-10 {
+  margin-top: 10px;
+}
+
+.mb-10 {
+  margin-bottom: 10px;
+}
+
+/* ====================================
+   Animation & Transitions
+   ==================================== */
+
+.invoice-container {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Print Page Setup */
+@page {
+  size: A4;
+  margin: 0;
+}

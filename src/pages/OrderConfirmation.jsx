@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams, useNavigate } from 'react-router-dom'
 import { apiGet, apiPost } from '../services/apiClient'
+import InvoiceViewer from '../components/invoices/InvoiceViewer'
+import { transformOrderToInvoice, transformInvoiceApiToTemplate } from '../components/invoices/invoice-utils'
 
 export default function OrderConfirmation() {
   const { id } = useParams()
@@ -14,6 +16,9 @@ export default function OrderConfirmation() {
   const [showReturnModal, setShowReturnModal] = useState(false)
   const [returnReason, setReturnReason] = useState('')
   const [returnStatus, setReturnStatus] = useState('')
+  const [invoiceData, setInvoiceData] = useState(null)
+  const [showInvoice, setShowInvoice] = useState(false)
+  const [invoiceLoading, setInvoiceLoading] = useState(false)
 
   useEffect(() => {
     if (order) return
@@ -83,34 +88,42 @@ export default function OrderConfirmation() {
     try {
       const orderId = order._id || order.id
       if (!orderId) return
+      setInvoiceLoading(true)
 
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
-      const invoiceData = await apiGet(`/invoices/order/${orderId}`)
-      const invoiceId = invoiceData?.invoice?._id
-      if (!invoiceId) {
-        setError('Invoice not found for this order')
+      let nextInvoiceData = null
+      try {
+        let invoiceResponse = await apiGet(`/invoices/order/${orderId}`)
+        if (!invoiceResponse?.invoice) {
+          await apiPost(`/invoices/generate/${orderId}`)
+          invoiceResponse = await apiGet(`/invoices/order/${orderId}`)
+        }
+
+        if (invoiceResponse?.invoice) {
+          nextInvoiceData = transformInvoiceApiToTemplate(
+            invoiceResponse.invoice,
+            invoiceResponse.items,
+            order
+          )
+        }
+      } catch (e) {
+        // fall back to order-only transformation
+      }
+
+      if (!nextInvoiceData) {
+        nextInvoiceData = transformOrderToInvoice(order)
+      }
+
+      if (!nextInvoiceData) {
+        setError('Invoice data not available')
         return
       }
 
-      const res = await fetch(`${API_BASE}/invoices/${invoiceId}/download`, {
-        credentials: 'include'
-      })
-      if (!res.ok) {
-        setError('Failed to download invoice')
-        return
-      }
-
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `Invoice-${invoiceData.invoice.invoiceNumber || orderId}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
+      setInvoiceData(nextInvoiceData)
+      setShowInvoice(true)
     } catch (e) {
       setError(e?.error || e?.message || 'Failed to download invoice')
+    } finally {
+      setInvoiceLoading(false)
     }
   }
   
@@ -227,7 +240,9 @@ export default function OrderConfirmation() {
                 <div className="mt-4 flex flex-col gap-2">
                   <button onClick={() => window.location.assign('/')} className="w-full px-4 py-2 bg-black text-white rounded-md">Continue shopping</button>
                   <Link to={`/orders/${order._id || order.id}`} className="w-full text-center px-4 py-2 border rounded-md">Track order</Link>
-                  <button onClick={downloadInvoice} className="w-full px-4 py-2 bg-white border rounded-md">Download invoice</button>
+                  <button onClick={downloadInvoice} className="w-full px-4 py-2 bg-white border rounded-md">
+                    {invoiceLoading ? 'Preparing invoice...' : 'Download invoice'}
+                  </button>
                   <button onClick={handleShare} className="w-full px-4 py-2 bg-white border rounded-md">Share order {shareStatus && <span className="ml-2 text-sm text-gray-500">{shareStatus}</span>}</button>
                   <button onClick={() => setShowReturnModal(true)} className="w-full px-4 py-2 bg-red-50 text-red-700 border rounded-md">Request return / replace</button>
                 </div>
@@ -246,6 +261,23 @@ export default function OrderConfirmation() {
             <div className="mt-4 flex items-center justify-end gap-2">
               <button className="px-4 py-2 border rounded-md" onClick={() => setShowReturnModal(false)}>Cancel</button>
               <button className="px-4 py-2 bg-red-600 text-white rounded-md" onClick={submitReturnRequest}>{returnStatus === 'sending' ? 'Sending...' : 'Submit request'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowInvoice(false)} />
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-auto z-10">
+            <div className="flex justify-end p-3 border-b">
+              <button className="px-3 py-1 text-sm border rounded-md" onClick={() => setShowInvoice(false)}>Close</button>
+            </div>
+            <div className="p-4">
+              {invoiceData ? (
+                <InvoiceViewer invoiceData={invoiceData} />
+              ) : (
+                <div className="p-6">Loading invoice...</div>
+              )}
             </div>
           </div>
         </div>

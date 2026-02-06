@@ -89,9 +89,7 @@ export default function Login() {
 
     try {
       const payload = { email: formData.emailOrPhone, password: formData.password }
-      console.log('Login attempt with:', payload)
       const data = await apiPost('/auth/login', payload)
-      console.log('Login response:', data)
       
       // Check if email verification is required
       if (data.requiresVerification) {
@@ -125,7 +123,6 @@ export default function Login() {
         : (userRoles || '').toLowerCase() === 'admin'
       navigate(isAdmin ? '/admin' : '/')
     } catch (error) {
-      console.error('Login error:', error)
       const msg = error?.message || error?.error || 'Login failed. Please try again.'
       setErrors({ submit: msg })
     } finally {
@@ -134,8 +131,9 @@ export default function Login() {
   }
 
   const handleGoogleLogin = () => {
-    // Redirect to backend Google OAuth endpoint (don't add /api, it's already in base URL)
-    window.location.href = 'http://localhost:4000/api/auth/google'
+    // Redirect to backend Google OAuth endpoint
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+    window.location.href = `${apiBase}/api/auth/google`
   }
 
   return (

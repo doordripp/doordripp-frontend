@@ -104,7 +104,11 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    fetchMe()
+    // Silently check auth on mount - 401 is expected for unauthenticated users
+    fetchMe().catch(() => {
+      // Auth check failed (401 is expected), user will be null
+      // This is the correct behavior
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

@@ -121,7 +121,7 @@ export const CATEGORY_PRODUCTS = {
 }
 
 // Default placeholder image for products without images
-export const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/400x400?text=No+Image'
+export const PLACEHOLDER_IMAGE = 'https://placeholder.com/400x400?text=No+Image'
 
 // Helper to get first image or placeholder
 export const getProductImage = (product) => {
