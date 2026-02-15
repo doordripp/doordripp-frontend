@@ -11,8 +11,18 @@ const buildUrl = (path) => {
   return `${API_BASE}/api${pathWithSlash}`;
 };
 
+const getAuthHeaders = () => {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('auth_token');
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+};
+
 export const apiGet = async (path) => {
-  const res = await fetch(buildUrl(path), { credentials: 'include' });
+  const res = await fetch(buildUrl(path), {
+    credentials: 'include',
+    headers: { ...getAuthHeaders() }
+  });
   const data = await res.json();
   if (!res.ok) {
     // Attach status to error for better handling in catch blocks
@@ -26,7 +36,7 @@ export const apiPost = async (path, body) => {
   const res = await fetch(buildUrl(path), {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(body)
   });
   const data = await res.json();
@@ -42,7 +52,7 @@ export const apiPut = async (path, body) => {
   const res = await fetch(buildUrl(path), {
     method: 'PUT',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(body)
   });
   const data = await res.json();
@@ -55,7 +65,11 @@ export const apiPut = async (path, body) => {
 };
 
 export const apiDelete = async (path) => {
-  const res = await fetch(buildUrl(path), { method: 'DELETE', credentials: 'include' });
+  const res = await fetch(buildUrl(path), {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: { ...getAuthHeaders() }
+  });
   const data = await res.json();
   if (!res.ok) {
     // Attach status to error for better handling in catch blocks
@@ -66,7 +80,10 @@ export const apiDelete = async (path) => {
 };
 
 export const apiBlob = async (path) => {
-  const res = await fetch(buildUrl(path), { credentials: 'include' });
+  const res = await fetch(buildUrl(path), {
+    credentials: 'include',
+    headers: { ...getAuthHeaders() }
+  });
   if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
   return await res.blob();
 };
@@ -76,7 +93,10 @@ export default { apiGet, apiPost, apiPut, apiDelete, apiBlob };
 // Health ping helper; returns { ok: boolean, info }
 export const apiHealth = async () => {
   try {
-    const res = await fetch(buildUrl('/health'), { credentials: 'include' });
+    const res = await fetch(buildUrl('/health'), {
+      credentials: 'include',
+      headers: { ...getAuthHeaders() }
+    });
     if (!res.ok) return { ok: false, info: `status ${res.status}` };
     const data = await res.json();
     return { ok: !!data?.ok, info: data };
