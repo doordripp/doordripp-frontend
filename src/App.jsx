@@ -30,6 +30,7 @@ import About from './pages/About'
 import Features from './pages/Features'
 import Works from './pages/Works'
 import Career from './pages/Career'
+import Support from './pages/Support'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AdminLayout from './layout/AdminLayout'
 import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers, AdminCustomers, AdminReports, AdminDeliveryZones } from './pages/admin'
@@ -152,6 +153,7 @@ function App() {
                     <Route path="/features" element={<Features />} />
                     <Route path="/works" element={<Works />} />
                     <Route path="/career" element={<Career />} />
+                    <Route path="/support" element={<Support />} />
                   </Routes>
                 </main>
                 {/* Global Newsletter Section - Appears on all pages */}
