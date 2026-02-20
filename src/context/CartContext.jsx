@@ -216,11 +216,29 @@ export function CartProvider({ children }) {
 
   // Cart actions
   const addToCart = (product, options = {}) => {
-    const { size = 'M', color = 'default', quantity = 1 } = options
+    const legacyOptions = typeof options === 'object' && options !== null && !Array.isArray(options)
+      ? options
+      : { size: options, color: arguments[2], quantity: arguments[3] }
+
+    const { size = 'M', color = 'default', quantity = 1 } = legacyOptions
+    const stock = Number.isFinite(product?.stock) ? product.stock : null
+
+    const existingItem = state.items.find(
+      item => item.id === product.id &&
+               item.selectedSize === size &&
+               item.selectedColor === color
+    )
+    const existingQty = existingItem ? existingItem.quantity : 0
+    if (stock !== null && (stock <= 0 || existingQty + quantity > stock)) {
+      return { success: false, error: 'OUT_OF_STOCK' }
+    }
+
     dispatch({
       type: CART_ACTIONS.ADD_ITEM,
       payload: { product, size, color, quantity }
     })
+
+    return { success: true }
   }
 
   const removeFromCart = (id, selectedSize, selectedColor) => {

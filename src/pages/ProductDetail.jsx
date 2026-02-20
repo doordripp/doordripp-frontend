@@ -84,6 +84,7 @@ export default function ProductDetail() {
           images: p.images?.length ? p.images : [p.image],
           price: p.price,
           originalPrice: p.originalPrice,
+          stock: p.stock,
           rating: p.rating || { rating: 0 },
           category: p.category,
           subcategory: p.subcategory,
@@ -121,6 +122,7 @@ export default function ProductDetail() {
   }
 
   const images = product.images
+  const isOutOfStock = (product.stock ?? 0) <= 0
 
   return (
     <div className="min-h-screen bg-white">
@@ -229,14 +231,21 @@ export default function ProductDetail() {
             {/* ADD TO CART */}
             <button
               onClick={() => {
-                addToCart(product, { quantity })
+                if (isOutOfStock) return
+                const result = addToCart(product, { quantity })
+                if (result?.success === false) return
                 setIsAddedToCart(true)
                 setTimeout(() => setIsAddedToCart(false), 1500)
               }}
-              className="w-full bg-black text-white py-4 rounded-full font-semibold flex items-center justify-center gap-2"
+              disabled={isOutOfStock}
+              className={`w-full py-4 rounded-full font-semibold flex items-center justify-center gap-2 ${
+                isOutOfStock
+                  ? 'bg-gray-200 text-gray-500'
+                  : 'bg-black text-white'
+              }`}
             >
-              {isAddedToCart ? <Check /> : <ShoppingCart />}
-              {isAddedToCart ? 'Added to Cart' : 'Add to Cart'}
+              {isAddedToCart && !isOutOfStock ? <Check /> : <ShoppingCart />}
+              {isOutOfStock ? 'Out of Stock' : isAddedToCart ? 'Added to Cart' : 'Add to Cart'}
             </button>
           </div>
         </div>

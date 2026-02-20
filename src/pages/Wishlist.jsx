@@ -17,7 +17,9 @@ export default function Wishlist() {
 
   const handleAddToCart = (product) => {
     // Add to cart with default selections (can be improved later)
-    addToCart(product, product.selectedSize || 'M', product.selectedColor || product.colors?.[0] || 'black', 1)
+    const size = product.selectedSize || 'M'
+    const color = product.selectedColor || product.colors?.[0] || 'black'
+    return addToCart(product, { size, color, quantity: 1 })
   }
 
   const handleSelectItem = (productId) => {
@@ -181,10 +183,15 @@ export default function Wishlist() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleAddToCart(product)}
-                            className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                            disabled={product.stock <= 0}
+                            className={`flex items-center gap-2 px-3 py-1 text-sm rounded-lg ${
+                              product.stock <= 0
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                            }`}
                           >
                             <ShoppingCart size={16} />
-                            Add to Cart
+                            {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                           </button>
                           <button
                             onClick={() => handleRemoveFromWishlist(pid)}
