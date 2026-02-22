@@ -40,6 +40,10 @@ export default function AdminOrders() {
           date: o.date || o.createdAt,
           total: o.total || 0,
           status: o.status || 'pending',
+          isTrial: o.isTrial || false,
+          trialItems: o.trialItems || [],
+          trialFee: o.trialFee || 0,
+          deliveryFee: o.deliveryFee || 0,
           items: o.items || [],
           shipping: { address: toAddressLine(o.shippingAddress), method: 'Standard Delivery' }
         }))
@@ -344,10 +348,29 @@ function OrderDetailsModal({ order, onClose, onStatusChange }) {
           <div className="space-y-4 md:col-span-2">
             <h3 className="text-lg font-semibold">Shipping Information</h3>
             <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="font-medium">{order.shipping.method}</p>
+              <p className="font-medium">{order.isTrial ? 'Trial & Buy Delivery' : order.shipping.method}</p>
               <p className="text-gray-600">{order.shipping.address}</p>
             </div>
           </div>
+
+          {/* Trial Items if applicable */}
+          {order.isTrial && order.trialItems && order.trialItems.length > 0 && (
+            <div className="space-y-4 md:col-span-2">
+              <h3 className="text-lg font-semibold text-indigo-700">Trial Room Package</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {order.trialItems.map((ti, idx) => {
+                  const isMain = order.items.some(it => String(it.product?._id || it.product) === String(ti.product?._id || ti.product));
+                  return (
+                    <div key={idx} className={`bg-white p-3 rounded-xl border-2 ${isMain ? 'border-indigo-600 shadow-sm' : 'border-dashed border-gray-200 opacity-60'}`}>
+                      <img src={ti.image} alt={ti.name} className="w-full h-20 object-cover rounded-md mb-2" />
+                      <div className="text-xs font-bold truncate">{ti.name}</div>
+                      <div className="text-[10px] text-gray-500">{isMain ? 'PURCHASED' : 'TRIAL ITEM'}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Order Items */}
           <div className="space-y-4 md:col-span-2">
@@ -371,8 +394,20 @@ function OrderDetailsModal({ order, onClose, onStatusChange }) {
                       <td className="px-4 py-2">₹{(item.quantity * item.price).toFixed(2)}</td>
                     </tr>
                   ))}
+                  {order.isTrial && (
+                    <tr className="border-t border-gray-300 text-indigo-600 font-medium italic">
+                      <td className="px-4 py-1" colSpan="3">Trial Service Fee</td>
+                      <td className="px-4 py-1">₹{order.trialFee || 119}</td>
+                    </tr>
+                  )}
+                  {order.shippingFee > 0 && (
+                    <tr className="border-t border-gray-300 text-gray-500 font-medium italic">
+                      <td className="px-4 py-1" colSpan="3">Delivery Fee ({order.shipping?.method || 'Standard'})</td>
+                      <td className="px-4 py-1">₹{order.shippingFee}</td>
+                    </tr>
+                  )}
                   <tr className="border-t-2 border-gray-400 font-semibold bg-gray-100">
-                    <td className="px-4 py-2" colSpan="3">Total</td>
+                    <td className="px-4 py-2" colSpan="3">Grand Total</td>
                     <td className="px-4 py-2">₹{order.total.toFixed(2)}</td>
                   </tr>
                 </tbody>

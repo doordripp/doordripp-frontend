@@ -12,7 +12,8 @@ const CART_ACTIONS = {
   LOAD_CART: 'LOAD_CART',
   TOGGLE_DRAWER: 'TOGGLE_DRAWER',
   APPLY_PROMO: 'APPLY_PROMO',
-  REMOVE_PROMO: 'REMOVE_PROMO'
+  REMOVE_PROMO: 'REMOVE_PROMO',
+  SET_TRIAL_MODE: 'SET_TRIAL_MODE'
 }
 
 // Cart reducer
@@ -136,6 +137,17 @@ const cartReducer = (state, action) => {
         discount: 0
       }
 
+    case CART_ACTIONS.SET_TRIAL_MODE: {
+      const { isTrial, trialFee, trialItems, purchasedItemId } = action.payload
+      return {
+        ...state,
+        isTrialCheckout: !!isTrial,
+        trialFee: trialFee || 0,
+        trialItems: trialItems || [],
+        purchasedItemId: purchasedItemId || null
+      }
+    }
+
     default:
       return state
   }
@@ -146,7 +158,11 @@ const initialState = {
   items: [],
   isDrawerOpen: false,
   promoCode: null,
-  discount: 0 // percentage discount
+  discount: 0, // percentage discount
+  isTrialCheckout: false,
+  trialFee: 0,
+  trialItems: [],
+  purchasedItemId: null
 }
 
 // Cart provider component
@@ -206,8 +222,11 @@ export function CartProvider({ children }) {
     get totalGST() {
       return 0;
     },
+    get trialFee() {
+      return state.trialFee || 0
+    },
     get total() {
-      return this.subtotal - this.discountAmount + this.deliveryFee
+      return this.subtotal - this.discountAmount + this.deliveryFee + this.trialFee
     }
   }
 
@@ -254,7 +273,12 @@ export function CartProvider({ children }) {
 
   const clearCart = () => {
     dispatch({ type: CART_ACTIONS.CLEAR_CART })
+    dispatch({ type: CART_ACTIONS.SET_TRIAL_MODE, payload: { isTrial: false, trialFee: 0 } })
     localStorage.removeItem('doordripp_delivery_type')
+  }
+
+  const setTrialMode = (data) => {
+    dispatch({ type: CART_ACTIONS.SET_TRIAL_MODE, payload: data })
   }
 
   const toggleDrawer = (isOpen) => {
@@ -308,6 +332,10 @@ export function CartProvider({ children }) {
     isDrawerOpen: state.isDrawerOpen,
     promoCode: state.promoCode,
     discount: state.discount,
+    isTrialCheckout: state.isTrialCheckout,
+    trialFee: state.trialFee,
+    trialItems: state.trialItems,
+    purchasedItemId: state.purchasedItemId,
     
     // Computed values
     cartTotals,
@@ -317,6 +345,7 @@ export function CartProvider({ children }) {
     removeFromCart,
     updateQuantity,
     clearCart,
+    setTrialMode,
     toggleDrawer,
     applyPromoCode,
     removePromoCode,

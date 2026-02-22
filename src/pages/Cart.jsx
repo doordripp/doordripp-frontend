@@ -14,6 +14,8 @@ export default function Cart() {
     promoCode,
     applyPromoCode,
     removePromoCode,
+    isTrialCheckout,
+    trialFee
   } = useCart()
 
   const [promoInput, setPromoInput] = useState('')
@@ -234,6 +236,16 @@ export default function Cart() {
                 <span>Delivery</span>
                 <span>₹{cartTotals.deliveryFee}</span>
               </div>
+
+              {isTrialCheckout && trialFee > 0 && (
+                <div className="flex items-center justify-between text-gray-600">
+                  <div className="flex flex-col">
+                    <span className="text-sm">Trial Service Fee</span>
+                    <span className="text-[10px] text-gray-400">Covers 3 items delivery & return</span>
+                  </div>
+                  <span className="font-medium text-black">₹{trialFee.toFixed(2)}</span>
+                </div>
+              )}
 
               <hr />
 

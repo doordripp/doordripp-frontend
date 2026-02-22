@@ -18,6 +18,13 @@ export default function Products() {
   const limit = 24
   const trialMode = searchParams.get('mode') === 'trial'
 
+  // Force scroll to top on mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    document.body.scrollTop = 0
+    document.documentElement.scrollTop = 0
+  }, [])
+
   useEffect(() => {
     const urlSearch = searchParams.get('search')
     if (urlSearch && urlSearch !== searchQuery) {

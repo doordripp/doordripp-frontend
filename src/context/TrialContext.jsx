@@ -190,11 +190,13 @@ export function TrialProvider({ children }) {
   const calculateTotals = useCallback(() => {
     const selected = state.items.find(i => i.productId === state.selectedPurchaseItemId);
     const selectedPrice = selected ? selected.price : 0;
+    const trialFee = state.items.length > 0 ? 119 : 0;
 
     return {
       itemsCount: state.items.length,
       selectedItemPrice: selectedPrice,
-      total: selectedPrice,
+      trialFee: trialFee,
+      total: selectedPrice + trialFee,
     };
   }, [state.items, state.selectedPurchaseItemId]);
 

@@ -26,7 +26,7 @@ export default function TrialPage() {
   } = useTrial();
 
   const { user } = useAuth();
-  const { clearCart, addToCart } = useCart();
+  const { clearCart, addToCart, setTrialMode } = useCart();
   const navigate = useNavigate();
 
   const [tab, setTab] = useState('room');          // 'room' | 'history'
@@ -84,14 +84,25 @@ export default function TrialPage() {
       return;
     }
 
+    const trialItemsMetadata = [...items]; // ⚡ Capture full trial items list before clearing
+
     try {
       setPlacing(true);
 
       // 1) Create trial order on backend (saves the full trial with all items)
       await createTrialOrder();
 
-      // 2) Put ONLY the selected item into cart → checkout pays for this 1 item
+      // 2) Put ONLY the purchased item into cart
       clearCart();
+      
+      // 3) Set Trial Metadata in CartContext (Persistent during this session)
+      setTrialMode({
+        isTrial: true,
+        trialFee: 119,
+        trialItems: trialItemsMetadata,
+        purchasedItemId: selectedPurchaseItemId
+      });
+
       addToCart(
         {
           id: selectedItem.productId,
@@ -104,8 +115,15 @@ export default function TrialPage() {
         { size: 'M', color: 'default', quantity: 1 }
       );
 
-      // 3) Go to checkout → Razorpay pays for the 1 selected item
-      navigate('/checkout');
+      // 4) Go to checkout with trial metadata
+      navigate('/checkout', { 
+        state: { 
+          isTrialCheckout: true,
+          trialItems: items,
+          purchasedItemId: selectedPurchaseItemId,
+          trialFee: 119
+        } 
+      });
     } catch (err) {
       setLocalError(err?.response?.data?.message || err?.message || 'Failed to place trial order');
     } finally {
@@ -239,11 +257,19 @@ export default function TrialPage() {
                       </div>
                     )}
 
+                    <div className="flex justify-between text-gray-600">
+                      <div className="flex flex-col">
+                        <span>Trial Service Fee</span>
+                        <span className="text-[10px] text-gray-400">Covers 3 items delivery & return</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">₹{totals.trialFee.toLocaleString('en-IN')}</span>
+                    </div>
+
                     <div className="border-t border-gray-100 pt-3 flex justify-between">
                       <span className="font-semibold text-gray-900">You Pay</span>
                       <span className="text-xl font-bold text-black">
-                        {totals.selectedItemPrice > 0
-                          ? `₹${totals.selectedItemPrice.toLocaleString('en-IN')}`
+                        {totals.total > 0
+                          ? `₹${totals.total.toLocaleString('en-IN')}`
                           : '—'}
                       </span>
                     </div>
@@ -276,8 +302,8 @@ export default function TrialPage() {
                   >
                     {placing || loading
                       ? 'Processing…'
-                      : totals.selectedItemPrice > 0
-                        ? `Pay ₹${totals.selectedItemPrice.toLocaleString('en-IN')} & Checkout →`
+                      : totals.total > 0
+                        ? `Pay ₹${totals.total.toLocaleString('en-IN')} & Checkout →`
                         : 'Select an item to continue'}
                   </button>
 

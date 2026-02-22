@@ -197,7 +197,10 @@ export default function Orders() {
 
                       <div className="text-right">
                         <div className="text-lg font-semibold">{formatCurrency(subtotal)}</div>
-                        <div className="mt-2">
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          {order.isTrial && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-black text-white text-[10px] font-bold uppercase tracking-widest leading-none">TRIAL & BUY</span>
+                          )}
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${order.status === 'confirmed' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{(order.status || 'pending').toUpperCase()}</span>
                         </div>
                       </div>
@@ -205,19 +208,26 @@ export default function Orders() {
 
                     <div className="mt-4 flex items-center gap-3 text-sm text-gray-700">
                       <div className="flex -space-x-2">
-                        {items.slice(0,3).map((it, i) => {
+                        {(order.isTrial && order.trialItems && order.trialItems.length > 0 ? order.trialItems : items).slice(0,3).map((it, i) => {
                           const prod = it.product || {}
                           const thumb = it.image || it.imageUrl || prod.image || (prod.images && prod.images[0])
                           return (
-                            <div key={i} className="w-10 h-10 bg-white rounded overflow-hidden border">
+                            <div key={i} className={`w-10 h-10 bg-white rounded overflow-hidden border ${order.isTrial ? 'border-black' : ''}`}>
                               {thumb ? <img src={thumb} alt={it.name} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400">No</div>}
                             </div>
                           )
                         })}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium">{items[0]?.name || (items[0] && items[0].product && items[0].product.name) || `${items.length} items`}</div>
-                        <div className="text-xs text-gray-500">{items.length} item(s) • {items.slice(0,2).map(it => it.name || (it.product && it.product.name)).filter(Boolean).join(' • ')}</div>
+                        <div className="font-medium">
+                          {order.isTrial 
+                            ? `Trial Package: ${(order.trialItems || []).map(i => i.name).join(', ')}`
+                            : items[0]?.name || (items[0] && items[0].product && items[0].product.name) || `${items.length} items`}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {order.isTrial ? (order.trialItems?.length || 0) : items.length} item(s) 
+                          {!order.isTrial && ` • ${items.slice(0,2).map(it => it.name || (it.product && it.product.name)).filter(Boolean).join(' • ')}`}
+                        </div>
                       </div>
                     </div>
                   </div>

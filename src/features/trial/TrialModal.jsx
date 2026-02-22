@@ -11,8 +11,20 @@ export function TrialModal() {
   if (!isModalOpen) return null;
 
   const handleClose = () => toggleTrialModal(false);
-  const goCheckout = () => { toggleTrialModal(false); navigate('/trial-room'); };
-  const goShopping = () => { toggleTrialModal(false); navigate('/products'); };
+  const goCheckout = () => { 
+    toggleTrialModal(false); 
+    navigate('/trial-room'); 
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  };
+  const goShopping = () => { 
+    toggleTrialModal(false); 
+    navigate('/products');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  };
 
   return (
     <>
@@ -56,7 +68,10 @@ export function TrialModal() {
           <div className="px-6 py-4 border-t border-gray-100 space-y-3">
             {items.length > 0 ? (
               <>
-                <p className="text-xs text-gray-500 text-center">Select 1 item to buy → pay only for that item</p>
+                <div className="text-center space-y-1">
+                  <p className="text-xs text-gray-500">Pick 1 to buy, pay for that + ₹119 service fee</p>
+                  <p className="text-[10px] text-gray-400 italic">Remaining 2 returns are free</p>
+                </div>
                 <div className="flex gap-2">
                   {items.length < 3 && (
                     <button onClick={goShopping} className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">

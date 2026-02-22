@@ -191,8 +191,51 @@ export default function OrderConfirmation() {
 
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
+              {order.isTrial && order.trialItems && order.trialItems.length > 0 && (
+                <div className="bg-black/5 p-4 rounded-lg mb-6 border border-black/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold flex items-center gap-2">
+                       <span className="text-lg">📦</span> Trial Room Package
+                    </h3>
+                    <span className="text-[10px] font-bold bg-black text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                      Trial & Buy Mode
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {order.trialItems.map((ti, idx) => {
+                      const isPurchased = order.items.some(it => {
+                        const itProdId = it.product?._id || it.product;
+                        const tiProdId = ti.product?._id || ti.product;
+                        return String(itProdId) === String(tiProdId);
+                      });
+                      return (
+                        <div key={ti._id || ti.product || idx} className={`bg-white p-3 rounded-xl border-2 transition-all ${isPurchased ? 'border-black shadow-md relative overflow-hidden' : 'border-dashed border-gray-200 opacity-60'}`}>
+                          {isPurchased && (
+                            <div className="absolute top-0 right-0 bg-black text-white text-[8px] font-bold px-2 py-0.5 transform rotate-0 rounded-bl-lg">
+                              PURCHASED
+                            </div>
+                          )}
+                          <img src={ti.image} alt={ti.name} className="w-full h-24 object-cover rounded-lg mb-2" />
+                          <div className="text-[10px] font-bold truncate mb-1">{ti.name}</div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black">₹{ti.price}</span>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${isPurchased ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                              {isPurchased ? 'Main Item' : 'Trial Item'}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p className="mt-4 text-[10px] text-gray-500 italic text-center border-t border-gray-200 pt-3">
+                    Try all items at home. Keep the purchased one, returns for others are free!
+                  </p>
+                </div>
+              )}
+
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-3">Items in your order</h3>
+                <h3 className="font-semibold mb-3">{order.isTrial ? 'Purchased Item (Final Invoice)' : 'Items in your order'}</h3>
                 <div className="divide-y">
                   {(order.items || []).map((it, idx) => {
                     const prod = it.product || {}
@@ -231,10 +274,31 @@ export default function OrderConfirmation() {
               <div className="bg-white p-4 rounded-lg border">
                 <h4 className="font-semibold mb-3">Order summary</h4>
                 <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(order.subtotal || order.total)}</span></div>
-                  <div className="flex justify-between"><span>Shipping</span><span>{formatCurrency(order.shipping || 0)}</span></div>
-                  <div className="flex justify-between"><span>Tax</span><span>{formatCurrency(order.tax || 0)}</span></div>
-                  <div className="flex justify-between font-semibold text-gray-900"><span>Total</span><span>{formatCurrency(order.total)}</span></div>
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(order.subtotal)}</span>
+                  </div>
+                  
+                  {order.trialFee > 0 && (
+                    <div className="flex justify-between">
+                      <div className="flex flex-col">
+                        <span>Trial Service Fee</span>
+                        <span className="text-[10px] text-gray-400">Doorstep trial & returns</span>
+                      </div>
+                      <span>{formatCurrency(order.trialFee)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <span>Shipping ({order.deliveryType || 'Standard'})</span>
+                    <span className="text-green-600 font-medium">{formatCurrency(order.deliveryFee || 0)}</span>
+                  </div>
+
+
+                  <div className="pt-3 border-t border-gray-100 flex justify-between font-black text-gray-900 text-lg">
+                    <span>Grand Total</span>
+                    <span>{formatCurrency(order.total)}</span>
+                  </div>
                 </div>
 
                 <div className="mt-4 flex flex-col gap-2">

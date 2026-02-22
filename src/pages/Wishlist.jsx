@@ -21,7 +21,6 @@ export default function Wishlist() {
     const color = product.selectedColor || product.colors?.[0] || 'black'
     return addToCart(product, { size, color, quantity: 1 })
   }
-  }
 
   const handleSelectItem = (productId) => {
     setSelectedItems(prev => ({

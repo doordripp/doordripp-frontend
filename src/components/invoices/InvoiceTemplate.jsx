@@ -2,7 +2,7 @@ import React from 'react'
 import './InvoiceTemplate.css'
 
 /**
- * Professional GST Invoice Template for DoorDripp
+ * Professional Invoice Template for DoorDripp
  * Suitable for PDF export and printing
  * 
  * Props:
@@ -47,29 +47,16 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
         sno: 1,
         name: 'Classic Solid T-Shirt',
         description: 'Premium Cotton Blend',
-        hsnCode: '6104',
         quantity: 2,
         unitPrice: 799,
-        taxableAmount: 1598,
-        gstPercent: 5,
-        cgst: 79.90,
-        sgst: 79.90,
-        totalAmount: 1757.80
-      },
-      {
-        sno: 2,
-        name: 'Slim Fit Denim Jeans',
-        description: 'Blue Wash, Size 32',
-        hsnCode: '6203',
-        quantity: 1,
-        unitPrice: 1799,
-        taxableAmount: 1799,
-        gstPercent: 5,
-        cgst: 89.95,
-        sgst: 89.95,
-        totalAmount: 1978.90
+        totalAmount: 1598
       }
     ],
+
+    isTrial: false,
+    trialFee: 0,
+    deliveryFee: 100,
+    deliveryType: 'Standard',
     
     // Payment details
     paymentMode: 'UPI',
@@ -79,7 +66,6 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
     // Company details (hardcoded)
     company: {
       name: 'DoorDripp Pvt Ltd',
-      gstin: '09AAMCD3799E1Z5',
       pan: 'AAMCD3799E',
       address: 'LandCraft Metro Homes, Muradnagar, Ghaziabad, Uttar Pradesh – 201206',
       phone: '+91-9286819663',
@@ -91,9 +77,8 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
   const data = { ...defaultData, ...invoiceData }
   
   // Calculate totals
-  const subtotal = data.items.reduce((sum, item) => sum + item.taxableAmount, 0)
-  const totalGst = data.items.reduce((sum, item) => sum + (item.cgst || 0) + (item.sgst || 0), 0)
-  const grandTotal = subtotal + totalGst
+  const subtotal = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
+  const grandTotal = subtotal + (data.trialFee || 0) + (data.deliveryFee || 0)
   
   // Convert amount to words (Indian format)
   const amountInWords = (amount) => {
@@ -172,7 +157,7 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
           </div>
         </div>
         <div className="header-right">
-          <div className="invoice-badge">TAX INVOICE</div>
+          <div className="invoice-badge">INVOICE</div>
           <div className="invoice-meta">
             <p><strong>Invoice No:</strong> {data.invoiceNumber}</p>
             <p><strong>Invoice Date:</strong> {data.invoiceDate}</p>
@@ -183,10 +168,6 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
 
       {/* Company Details Section */}
       <div className="company-details-bar">
-        <div className="detail-item">
-          <span className="label">GSTIN:</span>
-          <span className="value">{data.company.gstin}</span>
-        </div>
         <div className="detail-item">
           <span className="label">PAN:</span>
           <span className="value">{data.company.pan}</span>
@@ -208,10 +189,6 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
           <div className="address-content">
             <p className="company-address">{data.company.name}</p>
             <p>{data.company.address}</p>
-            <p>
-              <strong>GSTIN:</strong> {data.company.gstin} | 
-              <strong> State Code:</strong> 09
-            </p>
           </div>
         </div>
 
@@ -254,11 +231,8 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
             <tr className="table-header">
               <th className="col-sno">S.No</th>
               <th className="col-product">Product Description</th>
-              <th className="col-hsn">HSN Code</th>
               <th className="col-qty">Qty</th>
               <th className="col-price">Unit Price</th>
-              <th className="col-taxable">Taxable Amount</th>
-              <th className="col-gst">GST %</th>
               <th className="col-total">Total Amount</th>
             </tr>
           </thead>
@@ -270,40 +244,9 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
                   <div className="product-name">{item.name}</div>
                   <div className="product-desc">{item.description}</div>
                 </td>
-                <td className="col-hsn">{item.hsnCode}</td>
                 <td className="col-qty">{item.quantity}</td>
                 <td className="col-price">₹{item.unitPrice.toFixed(2)}</td>
-                <td className="col-taxable">₹{item.taxableAmount.toFixed(2)}</td>
-                <td className="col-gst">{item.gstPercent}%</td>
-                <td className="col-total">₹{item.totalAmount.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* GST Breakdown Table */}
-        <table className="gst-breakdown-table">
-          <thead>
-            <tr className="table-header">
-              <th>HSN Code</th>
-              <th>Qty</th>
-              <th>Taxable Value</th>
-              <th>CGST</th>
-              <th>SGST</th>
-              <th>Total GST</th>
-              <th>Total Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.map((item, idx) => (
-              <tr key={idx}>
-                <td>{item.hsnCode}</td>
-                <td>{item.quantity}</td>
-                <td>₹{item.taxableAmount.toFixed(2)}</td>
-                <td>₹{(item.cgst || 0).toFixed(2)}</td>
-                <td>₹{(item.sgst || 0).toFixed(2)}</td>
-                <td>₹{((item.cgst || 0) + (item.sgst || 0)).toFixed(2)}</td>
-                <td>₹{item.totalAmount.toFixed(2)}</td>
+                <td className="col-total">₹{(item.unitPrice * item.quantity).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -329,20 +272,18 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
         <div className="summary-right">
           <div className="summary-table">
             <div className="summary-row">
-              <span className="summary-label">Subtotal (Taxable Value):</span>
+              <span className="summary-label">Subtotal:</span>
               <span className="summary-value">₹{subtotal.toFixed(2)}</span>
             </div>
+            {data.isTrial && (
+              <div className="summary-row">
+                <span className="summary-label">Trial Service Fee:</span>
+                <span className="summary-value">₹{(data.trialFee || 0).toFixed(2)}</span>
+              </div>
+            )}
             <div className="summary-row">
-              <span className="summary-label">CGST (GST @ component):</span>
-              <span className="summary-value">₹{(totalGst / 2).toFixed(2)}</span>
-            </div>
-            <div className="summary-row">
-              <span className="summary-label">SGST (GST @ component):</span>
-              <span className="summary-value">₹{(totalGst / 2).toFixed(2)}</span>
-            </div>
-            <div className="summary-row">
-              <span className="summary-label">Total GST:</span>
-              <span className="summary-value">₹{totalGst.toFixed(2)}</span>
+              <span className="summary-label">Delivery Fee ({data.deliveryType || 'Standard'}):</span>
+              <span className="summary-value">₹{(data.deliveryFee || 0).toFixed(2)}</span>
             </div>
             <div className="summary-row grand-total">
               <span className="summary-label">GRAND TOTAL:</span>

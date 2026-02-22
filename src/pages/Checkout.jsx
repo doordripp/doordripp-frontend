@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { useTrial } from '../context/TrialContext'
 import { apiGet, apiPost, apiPut, apiDelete } from '../services/apiClient'
 import AddressSelector from '../components/AddressSelector'
 import addressIllustration from '../assets/map.png'
@@ -15,9 +16,25 @@ const DELIVERY_OPTIONS = [
 ]
 
 export default function Checkout() {
-  const { items, cartTotals, clearCart } = useCart()
+  const { 
+    items, 
+    cartTotals, 
+    clearCart, 
+    isTrialCheckout: cartIsTrial,
+    trialFee: cartTrialFee,
+    trialItems: cartTrialItems,
+    purchasedItemId: cartPurchasedItemId
+  } = useCart()
   const { user, fetchMe } = useAuth()
+  const { clearTrial } = useTrial()
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Trial Mode State - Check location state first, then fallback to cart context
+  const isTrialCheckout = location.state?.isTrialCheckout || cartIsTrial || false
+  const trialItems = location.state?.trialItems || cartTrialItems || []
+  const purchasedItemId = location.state?.purchasedItemId || cartPurchasedItemId || null
+  const trialFee = location.state?.trialFee || cartTrialFee || 0
 
   // Map-selected address (mandatory)
   const [mapSelectedAddress, setMapSelectedAddress] = useState(null)
@@ -47,8 +64,8 @@ export default function Checkout() {
   // Get active delivery option data
   const selectedDeliveryOption = DELIVERY_OPTIONS.find(o => o.id === deliveryType) || DELIVERY_OPTIONS[2]
   
-  // Recalculate Total with selected delivery fee (no GST)
-  const finalTotal = cartTotals.subtotal + selectedDeliveryOption.charge
+  // Recalculate Total with selected delivery fee and potential trial fee (no GST)
+  const finalTotal = cartTotals.subtotal + selectedDeliveryOption.charge + trialFee
 
   // Ensure checkout opens at top
   useEffect(() => {
@@ -186,6 +203,14 @@ export default function Checkout() {
           selectedColor: i.selectedColor
         })),
         deliveryType, // Added delivery type
+        trialFee,     // Added trial fee
+        isTrial: isTrialCheckout,
+        trialItems: trialItems.map(ti => ({
+          product: ti.productId,
+          name: ti.name,
+          image: ti.image,
+          price: ti.price
+        })),
         shippingAddress: {
           name: selectedAddress.name || user?.name || '',
           phone: selectedAddress.phone || user?.phone || '',
@@ -233,6 +258,7 @@ export default function Checkout() {
                 
                 if (verifyResponse?.success || verifyResponse?.message) {
                   // Payment verified - clear cart and reset delivery
+                  if (isTrialCheckout) clearTrial()
                   clearCart()
                   localStorage.removeItem('doordripp_delivery_type')
                   setDeliveryType('regular')
@@ -439,34 +465,85 @@ export default function Checkout() {
           {/* Order Summary */}
           <div>
             <div className="bg-gray-100 rounded-2xl p-6 shadow border border-gray-200 sticky top-6">
-              <h2 className="text-2xl font-bold mb-4">Your Order</h2>
-              <div className="space-y-3 mb-4 max-h-52 overflow-auto">
-                {items.map(i => (
-                  <div key={`${i.id}-${i.selectedSize}-${i.selectedColor}`} className="flex items-center gap-3">
-                    <img src={i.image} alt={i.name} className="w-14 h-14 object-cover rounded-md" />
-                    <div className="flex-1">
-                      <div className="font-medium">{i.name}</div>
-                      <div className="text-sm text-gray-600">Qty: {i.quantity}</div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">Your Order</h2>
+                {isTrialCheckout && (
+                  <span className="px-3 py-1 bg-black text-white text-[10px] font-bold rounded-full uppercase tracking-widest">
+                    Trial & Buy Mode
+                  </span>
+                )}
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-4 mb-6 max-h-[400px] overflow-auto pr-2">
+                {isTrialCheckout ? (
+                  // Show all items in trial, highlight the one being purchased
+                  <>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Items in your Trial Room</p>
+                    {trialItems.map(i => (
+                      <div key={i.productId} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${i.productId === purchasedItemId ? 'border-black bg-white shadow-sm' : 'border-dashed border-gray-300 bg-gray-50 opacity-60'}`}>
+                        <img src={i.image} alt={i.name} className="w-14 h-14 object-cover rounded-lg" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-sm truncate">{i.name}</div>
+                          {i.productId === purchasedItemId ? (
+                            <div className="text-[10px] text-green-700 font-bold uppercase tracking-tight flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                              Buying this item
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-gray-500 font-medium italic">Sent for trial (will return)</div>
+                          )}
+                        </div>
+                        <div className="font-bold text-sm">
+                          {i.productId === purchasedItemId ? `₹${i.price.toFixed(2)}` : 'FREE'}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  // Regular Cart view
+                  items.map(i => (
+                    <div key={`${i.id}-${i.selectedSize}-${i.selectedColor}`} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                      <img src={i.image} alt={i.name} className="w-14 h-14 object-cover rounded-lg" />
+                      <div className="flex-1">
+                        <div className="font-bold text-sm">{i.name}</div>
+                        <div className="text-xs text-gray-500 font-medium">Qty: {i.quantity} | {i.selectedSize}</div>
+                      </div>
+                      <div className="font-bold text-sm">₹{(i.price * i.quantity).toFixed(2)}</div>
                     </div>
-                    <div className="font-semibold">₹{(i.price * i.quantity).toFixed(2)}</div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               
-              <div className="border-t border-gray-300 pt-4 space-y-2 mb-4">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>₹{cartTotals.subtotal.toFixed(2)}</span>
+              <div className="border-t border-gray-300 pt-4 space-y-3 mb-6">
+                <div className="flex justify-between text-gray-600">
+                  <span className="text-sm font-medium">Subtotal</span>
+                  <span className="font-bold">₹{cartTotals.subtotal.toFixed(2)}</span>
                 </div>
                 
-                <div className="flex justify-between">
-                  <span>Delivery Fee</span>
-                  <span className="font-semibold text-green-700">₹{selectedDeliveryOption.charge.toFixed(2)}</span>
+                {isTrialCheckout && (
+                  <div className="flex justify-between text-gray-600">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">Trial Service Fee</span>
+                      <span className="text-[10px] text-gray-500 leading-tight">Covers delivery & returns of 3 items</span>
+                    </div>
+                    <span className="font-bold">₹{trialFee.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-gray-600">
+                  <span className="text-sm font-medium">Delivery Fee ({selectedDeliveryOption.label})</span>
+                  <span className="font-bold text-green-700">₹{selectedDeliveryOption.charge.toFixed(2)}</span>
                 </div>
 
-                {/* Delivery Option Selector */}
-                <div className="pt-4 border-t border-gray-200 mt-4">
-                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">Delivery Speed</h3>
+                <div className="pt-4 border-t border-gray-300 border-dashed flex justify-between items-center text-xl font-black">
+                  <span>Grand Total</span>
+                  <span className="text-2xl">₹{finalTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Delivery Option Selector */}
+              <div className="pt-2">
                   <div className="space-y-2">
                     {DELIVERY_OPTIONS.map((opt) => (
                       <label 
@@ -507,11 +584,6 @@ export default function Checkout() {
                     ))}
                   </div>
                 </div>
-
-                <div className="flex justify-between font-bold text-lg pt-4">
-                  <span>Total</span>
-                  <span className="text-red-600">₹{finalTotal.toFixed(2)}</span>
-                </div>
               </div>
 
               {/* Dynamic ETA Info */}
@@ -529,14 +601,26 @@ export default function Checkout() {
               <button 
                 onClick={handlePlaceOrder}
                 disabled={!selectedAddress || !hasItems || placing}
-                className="w-full py-3 rounded-lg bg-red-500 text-white font-bold hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full py-4 rounded-xl font-black text-lg shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+                  isTrialCheckout 
+                    ? 'bg-black text-white hover:bg-gray-900' 
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {placing ? 'Placing Order...' : 'Place Order'}
+                {placing ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : isTrialCheckout ? (
+                  `Pay ₹${finalTotal.toFixed(2)} & Start Trial`
+                ) : (
+                  'Place Order'
+                )}
               </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
   )
 }
