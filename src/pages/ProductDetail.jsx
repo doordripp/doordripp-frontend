@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import {
   Star,
@@ -39,10 +39,12 @@ const formatTitleForBreadcrumb = (title = '') => {
 export default function ProductDetail() {
   const { id } = useParams()
   const { addToCart } = useCart()
+  const topRef = useRef(null)
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
+  const [selectedSize, setSelectedSize] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
@@ -65,10 +67,34 @@ export default function ProductDetail() {
   }
   
 
-  /* FORCE SCROLL TOP */
-  useLayoutEffect(() => {
-    window.scrollTo(0, 0)
-  }, [id])
+  /* FORCED BRUTE-FORCE SCROLL TO TOP */
+  useEffect(() => {
+    const scrollToTop = () => {
+      if (topRef.current) {
+        topRef.current.scrollIntoView({ behavior: 'auto', block: 'start' })
+        topRef.current.focus({ preventScroll: true })
+      }
+      window.scrollTo(0, 0)
+      document.body.scrollTop = 0
+      document.documentElement.scrollTop = 0
+    }
+
+    // Execute immediately
+    scrollToTop()
+
+    // Execute again after a few frames to handle content jumps
+    const timer1 = setTimeout(scrollToTop, 50)
+    const timer2 = setTimeout(scrollToTop, 200)
+    const timer3 = setTimeout(scrollToTop, 500)
+    const timer4 = setTimeout(scrollToTop, 1000)
+
+    return () => {
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      clearTimeout(timer3)
+      clearTimeout(timer4)
+    }
+  }, [id, loading])
 
   /* FETCH PRODUCT */
   useEffect(() => {
@@ -87,8 +113,14 @@ export default function ProductDetail() {
           rating: p.rating || { rating: 0 },
           category: p.category,
           subcategory: p.subcategory,
-          description: p.description
+          description: p.description,
+          sizes: p.sizes || [],
+          colors: p.colors || []
         })
+
+        if (p.sizes?.length) setSelectedSize(p.sizes[0])
+        else setSelectedSize('M')
+
       } catch (err) {
         setProduct(null)
       } finally {
@@ -123,7 +155,7 @@ export default function ProductDetail() {
   const images = product.images
 
   return (
-    <div className="min-h-screen bg-white">
+    <div ref={topRef} tabIndex={-1} className="min-h-screen bg-white outline-none">
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* ================= BREADCRUMB ================= */}
@@ -132,22 +164,26 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
           {/* ================= IMAGES ================= */}
-          <div>
-            <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden">
+          <div className="space-y-4">
+            <div className="aspect-square bg-gray-50 rounded-3xl overflow-hidden shadow-sm relative group border border-gray-100">
               <img
+                key={selectedImage}
                 src={optimizeImage(images[selectedImage], { width: 800 })}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110"
                 alt={product.name}
               />
+              <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
             </div>
 
-            <div className="grid grid-cols-4 gap-4 mt-4">
+            <div className="grid grid-cols-4 gap-4">
               {images.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
-                  className={`aspect-square rounded-xl overflow-hidden border-2 ${
-                    selectedImage === i ? 'border-black' : 'border-transparent'
+                  className={`aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
+                    selectedImage === i 
+                      ? 'border-black scale-95 shadow-lg' 
+                      : 'border-transparent hover:border-gray-300 hover:scale-105 bg-gray-50'
                   }`}
                 >
                   <img
@@ -161,7 +197,7 @@ export default function ProductDetail() {
           </div>
 
           {/* ================= INFO ================= */}
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col">
 
             {/* FULL PRODUCT TITLE */}
             <h1 className="text-3xl font-bold text-gray-900 leading-snug">
@@ -226,17 +262,73 @@ export default function ProductDetail() {
               </button>
             </div>
 
+            {/* COLOR & SIZE SELECTORS */}
+            <div className="space-y-6 py-4 border-y border-gray-100">
+              {/* SIZE SELECTOR */}
+              {product.sizes && product.sizes.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                      Size
+                    </span>
+                    <span className="text-sm text-gray-500 font-medium">Selected: {selectedSize}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`min-w-[50px] h-[50px] flex items-center justify-center rounded-lg border-2 text-sm font-bold transition-all duration-200 ${
+                          selectedSize === size
+                            ? 'border-black bg-black text-white shadow-sm'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600 bg-white'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* QUANTITY */}
+              <div className="space-y-3">
+                <span className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                  Quantity
+                </span>
+                <div className="flex items-center w-32 border-2 border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="flex-1 py-2 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="w-10 text-center font-bold">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="flex-1 py-2 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* ADD TO CART */}
             <button
               onClick={() => {
-                addToCart(product, { quantity })
+                addToCart({ ...product, image: product.images[0] }, { 
+                  quantity, 
+                  size: selectedSize, 
+                  color: 'Default' 
+                })
                 setIsAddedToCart(true)
                 setTimeout(() => setIsAddedToCart(false), 1500)
               }}
-              className="w-full bg-black text-white py-4 rounded-full font-semibold flex items-center justify-center gap-2"
+              className="w-full bg-black text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-900 transition-all active:scale-[0.98]"
             >
-              {isAddedToCart ? <Check /> : <ShoppingCart />}
-              {isAddedToCart ? 'Added to Cart' : 'Add to Cart'}
+              {isAddedToCart ? <Check className="animate-in zoom-in duration-300" /> : <ShoppingCart />}
+              {isAddedToCart ? 'Added to Cart' : `Add to Cart • ₹${product.price * quantity}`}
             </button>
           </div>
         </div>

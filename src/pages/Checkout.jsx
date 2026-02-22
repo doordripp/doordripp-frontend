@@ -2,9 +2,17 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-import { apiGet, apiPost, apiPut } from '../services/apiClient'
+import { apiGet, apiPost, apiPut, apiDelete } from '../services/apiClient'
 import AddressSelector from '../components/AddressSelector'
 import addressIllustration from '../assets/map.png'
+import { Trash2, Edit } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+
+const DELIVERY_OPTIONS = [
+  { id: 'priority', label: 'Priority Delivery', sublabel: 'Fastest', eta: '25 minutes', charge: 120, badge: '🔥' },
+  { id: 'standard', label: 'Standard Delivery', sublabel: 'Best Value', eta: '35 minutes', charge: 100, badge: '⭐' },
+  { id: 'regular', label: 'Regular Delivery', sublabel: 'Economical', eta: '45 minutes', charge: 80, badge: '🚚' }
+]
 
 export default function Checkout() {
   const { items, cartTotals, clearCart } = useCart()
@@ -17,13 +25,30 @@ export default function Checkout() {
   const [savedAddresses, setSavedAddresses] = useState([])
   // Currently selected address for order (map or saved)
   const [selectedAddress, setSelectedAddress] = useState(null)
+
+  // Delivery Option State
+  const [deliveryType, setDeliveryType] = useState(() => {
+    return localStorage.getItem('doordripp_delivery_type') || 'regular'
+  })
   
   const [showMapSelector, setShowMapSelector] = useState(false)
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
+  const [editingAddress, setEditingAddress] = useState(null)
 
   const hasItems = items && items.length > 0
+
+  // Persist delivery choice
+  useEffect(() => {
+    localStorage.setItem('doordripp_delivery_type', deliveryType)
+  }, [deliveryType])
+
+  // Get active delivery option data
+  const selectedDeliveryOption = DELIVERY_OPTIONS.find(o => o.id === deliveryType) || DELIVERY_OPTIONS[2]
+  
+  // Recalculate Total with selected delivery fee (no GST)
+  const finalTotal = cartTotals.subtotal + selectedDeliveryOption.charge
 
   // Ensure checkout opens at top
   useEffect(() => {
@@ -47,19 +72,68 @@ export default function Checkout() {
     }
   }, [])
 
+  const loadSavedAddresses = async () => {
+    if (!user?._id) return
+    try {
+      const data = await apiGet('/addresses')
+      const addresses = data.addresses || []
+      setSavedAddresses(addresses)
+
+      // Auto-select default address if it exists and no address is selected yet
+      const defaultAddr = addresses.find(a => a.isDefault) || addresses[0]
+      if (defaultAddr && !selectedAddress) {
+        setSelectedAddress({
+          _id: defaultAddr._id,
+          name: defaultAddr.label || user?.name || '',
+          line1: defaultAddr.addressLine1,
+          line2: defaultAddr.addressLine2,
+          city: defaultAddr.city,
+          state: defaultAddr.state,
+          zip: defaultAddr.zip,
+          phone: defaultAddr.phone || user?.phone || '',
+          latitude: defaultAddr.latitude,
+          longitude: defaultAddr.longitude,
+          isMapSelected: false
+        })
+      }
+    } catch (e) {
+      // Silently handle address loading errors
+    }
+  }
+
   // Load pre-saved addresses from backend
   useEffect(() => {
-    const loadSavedAddresses = async () => {
-      if (!user?._id) return
-      try {
-        const data = await apiGet('/addresses')
-        setSavedAddresses(data.addresses || [])
-      } catch (e) {
-        // Silently handle address loading errors
-      }
-    }
     loadSavedAddresses()
   }, [user?._id])
+
+  const handleDeleteAddress = async (e, addressId) => {
+    e.stopPropagation()
+    e.preventDefault()
+    
+    if (!window.confirm('Are you sure you want to delete this address?')) return
+    
+    try {
+      await apiDelete(`/addresses/${addressId}`)
+      toast.success('Address deleted')
+      
+      // If the deleted address was selected, clear selection
+      if (selectedAddress?._id === addressId) {
+        setSelectedAddress(null)
+      }
+      
+      // Reload addresses
+      loadSavedAddresses()
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete address')
+    }
+  }
+
+  const handleEditAddress = (e, addr) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setEditingAddress(addr)
+    setShowMapSelector(true)
+  }
 
   const handleMapAddressSelect = (mapAddress) => {
     if (!mapAddress) return
@@ -76,8 +150,10 @@ export default function Checkout() {
       isMapSelected: true
     }
     setMapSelectedAddress(mapped)
-    setSelectedAddress(mapped) // Use map selection as default
+    setSelectedAddress(mapped)
     setShowMapSelector(false)
+    setEditingAddress(null)
+    loadSavedAddresses() // Refresh list since it might have been saved
   }
 
   const handlePlaceOrder = async () => {
@@ -109,6 +185,7 @@ export default function Checkout() {
           selectedSize: i.selectedSize,
           selectedColor: i.selectedColor
         })),
+        deliveryType, // Added delivery type
         shippingAddress: {
           name: selectedAddress.name || user?.name || '',
           phone: selectedAddress.phone || user?.phone || '',
@@ -155,8 +232,11 @@ export default function Checkout() {
                 })
                 
                 if (verifyResponse?.success || verifyResponse?.message) {
-                  // Payment verified - clear cart and navigate
+                  // Payment verified - clear cart and reset delivery
                   clearCart()
+                  localStorage.removeItem('doordripp_delivery_type')
+                  setDeliveryType('regular')
+                  
                   navigate(`/orders/${order._id}`, { 
                     state: { 
                       order, 
@@ -213,101 +293,146 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <h2 className="text-xl font-semibold mb-6">Select Delivery Address</h2>
+              <h2 className="text-xl font-semibold mb-6">Delivery Address</h2>
 
-              {/* Show map selector if not yet selected */}
-              {!mapSelectedAddress ? (
-                <div>
-                  {showMapSelector && (
-                    <AddressSelector
-                      onAddressSelect={handleMapAddressSelect}
-                      onClose={() => setShowMapSelector(false)}
-                    />
-                  )}
-                  {!showMapSelector && (
-                    <div className="p-8 text-center border rounded-xl bg-yellow-50 shadow-sm border-yellow-200">
-                      <h3 className="text-lg font-semibold text-yellow-800 mb-2">📍 Delivery Address Required</h3>
-                      <p className="text-sm text-yellow-700 mb-4">Please select your delivery location on the map to proceed with your order.</p>
+              <div className="space-y-6">
+                {/* 1. Saved Addresses Section - Shown if they exist */}
+                {savedAddresses.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center justify-between">
+                      Your Saved Addresses
+                      <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">{savedAddresses.length}/3</span>
+                    </h3>
+                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                      {savedAddresses.map((addr) => (
+                        <label key={addr._id} className={`group block border-2 rounded-xl p-4 shadow-sm cursor-pointer transition-all ${selectedAddress?._id === addr._id ? 'border-red-500 bg-red-50' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`}>
+                          <div className="flex items-start gap-3">
+                            <input 
+                              type="radio" 
+                              name="addressChoice" 
+                              value={addr._id} 
+                              checked={selectedAddress?._id === addr._id} 
+                              onChange={() => setSelectedAddress({ 
+                                _id: addr._id, 
+                                name: addr.label, 
+                                line1: addr.addressLine1, 
+                                line2: addr.addressLine2, 
+                                city: addr.city, 
+                                state: addr.state, 
+                                zip: addr.zip, 
+                                phone: addr.phone || user?.phone || '',
+                                latitude: addr.latitude,
+                                longitude: addr.longitude,
+                                isMapSelected: false 
+                              })} 
+                              className="mt-1 accent-red-600 w-4 h-4" 
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${selectedAddress?._id === addr._id ? 'bg-red-200 text-red-800' : 'bg-gray-200 text-gray-700'}`}>{addr.label}</span>
+                                  {addr.isDefault && <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold italic">DEFAULT</span>}
+                                </div>
+                                
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={(e) => handleEditAddress(e, addr)}
+                                    className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors"
+                                    title="Edit Address"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleDeleteAddress(e, addr._id)}
+                                    className="p-1.5 text-red-600 hover:bg-red-100 rounded-md transition-colors"
+                                    title="Delete Address"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="text-sm font-medium text-gray-900">{[addr.addressLine1, addr.addressLine2].filter(Boolean).join(', ')}</div>
+                              <div className="text-sm text-gray-600">{[addr.city, addr.state, addr.zip].filter(Boolean).join(', ')}</div>
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Map Selection Section */}
+                <div className={savedAddresses.length > 0 ? "pt-6 border-t border-gray-100" : ""}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">
+                    {savedAddresses.length > 0 ? (savedAddresses.length >= 3 ? 'Only 3 Addresses Allowed' : 'Or Select New Location') : 'Select Delivery Location'}
+                  </h3>
+
+                  {mapSelectedAddress ? (
+                    <div className="space-y-3">
+                      <label className={`block border-2 rounded-xl p-4 shadow-sm cursor-pointer transition-all ${selectedAddress?.isMapSelected ? 'border-green-500 bg-green-50' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`}>
+                        <div className="flex items-start gap-3">
+                          <input 
+                            type="radio" 
+                            name="addressChoice" 
+                            value="map" 
+                            checked={selectedAddress?.isMapSelected === true} 
+                            onChange={() => setSelectedAddress({ ...mapSelectedAddress, isMapSelected: true })} 
+                            className="mt-1 accent-green-600 w-4 h-4" 
+                          />
+                          <div>
+                            <div className="font-bold text-green-800 text-xs mb-1 uppercase tracking-tight flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-green-500"></span> Current Map Selection
+                            </div>
+                            <div className="text-sm font-medium text-gray-900">{[mapSelectedAddress.line1, mapSelectedAddress.line2, mapSelectedAddress.city, mapSelectedAddress.state].filter(Boolean).join(', ')} </div>
+                            <div className="text-xs text-gray-500 mt-1 italic">Phone: {mapSelectedAddress.phone}</div>
+                          </div>
+                        </div>
+                      </label>
                       <button 
                         onClick={() => setShowMapSelector(true)} 
-                        className="px-6 py-2 rounded-lg bg-yellow-600 text-white font-semibold hover:bg-yellow-700"
+                        className="text-xs text-blue-600 hover:text-blue-800 font-bold uppercase tracking-widest flex items-center gap-1"
                       >
-                        Select on Map
+                         Change Map Location
                       </button>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Show selected map address */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">📍 Selected Delivery Address</h3>
-                    <label className="block bg-green-50 border border-green-200 rounded-xl p-4 shadow-sm cursor-pointer hover:bg-green-100 transition">
-                      <div className="flex items-start gap-3">
-                        <input 
-                          type="radio" 
-                          name="addressChoice" 
-                          value="map" 
-                          checked={selectedAddress?.isMapSelected === true} 
-                          onChange={() => setSelectedAddress(mapSelectedAddress)} 
-                          className="mt-1 accent-green-600 w-4 h-4" 
-                        />
-                        <div>
-                          <div className="font-semibold text-green-900">Map Selected Address</div>
-                          <div className="text-sm text-gray-700">{[mapSelectedAddress.line1, mapSelectedAddress.line2, mapSelectedAddress.city, mapSelectedAddress.state].filter(Boolean).join(', ')} </div>
-                          <div className="text-sm text-gray-700 mt-1">📞 {mapSelectedAddress.phone}</div>
-                        </div>
-                      </div>
-                    </label>
-                    <button 
-                      onClick={() => setShowMapSelector(true)} 
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      Change Address on Map
-                    </button>
-                  </div>
-
-                  {/* Show saved addresses as alternatives */}
-                  {savedAddresses.length > 0 && (
+                  ) : (
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Or Use Saved Address</h3>
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {savedAddresses.map((addr) => (
-                          <label key={addr._id} className="block bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:bg-gray-100 transition">
-                            <div className="flex items-start gap-3">
-                              <input 
-                                type="radio" 
-                                name="addressChoice" 
-                                value={addr._id} 
-                                checked={selectedAddress?._id === addr._id} 
-                                onChange={() => setSelectedAddress({ 
-                                  _id: addr._id, 
-                                  name: addr.label, 
-                                  line1: addr.addressLine1, 
-                                  line2: addr.addressLine2, 
-                                  city: addr.city, 
-                                  state: addr.state, 
-                                  zip: addr.zip, 
-                                  phone: addr.phone || user?.phone || '',
-                                  isMapSelected: false 
-                                })} 
-                                className="mt-1 accent-blue-600 w-4 h-4" 
-                              />
-                              <div>
-                                <div className="inline-flex items-center gap-2 mb-1">
-                                  <span className="text-xs bg-gray-200 px-2 py-0.5 rounded-md">{addr.label}</span>
-                                  {addr.isDefault && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">Default</span>}
-                                </div>
-                                <div className="text-sm text-gray-700">{[addr.addressLine1, addr.addressLine2, addr.city, addr.state].filter(Boolean).join(', ')} </div>
-                              </div>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
+                      {showMapSelector ? (
+                        <div className="border rounded-2xl overflow-hidden shadow-inner bg-gray-50 p-2">
+                          <AddressSelector
+                            onAddressSelect={handleMapAddressSelect}
+                            onClose={() => {
+                              setShowMapSelector(false)
+                              setEditingAddress(null)
+                            }}
+                            initialLocation={editingAddress ? { lat: editingAddress.latitude, lng: editingAddress.longitude } : null}
+                            addressId={editingAddress?._id}
+                          />
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            if (savedAddresses.length >= 3) {
+                              toast.error('Maximum 3 addresses allowed. Please delete one to add a new one.')
+                              return
+                            }
+                            setShowMapSelector(true)
+                          }} 
+                          disabled={savedAddresses.length >= 3}
+                          className={`w-full py-8 border-2 border-dashed rounded-2xl font-bold flex flex-col items-center justify-center gap-3 transition-all group ${savedAddresses.length >= 3 ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
+                        >
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform ${savedAddresses.length >= 3 ? 'bg-gray-100' : 'bg-red-100 group-hover:scale-110'}`}>
+                            <img src={addressIllustration} alt="Locate" className={`w-8 h-8 object-contain ${savedAddresses.length >= 3 ? 'grayscale' : ''}`} />
+                          </div>
+                          <span className="text-sm">
+                            {savedAddresses.length >= 3 ? 'Address Limit Reached' : 'Click to Select Location on Map'}
+                          </span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -334,26 +459,65 @@ export default function Checkout() {
                   <span>₹{cartTotals.subtotal.toFixed(2)}</span>
                 </div>
                 
-                {/* GST Breakdown */}
-                <div className="bg-blue-50 rounded p-2 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>CGST (6%)</span>
-                    <span>₹{cartTotals.cgstAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>SGST (6%)</span>
-                    <span>₹{cartTotals.sgstAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-                
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
-                  <span>₹{cartTotals.deliveryFee.toFixed(2)}</span>
+                  <span className="font-semibold text-green-700">₹{selectedDeliveryOption.charge.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg">
+
+                {/* Delivery Option Selector */}
+                <div className="pt-4 border-t border-gray-200 mt-4">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">Delivery Speed</h3>
+                  <div className="space-y-2">
+                    {DELIVERY_OPTIONS.map((opt) => (
+                      <label 
+                        key={opt.id} 
+                        className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                          deliveryType === opt.id 
+                            ? 'border-black bg-white shadow-md scale-[1.02]' 
+                            : 'border-transparent bg-gray-50 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="radio" 
+                            name="deliveryType" 
+                            value={opt.id} 
+                            checked={deliveryType === opt.id}
+                            onChange={() => setDeliveryType(opt.id)}
+                            className="w-4 h-4 accent-black"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-gray-900">{opt.label}</span>
+                              <span className="text-xs">{opt.badge}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                                opt.id === 'priority' ? 'bg-orange-100 text-orange-600 animate-priority' : 
+                                opt.id === 'standard' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'
+                              }`}>
+                                {opt.sublabel}
+                              </span>
+                              <span className="text-[10px] font-medium text-gray-500 italic">ETA: {opt.eta}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm font-bold text-black">₹{opt.charge}</div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between font-bold text-lg pt-4">
                   <span>Total</span>
-                  <span>₹{cartTotals.total.toFixed(2)}</span>
+                  <span className="text-red-600">₹{finalTotal.toFixed(2)}</span>
                 </div>
+              </div>
+
+              {/* Dynamic ETA Info */}
+              <div className="mb-4 px-3 py-2 bg-yellow-50 border border-yellow-100 rounded-lg flex items-center gap-2 text-xs text-yellow-800">
+                <span className="animate-pulse">⏳</span>
+                <span>Estimated arrival: <strong>{selectedDeliveryOption.eta}</strong></span>
               </div>
 
               {error && (

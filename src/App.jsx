@@ -66,9 +66,9 @@ function ScrollToTop() {
   const scrollPositionsRef = useRef(new Map())
 
   useLayoutEffect(() => {
-    // Enable browser's native scroll restoration
+    // Disable browser's native scroll restoration to have full control
     if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'auto'
+      window.history.scrollRestoration = 'manual'
     }
   }, [])
 
@@ -89,8 +89,8 @@ function ScrollToTop() {
       // Back navigation - restore scroll position
       window.scrollTo({ top: savedPosition, left: 0, behavior: 'auto' })
     } else {
-      // Forward navigation - scroll to top (but only once, not aggressively)
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      // Forward navigation - scroll to top instantly to ensure we start at the header
+      window.scrollTo(0, 0)
     }
 
     lastPathnameRef.current = pathname

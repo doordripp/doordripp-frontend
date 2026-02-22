@@ -17,7 +17,11 @@ export default function Wishlist() {
 
   const handleAddToCart = (product) => {
     // Add to cart with default selections (can be improved later)
-    addToCart(product, product.selectedSize || 'M', product.selectedColor || product.colors?.[0] || 'black', 1)
+    addToCart(product, {
+      size: product.selectedSize || 'M',
+      color: product.selectedColor || product.colors?.[0] || 'black',
+      quantity: 1
+    })
   }
 
   const handleSelectItem = (productId) => {

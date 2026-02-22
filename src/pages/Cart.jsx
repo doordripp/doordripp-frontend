@@ -230,18 +230,6 @@ export default function Cart() {
                 </div>
               )}
 
-              {/* GST Breakdown */}
-              <div className="bg-blue-50 rounded-lg p-3 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>CGST (6%)</span>
-                  <span>₹{cartTotals.cgstAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>SGST (6%)</span>
-                  <span>₹{cartTotals.sgstAmount.toFixed(2)}</span>
-                </div>
-              </div>
-
               <div className="flex justify-between">
                 <span>Delivery</span>
                 <span>₹{cartTotals.deliveryFee}</span>

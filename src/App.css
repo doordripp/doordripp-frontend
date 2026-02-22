@@ -37,6 +37,17 @@
 .card { padding: 0; }
 
 .read-the-docs { color: #888; }
+
+@keyframes priority-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+}
+
+.animate-priority {
+  animation: priority-pulse 2s infinite;
+}
+
 /* Improved product grid layout for category page */
 .product-list {
   display: grid;

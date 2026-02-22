@@ -378,6 +378,20 @@ function ProductModal({ product, onSave, onClose, saving }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     
+    // Validation
+    if (formData.sizes.length === 0) {
+      alert('Please select at least one size.')
+      return
+    }
+    if (formData.colors.length === 0) {
+      alert('Please select at least one color.')
+      return
+    }
+    if (formData.images.length === 0) {
+      alert('Please upload at least one product image.')
+      return
+    }
+
     // Calculate discount if original price is provided
     const price = parseFloat(formData.price)
     const originalPrice = formData.originalPrice ? parseFloat(formData.originalPrice) : null
@@ -541,7 +555,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Available Sizes *
+              Available Sizes * <span className="text-red-500 font-bold">(Required)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {(formData.category === 'Footwear' ? shoeSizes : availableSizes).map(size => (
@@ -559,11 +573,14 @@ function ProductModal({ product, onSave, onClose, saving }) {
                 </button>
               ))}
             </div>
+            {formData.sizes.length === 0 && (
+              <p className="mt-1 text-xs text-red-500 font-medium">Please select at least one size</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Available Colors *
+              Available Colors * <span className="text-red-500 font-bold">(Required)</span>
             </label>
             <div className="flex flex-wrap gap-3">
               {availableColors.map(color => (
@@ -589,6 +606,9 @@ function ProductModal({ product, onSave, onClose, saving }) {
                 </button>
               ))}
             </div>
+            {formData.colors.length === 0 && (
+              <p className="mt-1 text-xs text-red-500 font-medium">Please select at least one color</p>
+            )}
           </div>
 
           <div>
@@ -674,12 +694,15 @@ function ProductModal({ product, onSave, onClose, saving }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Images
+              Product Images * <span className="text-red-500 font-bold">(Required)</span>
             </label>
             <ImageKitUploader
               existingImages={formData.images}
               onUploadComplete={(images) => setFormData({...formData, images})}
             />
+            {formData.images.length === 0 && (
+              <p className="mt-1 text-xs text-red-500 font-medium">Please upload at least one image</p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">

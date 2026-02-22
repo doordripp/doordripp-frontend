@@ -193,24 +193,21 @@ export function CartProvider({ children }) {
       return (this.subtotal * state.discount) / 100
     },
     get deliveryFee() {
-      return this.subtotal > 0 ? 15 : 0
+      // Default to regular delivery charge if cart not empty
+      return this.subtotal > 0 ? 80 : 0
     },
-    // GST Calculation (12% default for clothing)
+    // Removed GST charges
     get cgstAmount() {
-      const gstableAmount = this.subtotal - this.discountAmount; // GST not on delivery
-      const gstRate = 12; // Default 12% for apparel/clothing
-      return Math.round((gstableAmount * (gstRate / 2) / 100) * 100) / 100;
+      return 0;
     },
     get sgstAmount() {
-      const gstableAmount = this.subtotal - this.discountAmount;
-      const gstRate = 12;
-      return Math.round((gstableAmount * (gstRate / 2) / 100) * 100) / 100;
+      return 0;
     },
     get totalGST() {
-      return this.cgstAmount + this.sgstAmount;
+      return 0;
     },
     get total() {
-      return this.subtotal - this.discountAmount + this.totalGST + this.deliveryFee
+      return this.subtotal - this.discountAmount + this.deliveryFee
     }
   }
 
@@ -239,6 +236,7 @@ export function CartProvider({ children }) {
 
   const clearCart = () => {
     dispatch({ type: CART_ACTIONS.CLEAR_CART })
+    localStorage.removeItem('doordripp_delivery_type')
   }
 
   const toggleDrawer = (isOpen) => {

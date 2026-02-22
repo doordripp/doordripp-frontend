@@ -40,7 +40,8 @@ const extractAddressFields = (result) => {
 const AddressSelector = ({ 
   onAddressSelect, 
   onClose,
-  initialLocation = null 
+  initialLocation = null,
+  addressId = null // New prop for editing
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -334,9 +335,12 @@ const AddressSelector = ({
     }
 
     try {
-      toast.loading('Saving address...');
+      toast.loading(addressId ? 'Updating address...' : 'Saving address...');
 
-      const data = await apiPost('/save-address', {
+      const endpoint = addressId ? `/addresses/${addressId}` : '/save-address';
+      const method = addressId ? apiPut : apiPost;
+
+      const data = await method(endpoint, {
         latitude: selectedLocation.lat,
         longitude: selectedLocation.lng,
         formattedAddress,
@@ -351,9 +355,10 @@ const AddressSelector = ({
       toast.dismiss();
 
       if (data.success) {
-        toast.success('Address saved successfully!');
+        toast.success(addressId ? 'Address updated successfully!' : 'Address saved successfully!');
         if (onAddressSelect) {
           onAddressSelect({
+            ...data.address, // Use returned address data if available
             location: selectedLocation,
             formattedAddress,
             line1: addressFields.line1 || formattedAddress,
