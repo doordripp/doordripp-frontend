@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useWishlist } from '../../context/WishlistContext'
 import { optimizeImage } from '../../config/imagekit'
+import { TrialButton } from '../trial/TrialButton'
 
 
 const formatProductTitle = (title = '') => {
@@ -23,6 +24,7 @@ export default function ProductCard({
   showDiscount = true,
   initialImageIndex = 0,
   showAddToCart = true,
+  trialMode = false,
 }) {
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
@@ -44,6 +46,9 @@ export default function ProductCard({
   const stock = product.stock ?? 1
   const isOutOfStock = stock === 0
   const hasDiscount = originalPrice && discount
+  
+  // Preserve trial mode in product links
+  const productLink = trialMode ? `/product/${id}?mode=trial` : `/product/${id}`
 
   return (
     <div
@@ -58,7 +63,7 @@ export default function ProductCard({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <Link to={`/product/${id}`} className="block h-full w-full">
+          <Link to={productLink} className="block h-full w-full">
             <img
               src={optimizeImage(image, { width: 800, height: 800 })}
               alt={name}
@@ -140,27 +145,34 @@ export default function ProductCard({
           {/* CTA PUSHED TO BOTTOM */}
           {showAddToCart && (
             <div className="mt-auto">
-              <button
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (!isOutOfStock) {
-                    addToCart(product, {
-                      size: 'M',
-                      color: 'default',
-                      quantity: 1,
-                    })
-                  }
-                }}
-                disabled={isOutOfStock}
-                className={`w-full flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-semibold transition ${
-                  isOutOfStock
-                    ? 'bg-gray-200 text-gray-500 border-gray-300'
-                    : 'bg-white border-black hover:bg-black hover:text-white'
-                }`}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
-              </button>
+              {trialMode ? (
+                <TrialButton 
+                  product={product} 
+                  className="w-full"
+                />
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (!isOutOfStock) {
+                      addToCart(product, {
+                        size: 'M',
+                        color: 'default',
+                        quantity: 1,
+                      })
+                    }
+                  }}
+                  disabled={isOutOfStock}
+                  className={`w-full flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-semibold transition ${
+                    isOutOfStock
+                      ? 'bg-gray-200 text-gray-500 border-gray-300'
+                      : 'bg-white border-black hover:bg-black hover:text-white'
+                  }`}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -16,6 +16,7 @@ export default function Products() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const limit = 24
+  const trialMode = searchParams.get('mode') === 'trial'
 
   useEffect(() => {
     const urlSearch = searchParams.get('search')
@@ -97,6 +98,29 @@ export default function Products() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+
+      {/* TRIAL MODE BANNER */}
+      {trialMode && (
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📦</span>
+                <div>
+                  <h3 className="font-bold text-lg">Trial Room Mode</h3>
+                  <p className="text-sm opacity-90">Select up to 3 items to try at home</p>
+                </div>
+              </div>
+              <button
+                onClick={() => window.location.href = '/trial-room'}
+                className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold text-sm hover:bg-gray-100 transition"
+              >
+                View Trial Cart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TOP FILTERS */}
       <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
@@ -191,6 +215,7 @@ export default function Products() {
                   <ProductCard
                     product={product}
                     className="w-full"
+                    trialMode={trialMode}
                   />
                 </div>
               ))}
@@ -223,7 +248,7 @@ export default function Products() {
       </div>
 
       {/* Fade-in Animation */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }

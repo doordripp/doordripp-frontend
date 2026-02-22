@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
   Star,
   Plus,
@@ -16,6 +16,7 @@ import api from '../services/api'
 import { optimizeImage } from '../config/imagekit'
 import Breadcrumb, { buildProductBreadcrumb } from '../components/ui/Breadcrumb'
 import { useAuth } from '../context/AuthContext'
+import { TrialButton } from '../features/trial/TrialButton'
 
 
 /* ============================
@@ -38,7 +39,9 @@ const formatTitleForBreadcrumb = (title = '') => {
 
 export default function ProductDetail() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const { addToCart } = useCart()
+  const trialMode = searchParams.get('mode') === 'trial'
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -228,25 +231,44 @@ export default function ProductDetail() {
               </button>
             </div>
 
-            {/* ADD TO CART */}
-            <button
-              onClick={() => {
-                if (isOutOfStock) return
-                const result = addToCart(product, { quantity })
-                if (result?.success === false) return
-                setIsAddedToCart(true)
-                setTimeout(() => setIsAddedToCart(false), 1500)
-              }}
-              disabled={isOutOfStock}
-              className={`w-full py-4 rounded-full font-semibold flex items-center justify-center gap-2 ${
-                isOutOfStock
-                  ? 'bg-gray-200 text-gray-500'
-                  : 'bg-black text-white'
-              }`}
-            >
-              {isAddedToCart && !isOutOfStock ? <Check /> : <ShoppingCart />}
-              {isOutOfStock ? 'Out of Stock' : isAddedToCart ? 'Added to Cart' : 'Add to Cart'}
-            </button>
+            {/* ADD TO CART / TRIAL BUTTON */}
+            {trialMode ? (
+              <div className="space-y-3">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm">
+                  <span className="font-semibold text-purple-900">📦 Trial Mode:</span>
+                  <span className="text-purple-700"> Add this item to try at home (max 3 items)</span>
+                </div>
+                <TrialButton 
+                  product={product}
+                  className="w-full py-4 text-base"
+                />
+                <button
+                  onClick={() => window.location.href = '/trial-room'}
+                  className="w-full py-3 border-2 border-purple-600 text-purple-600 rounded-full font-semibold hover:bg-purple-50 transition"
+                >
+                  View Trial Cart
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  if (isOutOfStock) return
+                  const result = addToCart(product, { quantity })
+                  if (result?.success === false) return
+                  setIsAddedToCart(true)
+                  setTimeout(() => setIsAddedToCart(false), 1500)
+                }}
+                disabled={isOutOfStock}
+                className={`w-full py-4 rounded-full font-semibold flex items-center justify-center gap-2 ${
+                  isOutOfStock
+                    ? 'bg-gray-200 text-gray-500'
+                    : 'bg-black text-white'
+                }`}
+              >
+                {isAddedToCart && !isOutOfStock ? <Check /> : <ShoppingCart />}
+                {isOutOfStock ? 'Out of Stock' : isAddedToCart ? 'Added to Cart' : 'Add to Cart'}
+              </button>
+            )}
           </div>
         </div>
 
