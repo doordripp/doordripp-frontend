@@ -1,0 +1,333 @@
+/**
+ * Trial Room Categories Styles
+ * 
+ * Styling for the trial room promotional cards section
+ * Matches the design pattern of the main categories section
+ */
+
+/* ============ Section Container ============ */
+.trial-room-categories-section {
+  width: 100%;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 3rem 1.5rem;
+}
+
+.trial-room-categories-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ============ Section Title ============ */
+.trial-room-categories-title {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #000;
+  margin-bottom: 0.5rem;
+}
+
+.trial-room-categories-subtitle {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #4a5568;
+  margin-bottom: 3rem;
+  font-weight: 500;
+}
+
+/* ============ Grid Layout ============ */
+.trial-room-categories-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+@media (min-width: 640px) {
+  .trial-room-categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .trial-room-categories-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ============ Trial Category Cards ============ */
+.trial-category-card {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.trial-category-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.trial-category-card:focus {
+  outline: 2px solid #4299e1;
+  outline-offset: 2px;
+}
+
+/* ============ Card Backgrounds ============ */
+.card-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card-secondary {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.card-split {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+/* ============ Card Overlay ============ */
+.trial-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom right,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.35)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.trial-category-card:hover .trial-card-overlay {
+  opacity: 1;
+}
+
+/* ============ Card Content ============ */
+.trial-card-content {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+  color: white;
+  z-index: 1;
+}
+
+.trial-card-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.trial-category-card:hover .trial-card-icon {
+  transform: scale(1.1);
+}
+
+.trial-card-title {
+  font-size: 2rem;
+  font-weight: 900;
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.trial-card-description {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  opacity: 0.95;
+  max-width: 280px;
+}
+
+.trial-card-cta {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #333;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.trial-category-card:hover .trial-card-cta {
+  background: #f7fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ============ Split Card Layout ============ */
+.card-split {
+  position: relative;
+  background: transparent;
+}
+
+.trial-card-half {
+  position: absolute;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.trial-card-top {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.trial-card-bottom {
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(100% 6%, 100% 100%, 2% 100%);
+  background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+}
+
+.trial-card-top:hover,
+.trial-card-bottom:hover {
+  z-index: 10;
+}
+
+.trial-card-top .trial-card-content {
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 2rem;
+}
+
+.trial-card-bottom .trial-card-content {
+  align-items: flex-end;
+  justify-content: flex-end;
+  text-align: right;
+  padding: 2rem;
+}
+
+.trial-card-half .trial-card-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.trial-card-half .trial-card-title {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.trial-card-half .trial-card-description {
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+/* ============ Diagonal Separator ============ */
+.trial-card-separator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 570px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  transform: rotate(45deg);
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* ============ Info Section ============ */
+.trial-room-info {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 640px) {
+  .trial-room-info {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .trial-room-info {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.trial-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+}
+
+.trial-info-icon {
+  font-size: 1.25rem;
+  color: #48bb78;
+  font-weight: bold;
+}
+
+.trial-info-text {
+  font-size: 0.95rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* ============ Responsive Adjustments ============ */
+@media (max-width: 768px) {
+  .trial-room-categories-title {
+    font-size: 1.75rem;
+  }
+
+  .trial-room-categories-subtitle {
+    font-size: 1rem;
+  }
+
+  .trial-category-card {
+    height: 350px;
+  }
+
+  .trial-card-title {
+    font-size: 1.5rem;
+  }
+
+  .trial-card-description {
+    font-size: 0.9rem;
+  }
+
+  .trial-card-icon {
+    font-size: 3rem;
+  }
+}
+
+/* ============ Accessibility ============ */
+.trial-category-card:focus-visible {
+  outline: 3px solid #4299e1;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trial-category-card,
+  .trial-card-icon,
+  .trial-card-cta,
+  .trial-card-overlay {
+    transition: none;
+  }
+}

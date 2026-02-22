@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useWishlist } from '../../context/WishlistContext'
 import { optimizeImage } from '../../config/imagekit'
+import { TrialButton } from '../trial/TrialButton'
 
 
 const formatProductTitle = (title = '') => {
@@ -44,6 +45,8 @@ export default function ProductCard({
   const stock = product.stock ?? 1
   const isOutOfStock = stock === 0
   const hasDiscount = originalPrice && discount
+  
+  const productLink = `/product/${id}`
 
   return (
     <div
@@ -58,7 +61,7 @@ export default function ProductCard({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <Link to={`/product/${id}`} className="block h-full w-full">
+          <Link to={productLink} className="block h-full w-full">
             <img
               src={optimizeImage(image, { width: 800, height: 800 })}
               alt={name}
@@ -139,7 +142,7 @@ export default function ProductCard({
 
           {/* CTA PUSHED TO BOTTOM */}
           {showAddToCart && (
-            <div className="mt-auto">
+            <div className="mt-auto space-y-2">
               <button
                 onClick={(e) => {
                   e.preventDefault()
@@ -161,6 +164,10 @@ export default function ProductCard({
                 <ShoppingCart className="h-4 w-4" />
                 {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
               </button>
+              <TrialButton 
+                product={product} 
+                className="w-full"
+              />
             </div>
           )}
         </div>

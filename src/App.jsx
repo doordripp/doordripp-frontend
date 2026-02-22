@@ -1,5 +1,5 @@
 import './App.css'
-import { useLayoutEffect, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Navbar } from './components/navigation'
 import { Footer, Newsletter } from './layout'
@@ -7,7 +7,10 @@ import { CartDrawer } from './features/cart'
 import { CartProvider } from './context/CartContext'
 import { WishlistProvider, useWishlist } from './context/WishlistContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { TrialProvider } from './context/TrialContext'
 import { AdminProvider } from './context/AdminContext'
+import { TrialModal } from './features/trial'
+import { TrialFloatingButton } from './features/trial/TrialFloatingButton'
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Cart from './pages/Cart'
@@ -30,7 +33,10 @@ import About from './pages/About'
 import Features from './pages/Features'
 import Works from './pages/Works'
 import Career from './pages/Career'
+import Support from './pages/Support'
+import TrialPage from './features/trial/TrialPage'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
+import AuthenticatedRoute from './features/auth/AuthenticatedRoute'
 import AdminLayout from './layout/AdminLayout'
 import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers, AdminCustomers, AdminReports, AdminDeliveryZones } from './pages/admin'
 import AddProduct from './features/admin/products/AddProduct'
@@ -55,46 +61,135 @@ function WishlistSyncHandler() {
 }
 
 /**
- * Smart scroll restoration component
- * - Preserves scroll for back navigation
- * - Scrolls to top only for forward navigation
- * - Respects user's scroll intent
+ * Production-Ready Scroll Restoration Component
+ * 
+ * Implements Amazon-like scroll behavior:
+ * - Forward navigation: Scroll to top
+ * - Back/Forward buttons: Restore previous scroll position
+ * - Uses sessionStorage for persistence
+ * - Handles edge cases and cleanup
+ * 
+ * @returns {null} This component doesn't render anything
  */
 function ScrollToTop() {
-  const { pathname } = useLocation()
+  const { pathname, key } = useLocation()
+  const isBackNavigationRef = useRef(false)
   const lastPathnameRef = useRef(pathname)
-  const scrollPositionsRef = useRef(new Map())
+  const lastKeyRef = useRef(key)
 
-  useLayoutEffect(() => {
-    // Disable browser's native scroll restoration to have full control
+  // Initialize scroll restoration on mount
+  useEffect(() => {
+    // Disable browser's automatic scroll restoration
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual'
     }
+
+    // Listen for browser back/forward button navigation
+    const handlePopState = () => {
+      isBackNavigationRef.current = true
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      // Restore browser's default behavior on unmount
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'auto'
+      }
+    }
   }, [])
 
-  // Save scroll position before leaving page
+  // Handle scroll position save and restore on route change
   useEffect(() => {
-    return () => {
-      const scrollPos = window.scrollY
-      scrollPositionsRef.current.set(lastPathnameRef.current, scrollPos)
-    }
-  }, [pathname])
-
-  // Restore or reset scroll on route change
-  useLayoutEffect(() => {
-    // If we have a saved scroll position for this route, restore it (back navigation)
-    const savedPosition = scrollPositionsRef.current.get(pathname)
+    const scrollStorageKey = `doordripp_scroll_${lastPathnameRef.current}`
     
-    if (savedPosition !== undefined && savedPosition > 0) {
-      // Back navigation - restore scroll position
-      window.scrollTo({ top: savedPosition, left: 0, behavior: 'auto' })
-    } else {
-      // Forward navigation - scroll to top instantly to ensure we start at the header
-      window.scrollTo(0, 0)
+    // Save scroll position before leaving current page
+    if (lastPathnameRef.current !== pathname) {
+      const currentScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop
+      
+      try {
+        sessionStorage.setItem(scrollStorageKey, currentScrollY.toString())
+        // Optional: Store timestamp for cache invalidation
+        sessionStorage.setItem(`${scrollStorageKey}_time`, Date.now().toString())
+      } catch {
+        // Handle sessionStorage quota exceeded or disabled
+        console.warn('Failed to save scroll position')
+      }
     }
 
+    // Determine if this is back/forward navigation
+    const isBackOrForward = isBackNavigationRef.current
+
+    if (isBackOrForward) {
+      // BACK/FORWARD NAVIGATION: Restore scroll position
+      const savedScrollKey = `doordripp_scroll_${pathname}`
+      const savedScroll = sessionStorage.getItem(savedScrollKey)
+      
+      if (savedScroll) {
+        const scrollPosition = parseInt(savedScroll, 10)
+        
+        // Use multiple timing strategies to ensure scroll restoration works
+        // Immediate attempt
+        window.scrollTo(0, scrollPosition)
+        
+        // Delayed attempt after DOM render
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: scrollPosition, left: 0, behavior: 'auto' })
+        })
+        
+        // Final attempt for slow-loading content
+        setTimeout(() => {
+          const currentScroll = window.scrollY || window.pageYOffset
+          // Only scroll if we haven't reached the target position
+          if (Math.abs(currentScroll - scrollPosition) > 10) {
+            window.scrollTo({ top: scrollPosition, left: 0, behavior: 'auto' })
+          }
+        }, 100)
+      } else {
+        // No saved position, scroll to top
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      }
+      
+      // Reset back navigation flag
+      isBackNavigationRef.current = false
+    } else {
+      // FORWARD NAVIGATION: Scroll to top
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      
+      // Ensure scroll to top happens after render
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      })
+    }
+
+    // Update refs for next navigation
     lastPathnameRef.current = pathname
-  }, [pathname])
+    lastKeyRef.current = key
+  }, [pathname, key])
+
+  // Cleanup old scroll positions from sessionStorage
+  useEffect(() => {
+    try {
+      const CACHE_DURATION = 30 * 60 * 1000 // 30 minutes
+      const now = Date.now()
+      
+      // Check and clean up old entries on mount
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('doordripp_scroll_') && key.endsWith('_time')) {
+          const timestamp = parseInt(sessionStorage.getItem(key) || '0', 10)
+          if (now - timestamp > CACHE_DURATION) {
+            const scrollKey = key.replace('_time', '')
+            sessionStorage.removeItem(scrollKey)
+            sessionStorage.removeItem(key)
+          }
+        }
+      })
+    } catch {
+      // Silently fail if sessionStorage is not available
+    }
+  }, [])
 
   return null
 }
@@ -105,70 +200,78 @@ function App() {
       <AdminProvider>
         <CartProvider>
           <WishlistProvider>
-            <ScrollToTop />
-            <WishlistSyncHandler />
-          <Routes>
-            {/* Admin Routes - Separate layout */}
-            <Route path="/admin" element={
-              <RoleBasedRoute requiredRole={ROLES.ADMIN}>
-                <AdminLayout />
-              </RoleBasedRoute>
-            }>
-              <Route index element={<AdminDashboard />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="products/add" element={<AddProduct />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="customers" element={<AdminCustomers />} />
-              <Route path="reports" element={<AdminReports />} />
-              <Route path="delivery-zones" element={<AdminDeliveryZones />} />
-            </Route>
+            <TrialProvider>
+              <ScrollToTop />
+              <WishlistSyncHandler />
+            <Routes>
+              {/* Admin Routes - Separate layout */}
+              <Route path="/admin" element={
+                <RoleBasedRoute requiredRole={ROLES.ADMIN}>
+                  <AdminLayout />
+                </RoleBasedRoute>
+              }>
+                <Route index element={<AdminDashboard />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="products/add" element={<AddProduct />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="customers" element={<AdminCustomers />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="delivery-zones" element={<AdminDeliveryZones />} />
+              </Route>
 
-            {/* Main App Routes */}
-            <Route path="/*" element={
-              <div className="min-h-screen w-full flex flex-col overflow-x-hidden">
-                <Navbar />
-                <main className="flex-1 w-full px-0 py-0 overflow-x-hidden">
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/new-arrivals" element={<NewArrivalsPage />} />
-                    <Route path="/best-sellers" element={<BestSellersPage />} />
-                    <Route path="/category" element={<CategoryPage />} />
-                    <Route path="/product/:id" element={<ProductDetail />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/verify-email" element={<VerifyEmail />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/orders/:id" element={<OrderConfirmation />} />
-                    <Route path="/wishlist" element={<Wishlist />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/features" element={<Features />} />
-                    <Route path="/works" element={<Works />} />
-                    <Route path="/career" element={<Career />} />
-                  </Routes>
-                </main>
-                {/* Global Newsletter Section - Appears on all pages */}
-                <Newsletter />
-                {/* Global Footer - Appears on all pages */}
-                <Footer />
-                
-                {/* Global Cart Drawer - Available on all pages */}
-                <CartDrawer />
-              </div>
-            } />
-          </Routes>
-        </WishlistProvider>
-        </CartProvider>
-      </AdminProvider>
-    </AuthProvider>
-  )
-}
+              {/* Main App Routes */}
+              <Route path="/*" element={
+                <div className="min-h-screen w-full flex flex-col overflow-x-hidden">
+                  <Navbar />
+                  <main className="flex-1 w-full px-0 py-0 overflow-x-hidden">
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/cart" element={<Cart />} />
+                      <Route path="/products" element={<Products />} />
+                      <Route path="/new-arrivals" element={<NewArrivalsPage />} />
+                      <Route path="/best-sellers" element={<BestSellersPage />} />
+                      <Route path="/category" element={<CategoryPage />} />
+                      <Route path="/product/:id" element={<ProductDetail />} />
+                      <Route path="/trial-room" element={<TrialPage />} />
+                      <Route path="/login" element={<AuthenticatedRoute><Login /></AuthenticatedRoute>} />
+                      <Route path="/signup" element={<AuthenticatedRoute><Signup /></AuthenticatedRoute>} />
+                      <Route path="/verify-email" element={<AuthenticatedRoute><VerifyEmail /></AuthenticatedRoute>} />
+                      <Route path="/forgot-password" element={<AuthenticatedRoute><ForgotPassword /></AuthenticatedRoute>} />
+                      <Route path="/reset-password" element={<AuthenticatedRoute><ResetPassword /></AuthenticatedRoute>} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/checkout" element={<Checkout />} />
+                      <Route path="/orders" element={<Orders />} />
+                      <Route path="/orders/:id" element={<OrderConfirmation />} />
+                      <Route path="/wishlist" element={<Wishlist />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/features" element={<Features />} />
+                      <Route path="/works" element={<Works />} />
+                      <Route path="/career" element={<Career />} />
+                      <Route path="/support" element={<Support />} />
+                    </Routes>
+                  </main>
+                  {/* Global Newsletter Section - Appears on all pages */}
+                  <Newsletter />
+                  {/* Global Footer - Appears on all pages */}
+                  <Footer />
+                  
+                  {/* Global Cart Drawer - Available on all pages */}
+                  <CartDrawer />
+                  
+                  {/* Global Trial Modal - Available on all pages */}
+                  <TrialModal />
+                  <TrialFloatingButton />
+                </div>
+              } />
+            </Routes>
+            </TrialProvider>
+          </WishlistProvider>
+          </CartProvider>
+        </AdminProvider>
+      </AuthProvider>
+    )
+  }
 
 export default App

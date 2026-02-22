@@ -141,6 +141,17 @@
 .profile-card .btn-danger:active { transform: translateY(1px); }
 .profile-card .menu-item { background: transparent; border: 1px solid transparent; padding: 8px 12px; display: inline-flex; align-items: center; gap: 10px; width: auto; }
 .profile-card .menu-item:hover { border-color: rgba(15,23,42,0.04); }
+.profile-card .menu-item.menu-item-highlight {
+  background: rgba(37,99,235,0.08);
+  border-color: rgba(37,99,235,0.35);
+  color: #1d4ed8;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(37,99,235,0.12);
+}
+.profile-card .menu-item.menu-item-highlight:hover {
+  background: rgba(37,99,235,0.12);
+  border-color: rgba(37,99,235,0.5);
+}
 
 /* Sidebar styling improvements */
 .profile-sidebar {

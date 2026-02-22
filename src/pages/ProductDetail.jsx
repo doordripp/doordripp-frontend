@@ -16,6 +16,7 @@ import api from '../services/api'
 import { optimizeImage } from '../config/imagekit'
 import Breadcrumb, { buildProductBreadcrumb } from '../components/ui/Breadcrumb'
 import { useAuth } from '../context/AuthContext'
+import { TrialButton } from '../features/trial/TrialButton'
 
 
 /* ============================
@@ -110,6 +111,7 @@ export default function ProductDetail() {
           images: p.images?.length ? p.images : [p.image],
           price: p.price,
           originalPrice: p.originalPrice,
+          stock: p.stock,
           rating: p.rating || { rating: 0 },
           category: p.category,
           subcategory: p.subcategory,
@@ -153,6 +155,7 @@ export default function ProductDetail() {
   }
 
   const images = product.images
+  const isOutOfStock = (product.stock ?? 0) <= 0
 
   return (
     <div ref={topRef} tabIndex={-1} className="min-h-screen bg-white outline-none">
@@ -314,22 +317,34 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {/* ADD TO CART */}
-            <button
-              onClick={() => {
-                addToCart({ ...product, image: product.images[0] }, { 
-                  quantity, 
-                  size: selectedSize, 
-                  color: 'Default' 
-                })
-                setIsAddedToCart(true)
-                setTimeout(() => setIsAddedToCart(false), 1500)
-              }}
-              className="w-full bg-black text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-900 transition-all active:scale-[0.98]"
-            >
-              {isAddedToCart ? <Check className="animate-in zoom-in duration-300" /> : <ShoppingCart />}
-              {isAddedToCart ? 'Added to Cart' : `Add to Cart • ₹${product.price * quantity}`}
-            </button>
+            {/* ADD TO CART & TRIAL BUTTON */}
+            <div className="space-y-3 pt-4">
+              <button
+                onClick={() => {
+                  if (isOutOfStock) return
+                  addToCart({ ...product, image: product.images[0] }, { 
+                    quantity, 
+                    size: selectedSize, 
+                    color: 'Default' 
+                  })
+                  setIsAddedToCart(true)
+                  setTimeout(() => setIsAddedToCart(false), 1500)
+                }}
+                disabled={isOutOfStock}
+                className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+                  isOutOfStock
+                    ? 'bg-gray-200 text-gray-500'
+                    : 'bg-black text-white hover:bg-gray-900'
+                }`}
+              >
+                {isAddedToCart && !isOutOfStock ? <Check className="animate-in zoom-in duration-300" /> : <ShoppingCart />}
+                {isOutOfStock ? 'Out of Stock' : isAddedToCart ? 'Added to Cart' : `Add to Cart • ₹${product.price * quantity}`}
+              </button>
+              <TrialButton 
+                product={product}
+                className="w-full py-4 text-base"
+              />
+            </div>
           </div>
         </div>
 

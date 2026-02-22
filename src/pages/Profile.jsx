@@ -278,7 +278,7 @@ export default function Profile() {
                     </div>
                   ) : (
                     <div className="mt-2">
-                      <button className="menu-item" onClick={() => setEditingAddress(true)}>Change Address</button>
+                      <button className="menu-item menu-item-highlight" onClick={() => setEditingAddress(true)}>Change Address</button>
                     </div>
                   )}
                 </div>
@@ -343,7 +343,7 @@ export default function Profile() {
                       </div>
                     ) : (
                       <div>
-                        <button className="menu-item" onClick={() => setEditingPassword(true)}>Change Password</button>
+                        <button className="menu-item menu-item-highlight" onClick={() => setEditingPassword(true)}>Change Password</button>
                       </div>
                     )}
                   </div>
