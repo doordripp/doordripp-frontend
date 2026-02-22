@@ -1,73 +1,56 @@
 /**
- * Trial Room Add Button
- * 
- * Button component that adds a product to trial room
- * Shows current trial count (0/3)
- * 
- * @component
+ * Trial Button — Minimal black/white Doordripp theme
  */
-
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTrial } from '../../context/TrialContext';
 import { useAuth } from '../../context/AuthContext';
-import './styles/TrialButton.css';
 
 export function TrialButton({ product, className = '' }) {
-  const { addItemToTrial, isItemInTrial, items, hasUsedToday } = useTrial();
+  const { addItemToTrial, isItemInTrial, items, toggleTrialModal } = useTrial();
   const { user } = useAuth();
-  const [isAdding, setIsAdding] = useState(false);
-  const isInTrial = isItemInTrial(product.id || product._id);
+  const navigate = useNavigate();
+  const [justAdded, setJustAdded] = useState(false);
 
-  const handleAddToTrial = (e) => {
+  const productId = product._id || product.id || '';
+  const isInTrial = isItemInTrial(productId);
+  const isFull = items.length >= 3;
+
+  const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (!user) {
-      window.location.href = '/login?redirect=/trial-room';
-      return;
-    }
-
-    setIsAdding(true);
-    try {
-      addItemToTrial(product);
-    } finally {
-      setTimeout(() => setIsAdding(false), 300);
+    if (!user) { navigate('/login?redirect=/products'); return; }
+    if (isInTrial) { toggleTrialModal(true); return; }
+    if (isFull) { toggleTrialModal(true); return; }
+    const added = addItemToTrial(product);
+    if (added) {
+      setJustAdded(true);
+      toggleTrialModal(true);
+      setTimeout(() => setJustAdded(false), 2000);
     }
   };
 
-  const isDisabled = hasUsedToday || (items.length >= 3 && !isInTrial) || isAdding;
-  
-  let buttonText = 'Add to Trial';
-  let tooltipText = 'Add to Trial Room (Try at home)';
-  
-  if (isInTrial) {
-    buttonText = 'In Trial';
-    tooltipText = 'Already added to trial room';
-  } else if (hasUsedToday) {
-    buttonText = 'Used Today';
-    tooltipText = 'Trial already used today. Try again tomorrow!';
-  } else if (items.length >= 3) {
-    buttonText = 'Trial Full';
-    tooltipText = 'Maximum 3 items allowed in trial room';
+  let text = 'Add to Trial';
+  let btnStyle = 'bg-black text-white hover:bg-gray-900 border-black';
+  if (justAdded) {
+    text = '✓ Added';
+    btnStyle = 'bg-green-700 text-white border-green-700';
+  } else if (isInTrial) {
+    text = '✓ In Trial';
+    btnStyle = 'bg-green-700 text-white border-green-700';
+  } else if (isFull) {
+    text = 'Trial Full';
+    btnStyle = 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed';
   }
 
   return (
     <button
-      onClick={handleAddToTrial}
-      disabled={isDisabled}
-      className={`trial-button ${isInTrial ? 'active' : ''} ${isDisabled ? 'disabled' : ''} ${className}`}
-      title={tooltipText}
-      aria-label={`Add ${product.name} to trial room`}
+      onClick={handleClick}
+      className={`flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-semibold transition-all duration-200 ${btnStyle} ${className}`}
     >
-      <span className="trial-button-icon">
-        {isInTrial ? '✓' : '📦'}
-      </span>
-      <span className="trial-button-text">
-        {buttonText}
-      </span>
-      <span className="trial-counter">
-        {items.length}/3
-      </span>
+      <span>📦</span>
+      <span>{text}</span>
+      <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-extrabold">{items.length}/3</span>
     </button>
   );
 }

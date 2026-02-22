@@ -101,7 +101,7 @@ export default function Products() {
 
       {/* TRIAL MODE BANNER */}
       {trialMode && (
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+        <div className="bg-black text-white">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ export default function Products() {
               </div>
               <button
                 onClick={() => window.location.href = '/trial-room'}
-                className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold text-sm hover:bg-gray-100 transition"
+                className="px-4 py-2 bg-white text-black rounded-lg font-semibold text-sm hover:bg-gray-100 transition"
               >
                 View Trial Cart
               </button>

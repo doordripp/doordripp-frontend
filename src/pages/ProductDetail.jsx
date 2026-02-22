@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect } from 'react'
-import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import {
   Star,
   Plus,
@@ -39,9 +39,7 @@ const formatTitleForBreadcrumb = (title = '') => {
 
 export default function ProductDetail() {
   const { id } = useParams()
-  const [searchParams] = useSearchParams()
   const { addToCart } = useCart()
-  const trialMode = searchParams.get('mode') === 'trial'
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -231,25 +229,8 @@ export default function ProductDetail() {
               </button>
             </div>
 
-            {/* ADD TO CART / TRIAL BUTTON */}
-            {trialMode ? (
-              <div className="space-y-3">
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm">
-                  <span className="font-semibold text-purple-900">📦 Trial Mode:</span>
-                  <span className="text-purple-700"> Add this item to try at home (max 3 items)</span>
-                </div>
-                <TrialButton 
-                  product={product}
-                  className="w-full py-4 text-base"
-                />
-                <button
-                  onClick={() => window.location.href = '/trial-room'}
-                  className="w-full py-3 border-2 border-purple-600 text-purple-600 rounded-full font-semibold hover:bg-purple-50 transition"
-                >
-                  View Trial Cart
-                </button>
-              </div>
-            ) : (
+            {/* ADD TO CART + TRIAL BUTTON */}
+            <div className="space-y-3">
               <button
                 onClick={() => {
                   if (isOutOfStock) return
@@ -268,7 +249,11 @@ export default function ProductDetail() {
                 {isAddedToCart && !isOutOfStock ? <Check /> : <ShoppingCart />}
                 {isOutOfStock ? 'Out of Stock' : isAddedToCart ? 'Added to Cart' : 'Add to Cart'}
               </button>
-            )}
+              <TrialButton 
+                product={product}
+                className="w-full py-4 text-base"
+              />
+            </div>
           </div>
         </div>
 

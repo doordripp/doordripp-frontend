@@ -24,7 +24,6 @@ export default function ProductCard({
   showDiscount = true,
   initialImageIndex = 0,
   showAddToCart = true,
-  trialMode = false,
 }) {
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
@@ -47,8 +46,7 @@ export default function ProductCard({
   const isOutOfStock = stock === 0
   const hasDiscount = originalPrice && discount
   
-  // Preserve trial mode in product links
-  const productLink = trialMode ? `/product/${id}?mode=trial` : `/product/${id}`
+  const productLink = `/product/${id}`
 
   return (
     <div
@@ -144,35 +142,32 @@ export default function ProductCard({
 
           {/* CTA PUSHED TO BOTTOM */}
           {showAddToCart && (
-            <div className="mt-auto">
-              {trialMode ? (
-                <TrialButton 
-                  product={product} 
-                  className="w-full"
-                />
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (!isOutOfStock) {
-                      addToCart(product, {
-                        size: 'M',
-                        color: 'default',
-                        quantity: 1,
-                      })
-                    }
-                  }}
-                  disabled={isOutOfStock}
-                  className={`w-full flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-semibold transition ${
-                    isOutOfStock
-                      ? 'bg-gray-200 text-gray-500 border-gray-300'
-                      : 'bg-white border-black hover:bg-black hover:text-white'
-                  }`}
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
-                </button>
-              )}
+            <div className="mt-auto space-y-2">
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (!isOutOfStock) {
+                    addToCart(product, {
+                      size: 'M',
+                      color: 'default',
+                      quantity: 1,
+                    })
+                  }
+                }}
+                disabled={isOutOfStock}
+                className={`w-full flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-semibold transition ${
+                  isOutOfStock
+                    ? 'bg-gray-200 text-gray-500 border-gray-300'
+                    : 'bg-white border-black hover:bg-black hover:text-white'
+                }`}
+              >
+                <ShoppingCart className="h-4 w-4" />
+                {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
+              </button>
+              <TrialButton 
+                product={product} 
+                className="w-full"
+              />
             </div>
           )}
         </div>

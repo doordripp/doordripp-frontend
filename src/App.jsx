@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { TrialProvider } from './context/TrialContext'
 import { AdminProvider } from './context/AdminContext'
 import { TrialModal } from './features/trial'
+import { TrialFloatingButton } from './features/trial/TrialFloatingButton'
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Cart from './pages/Cart'
@@ -261,6 +262,7 @@ function App() {
                   
                   {/* Global Trial Modal - Available on all pages */}
                   <TrialModal />
+                  <TrialFloatingButton />
                 </div>
               } />
             </Routes>

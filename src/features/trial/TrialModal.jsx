@@ -1,241 +1,79 @@
 /**
- * Trial Room Modal Component
- * 
- * Main UI for Trial Room feature:
- * - Display selected items (max 3)
- * - Select item to purchase
- * - Show price breakdown
- * - Create trial order
- * 
- * @component
+ * Trial Modal — Slide-in quick view, minimal Doordripp theme
  */
-
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTrial } from '../../context/TrialContext';
-import { useAuth } from '../../context/AuthContext';
-import { TrialItemCard } from './TrialItemCard';
-import './styles/TrialModal.css';
 
 export function TrialModal() {
-  const {
-    items,
-    selectedPurchaseItemId,
-    selectPurchaseItem,
-    toggleTrialModal,
-    isModalOpen,
-    calculateTotals,
-    createTrialOrder,
-    loading,
-    error,
-    hasUsedToday
-  } = useTrial();
+  const { items, isModalOpen, toggleTrialModal, removeItemFromTrial } = useTrial();
+  const navigate = useNavigate();
 
-  const { user } = useAuth();
-  const [localError, setLocalError] = useState(null);
-  const totals = calculateTotals();
+  if (!isModalOpen) return null;
 
-  if (!isModalOpen) {
-    return null;
-  }
-
-  const handleClose = () => {
-    toggleTrialModal(false);
-    setLocalError(null);
-  };
-
-  const handleCreateTrial = async () => {
-    setLocalError(null);
-
-    // Validations
-    if (items.length === 0) {
-      setLocalError('Add at least 1 item to trial');
-      return;
-    }
-
-    if (!selectedPurchaseItemId) {
-      setLocalError('Select an item you want to purchase');
-      return;
-    }
-
-    if (hasUsedToday) {
-      setLocalError('Trial already used today. Try again tomorrow!');
-      return;
-    }
-
-    try {
-      const result = await createTrialOrder();
-      
-      // Success! Show success message and clear modal
-      setTimeout(() => {
-        handleClose();
-        // Show success toast
-        if (window.showToast) {
-          window.showToast('Trial room created! Proceed to checkout.', 'success');
-        }
-      }, 500);
-    } catch (error) {
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to create trial';
-      setLocalError(errorMsg);
-    }
-  };
-
-  const displayError = error || localError;
-  const isCheckoutDisabled = 
-    loading || 
-    items.length === 0 || 
-    !selectedPurchaseItemId || 
-    hasUsedToday;
+  const handleClose = () => toggleTrialModal(false);
+  const goCheckout = () => { toggleTrialModal(false); navigate('/trial-room'); };
+  const goShopping = () => { toggleTrialModal(false); navigate('/products'); };
 
   return (
     <>
       {/* Backdrop */}
-      <div className="trial-modal-backdrop" onClick={handleClose} />
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[999] animate-fadeIn" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="trial-modal-container">
-        <div className="trial-modal-content">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] w-[92%] max-w-md animate-slideUp">
+        <div className="bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden">
           {/* Header */}
-          <div className="trial-modal-header">
-            <h2 className="trial-modal-title">
-              <span className="icon">📦</span>
-              Trial Room
-            </h2>
-            <button
-              className="trial-modal-close"
-              onClick={handleClose}
-              aria-label="Close trial room"
-            >
-              ✕
-            </button>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">📦 Trial Room ({items.length}/3)</h2>
+            <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition">✕</button>
           </div>
 
           {/* Body */}
-          <div className="trial-modal-body">
-            {/* Empty State */}
+          <div className="px-6 py-4 max-h-[50vh] overflow-y-auto">
             {items.length === 0 ? (
-              <div className="trial-empty-state">
-                <div className="empty-icon">📭</div>
-                <h3>Trial Room is Empty</h3>
-                <p>Add items to try before buying!</p>
+              <div className="text-center py-10">
+                <p className="text-4xl mb-3">🛍️</p>
+                <h3 className="text-lg font-semibold text-gray-900">Trial Room is Empty</h3>
+                <p className="text-sm text-gray-500 mt-1">Add items to try at home</p>
               </div>
             ) : (
-              <>
-                {/* Info Message */}
-                <div className="trial-info-message">
-                  <span className="info-icon">ℹ️</span>
-                  <div>
-                    <p className="info-title">How Trial Room Works</p>
-                    <p className="info-text">
-                      Select up to 3 items to try, then choose 1 to purchase. You pay ₹{totals.trialFee} trial fee.
-                    </p>
+              <div className="space-y-3">
+                {items.map((item) => (
+                  <div key={item.productId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover bg-gray-200" onError={(e) => { e.target.src = 'https://via.placeholder.com/48'; }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
+                      <p className="text-xs text-gray-500">₹{item.price?.toLocaleString('en-IN')}</p>
+                    </div>
+                    <button onClick={() => removeItemFromTrial(item.productId)} className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:bg-red-50 hover:border-red-200 hover:text-red-500 text-xs transition">✕</button>
                   </div>
-                </div>
-
-                {/* Items Count */}
-                <div className="trial-items-count">
-                  Items Selected: <strong>{items.length}/3</strong>
-                </div>
-
-                {/* Items List */}
-                <div className="trial-items-list">
-                  {items.map((item) => (
-                    <TrialItemCard
-                      key={item.productId}
-                      item={item}
-                      isSelected={selectedPurchaseItemId === item.productId}
-                      onSelect={selectPurchaseItem}
-                    />
-                  ))}
-                </div>
-
-                {/* Purchase Selection Requirement */}
-                {!selectedPurchaseItemId && (
-                  <div className="trial-warning">
-                    <span className="warning-icon">⚠️</span>
-                    <p>You must select at least 1 item to purchase</p>
-                  </div>
-                )}
-
-                {/* Error Message */}
-                {displayError && (
-                  <div className="trial-error-message">
-                    <span className="error-icon">❌</span>
-                    <p>{displayError}</p>
-                  </div>
-                )}
-              </>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Footer - Price Breakdown and Buttons */}
-          {items.length > 0 && (
-            <div className="trial-modal-footer">
-              {/* Price Breakdown */}
-              <div className="trial-price-breakdown">
-                <div className="breakdown-item">
-                  <span className="breakdown-label">Items Total:</span>
-                  <span className="breakdown-value">₹{totals.itemsTotal.toLocaleString('en-IN')}</span>
-                </div>
-                <div className="breakdown-item">
-                  <span className="breakdown-label">Trial Fee:</span>
-                  <span className="breakdown-value trial-fee-badge">+₹{totals.trialFee}</span>
-                </div>
-                <div className="breakdown-divider"></div>
-                <div className="breakdown-item total">
-                  <span className="breakdown-label">Final Total:</span>
-                  <span className="breakdown-value-total">₹{totals.finalTotal.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="trial-modal-actions">
-                <button
-                  className="trial-btn-cancel"
-                  onClick={handleClose}
-                  disabled={loading}
-                >
-                  Discard
-                </button>
-                <button
-                  className="trial-btn-checkout"
-                  onClick={handleCreateTrial}
-                  disabled={isCheckoutDisabled}
-                  aria-busy={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner"></span>
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <span className="icon">🛍️</span>
-                      Start Trial
-                    </>
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-gray-100 space-y-3">
+            {items.length > 0 ? (
+              <>
+                <p className="text-xs text-gray-500 text-center">Select 1 item to buy → pay only for that item</p>
+                <div className="flex gap-2">
+                  {items.length < 3 && (
+                    <button onClick={goShopping} className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                      + Add More
+                    </button>
                   )}
-                </button>
-              </div>
-
-              {/* Daily Limit Message */}
-              {hasUsedToday && (
-                <p className="trial-daily-limit-message">
-                  ⏰ Trial already used today. Come back tomorrow!
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Empty State Buttons */}
-          {items.length === 0 && (
-            <div className="trial-modal-footer">
-              <button
-                className="trial-btn-close"
-                onClick={handleClose}
-              >
-                Continue Shopping
+                  <button onClick={goCheckout} className="flex-1 py-2.5 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-900 transition">
+                    Continue →
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button onClick={goShopping} className="w-full py-2.5 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-900 transition">
+                Browse Products
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </>

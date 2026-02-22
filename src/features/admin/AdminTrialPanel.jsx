@@ -11,10 +11,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import './AdminTrialPanel.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 export function AdminTrialPanel() {
   const [trials, setTrials] = useState([]);
@@ -33,19 +31,15 @@ export function AdminTrialPanel() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-
       // Fetch trials
-      let trialsUrl = `${API_BASE_URL}/trial-room/admin/list?page=1&limit=50`;
+      let trialsUrl = `/trial-room/admin/list?page=1&limit=50`;
       if (filter !== 'all') {
         trialsUrl += `&status=${filter}`;
       }
 
       const [trialsRes, analyticsRes] = await Promise.all([
-        axios.get(trialsUrl, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_BASE_URL}/trial-room/admin/analytics`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        api.get(trialsUrl),
+        api.get(`/trial-room/admin/analytics`)
       ]);
 
       setTrials(trialsRes.data.data || []);
