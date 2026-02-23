@@ -1,12 +1,7 @@
-import { useEffect } from 'react'
 import { FileText, UserCheck, ShoppingCart, CreditCard, Truck, XCircle, RefreshCw, Shield, AlertTriangle, Scale, Mail, Phone, MapPin } from 'lucide-react'
 import './TermsAndConditions.css'
 
 export default function TermsAndConditions() {
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
-
   return (
     <div className="terms-page">
       {/* Hero Section */}

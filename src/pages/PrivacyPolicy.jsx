@@ -1,12 +1,7 @@
-import { useEffect } from 'react'
 import { Shield, Lock, Eye, Users, FileText, Mail, Phone, MapPin } from 'lucide-react'
 import './PrivacyPolicy.css'
 
 export default function PrivacyPolicy() {
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
-
   return (
     <div className="privacy-policy-page">
       {/* Hero Section */}

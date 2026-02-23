@@ -1,12 +1,7 @@
-import { useEffect } from 'react'
 import { Truck, XCircle, RefreshCw, AlertTriangle, ShieldAlert, Mail, Phone } from 'lucide-react'
 import './DeliveryDetails.css'
 
 export default function DeliveryDetails() {
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
-
   return (
     <div className="delivery-page">
       {/* Hero Section */}

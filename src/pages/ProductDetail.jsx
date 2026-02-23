@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import {
   Star,
@@ -40,7 +40,6 @@ const formatTitleForBreadcrumb = (title = '') => {
 export default function ProductDetail() {
   const { id } = useParams()
   const { addToCart } = useCart()
-  const topRef = useRef(null)
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -66,36 +65,6 @@ export default function ProductDetail() {
       console.error('Error refreshing product data:', error)
     }
   }
-  
-
-  /* FORCED BRUTE-FORCE SCROLL TO TOP */
-  useEffect(() => {
-    const scrollToTop = () => {
-      if (topRef.current) {
-        topRef.current.scrollIntoView({ behavior: 'auto', block: 'start' })
-        topRef.current.focus({ preventScroll: true })
-      }
-      window.scrollTo(0, 0)
-      document.body.scrollTop = 0
-      document.documentElement.scrollTop = 0
-    }
-
-    // Execute immediately
-    scrollToTop()
-
-    // Execute again after a few frames to handle content jumps
-    const timer1 = setTimeout(scrollToTop, 50)
-    const timer2 = setTimeout(scrollToTop, 200)
-    const timer3 = setTimeout(scrollToTop, 500)
-    const timer4 = setTimeout(scrollToTop, 1000)
-
-    return () => {
-      clearTimeout(timer1)
-      clearTimeout(timer2)
-      clearTimeout(timer3)
-      clearTimeout(timer4)
-    }
-  }, [id, loading])
 
   /* FETCH PRODUCT */
   useEffect(() => {
@@ -158,7 +127,7 @@ export default function ProductDetail() {
   const isOutOfStock = (product.stock ?? 0) <= 0
 
   return (
-    <div ref={topRef} tabIndex={-1} className="min-h-screen bg-white outline-none">
+    <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* ================= BREADCRUMB ================= */}
