@@ -34,6 +34,9 @@ import Features from './pages/Features'
 import Works from './pages/Works'
 import Career from './pages/Career'
 import Support from './pages/Support'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsAndConditions from './pages/TermsAndConditions'
+import DeliveryDetails from './pages/DeliveryDetails'
 import TrialPage from './features/trial/TrialPage'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AuthenticatedRoute from './features/auth/AuthenticatedRoute'
@@ -250,6 +253,9 @@ function App() {
                       <Route path="/works" element={<Works />} />
                       <Route path="/career" element={<Career />} />
                       <Route path="/support" element={<Support />} />
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/terms" element={<TermsAndConditions />} />
+                      <Route path="/delivery" element={<DeliveryDetails />} />
                     </Routes>
                   </main>
                   {/* Global Newsletter Section - Appears on all pages */}

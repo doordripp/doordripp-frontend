@@ -50,14 +50,22 @@
 }
 
 .chat-bubble.bot {
-  background: #0f172a;
-  color: #f8fafc;
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.chat-bubble.bot p {
+  color: #ffffff !important;
 }
 
 .chat-bubble.user {
-  background: #fff5ea;
-  border: 1px solid rgba(244, 192, 149, 0.4);
-  color: #1f2937;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #000000 !important;
+}
+
+.chat-bubble.user p {
+  color: #000000 !important;
 }
 
 .quick-chip {
