@@ -296,6 +296,7 @@ export default function TrialPage() {
 
                   {/* CTA */}
                   <button
+                    type="button"
                     onClick={handlePay}
                     disabled={!selectedPurchaseItemId || items.length === 0 || placing || loading}
                     className="mt-5 w-full py-3 rounded-xl bg-black text-white font-bold text-sm hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed transition"
@@ -308,6 +309,7 @@ export default function TrialPage() {
                   </button>
 
                   <button
+                    type="button"
                     onClick={clearTrial}
                     className="mt-2 w-full py-2 text-sm text-gray-400 hover:text-red-500 transition"
                   >

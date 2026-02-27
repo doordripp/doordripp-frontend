@@ -18,13 +18,6 @@ export function TrialModal() {
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
   };
-  const goShopping = () => { 
-    toggleTrialModal(false); 
-    navigate('/products');
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
-  };
 
   return (
     <>
@@ -37,7 +30,7 @@ export function TrialModal() {
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">📦 Trial Room ({items.length}/3)</h2>
-            <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition">✕</button>
+            <button type="button" onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition">✕</button>
           </div>
 
           {/* Body */}
@@ -57,7 +50,7 @@ export function TrialModal() {
                       <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
                       <p className="text-xs text-gray-500">₹{item.price?.toLocaleString('en-IN')}</p>
                     </div>
-                    <button onClick={() => removeItemFromTrial(item.productId)} className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:bg-red-50 hover:border-red-200 hover:text-red-500 text-xs transition">✕</button>
+                    <button type="button" onClick={() => removeItemFromTrial(item.productId)} className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:bg-red-50 hover:border-red-200 hover:text-red-500 text-xs transition">✕</button>
                   </div>
                 ))}
               </div>
@@ -74,18 +67,18 @@ export function TrialModal() {
                 </div>
                 <div className="flex gap-2">
                   {items.length < 3 && (
-                    <button onClick={goShopping} className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                    <button type="button" onClick={handleClose} className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
                       + Add More
                     </button>
                   )}
-                  <button onClick={goCheckout} className="flex-1 py-2.5 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-900 transition">
+                  <button type="button" onClick={goCheckout} className="flex-1 py-2.5 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-900 transition">
                     Continue →
                   </button>
                 </div>
               </>
             ) : (
-              <button onClick={goShopping} className="w-full py-2.5 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-900 transition">
-                Browse Products
+              <button type="button" onClick={handleClose} className="w-full py-2.5 rounded-xl bg-black text-white text-sm font-semibold hover:bg-gray-900 transition">
+                Continue Shopping
               </button>
             )}
           </div>

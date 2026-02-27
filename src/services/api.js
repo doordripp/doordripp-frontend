@@ -4,7 +4,7 @@ import axios from "axios";
 const rawBaseUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
-  "https://doordripp-backend.onrender.com/api";
+  "http://localhost:4000/api";
 
 const normalizedBaseUrl = /\/api\/?$/.test(rawBaseUrl)
   ? rawBaseUrl

@@ -17,6 +17,7 @@ import { optimizeImage } from '../config/imagekit'
 import Breadcrumb, { buildProductBreadcrumb } from '../components/ui/Breadcrumb'
 import { useAuth } from '../context/AuthContext'
 import { TrialButton } from '../features/trial/TrialButton'
+import ImageZoom from '../components/ui/ImageZoom'
 
 
 /* ============================
@@ -137,19 +138,16 @@ export default function ProductDetail() {
 
           {/* ================= IMAGES ================= */}
           <div className="space-y-4">
-            <div className="aspect-square bg-gray-50 rounded-3xl overflow-hidden shadow-sm relative group border border-gray-100">
-              <img
-                key={selectedImage}
-                src={optimizeImage(images[selectedImage], { width: 800 })}
-                className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110"
-                alt={product.name}
-              />
-              <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-            </div>
+            <ImageZoom
+              key={selectedImage}
+              src={optimizeImage(images[selectedImage], { width: 800 })}
+              alt={product.name}
+            />
 
             <div className="grid grid-cols-4 gap-4">
               {images.map((img, i) => (
                 <button
+                  type="button"
                   key={i}
                   onClick={() => setSelectedImage(i)}
                   className={`aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
@@ -227,6 +225,7 @@ export default function ProductDetail() {
                 {product.description}
               </p>
               <button
+                type="button"
                 className="text-sm text-blue-600 mt-2"
                 onClick={() => setDescExpanded(!descExpanded)}
               >
@@ -248,6 +247,7 @@ export default function ProductDetail() {
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map((size) => (
                       <button
+                        type="button"
                         key={size}
                         onClick={() => setSelectedSize(size)}
                         className={`min-w-[50px] h-[50px] flex items-center justify-center rounded-lg border-2 text-sm font-bold transition-all duration-200 ${
@@ -270,6 +270,7 @@ export default function ProductDetail() {
                 </span>
                 <div className="flex items-center w-32 border-2 border-gray-200 rounded-lg overflow-hidden">
                   <button
+                    type="button"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     className="flex-1 py-2 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
@@ -277,6 +278,7 @@ export default function ProductDetail() {
                   </button>
                   <span className="w-10 text-center font-bold">{quantity}</span>
                   <button
+                    type="button"
                     onClick={() => setQuantity(quantity + 1)}
                     className="flex-1 py-2 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
@@ -289,6 +291,7 @@ export default function ProductDetail() {
             {/* ADD TO CART & TRIAL BUTTON */}
             <div className="space-y-3 pt-4">
               <button
+                type="button"
                 onClick={() => {
                   if (isOutOfStock) return
                   addToCart({ ...product, image: product.images[0] }, { 

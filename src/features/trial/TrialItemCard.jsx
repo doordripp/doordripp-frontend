@@ -47,6 +47,7 @@ export function TrialItemCard({ item, isSelected, onSelect, onRemove }) {
 
       {/* Remove */}
       <button
+        type="button"
         onClick={(e) => { e.stopPropagation(); onRemove(item.productId); }}
         className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition"
         title="Remove"
