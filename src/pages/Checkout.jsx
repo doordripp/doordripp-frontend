@@ -134,9 +134,11 @@ export default function Checkout() {
       }
       
       // Reload addresses
-      loadSavedAddresses()
+      await loadSavedAddresses()
     } catch (err) {
-      toast.error(err.message || 'Failed to delete address')
+      console.error('Error deleting address:', err)
+      const msg = err?.message || err?.error || 'Failed to delete address'
+      toast.error(typeof msg === 'string' ? msg : 'Failed to delete address')
     }
   }
 

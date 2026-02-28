@@ -38,7 +38,7 @@ export default function About() {
             <blockquote className="text-neutral-700 leading-relaxed border-l-4 border-amber-500 pl-4">
               "We are committed to partnering primarily with local and ethical retailers who prioritize quality and sustainable practices. Fast fashion doesn't have to mean throwaway fashion."
             </blockquote>
-            <p className="text-neutral-700 leading-relaxed">DOORDRIPP is owned by Doordripp pvt ltd.</p>
+            <p className="text-neutral-700 leading-relaxed">DOORDRIPP is owned by Doordripp.</p>
           </div>
         </section>
       </div>

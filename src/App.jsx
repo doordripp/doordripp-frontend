@@ -72,7 +72,7 @@ function WishlistSyncHandler() {
  * @returns {null} This component doesn't render anything
  */
 function ScrollToTop() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
 
   useEffect(() => {
     // Disable browser's automatic scroll restoration
@@ -81,19 +81,19 @@ function ScrollToTop() {
     }
 
     // Scroll to top immediately on route change
-    window.scrollTo(0, 0)
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     
     // Double-check after DOM updates
     requestAnimationFrame(() => {
-      window.scrollTo(0, 0)
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     })
     
     // Final fallback for slow-loading content
     setTimeout(() => {
-      window.scrollTo(0, 0)
-    }, 0)
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    }, 100)
 
-  }, [pathname])
+  }, [pathname, search])
 
   return null
 }
