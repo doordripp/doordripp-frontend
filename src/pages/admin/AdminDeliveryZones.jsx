@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Navigate } from 'react-router-dom'
 import adminAPI from "../../services/adminAPI";
 import DeliveryZoneMapDrawer from "../../components/admin/DeliveryZoneMapDrawer";
 import { loadGoogleMaps } from "../../utils/googleMapsLoader";
+import { useAuth } from '../../context/AuthContext'
+import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 
 const emptyForm = {
   id: null,
@@ -19,6 +22,13 @@ const emptyForm = {
 };
 
 export default function AdminDeliveryZones() {
+  const { user } = useAuth()
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  
+  if (isDeliveryPartner) {
+    return <Navigate to="/admin/orders" replace />
+  }
+
   const [zones, setZones] = useState([]);
   const [stats, setStats] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -32,8 +42,10 @@ export default function AdminDeliveryZones() {
   const [showManagerModal, setShowManagerModal] = useState(false);
   const [selectedZoneForManager, setSelectedZoneForManager] = useState(null);
   const [availableManagers, setAvailableManagers] = useState([]);
+  const [availableDeliveryPartners, setAvailableDeliveryPartners] = useState([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
   const [assignedManagers, setAssignedManagers] = useState({});
+  const [assignmentTab, setAssignmentTab] = useState('managers');
 
   // Pre-compute display rows
   const zoneRows = useMemo(() => zones || [], [zones]);
@@ -228,7 +240,12 @@ export default function AdminDeliveryZones() {
       const managers = (data.users || []).filter(u => 
         u.roles?.includes('admin') || u.roles?.includes('manager')
       );
+      // Filter users who have 'delivery_partner' role
+      const deliveryPartners = (data.users || []).filter(u => 
+        u.roles?.includes('delivery_partner')
+      );
       setAvailableManagers(managers);
+      setAvailableDeliveryPartners(deliveryPartners);
     } catch (err) {
       console.error('Failed to load managers:', err);
       setError('Failed to load managers');
@@ -239,6 +256,7 @@ export default function AdminDeliveryZones() {
 
   const handleOpenManagerModal = async (zone) => {
     setSelectedZoneForManager(zone);
+    setAssignmentTab('managers');
     setShowManagerModal(true);
     await loadAvailableManagers();
   };
@@ -619,13 +637,37 @@ export default function AdminDeliveryZones() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">
-                Assign Manager to {selectedZoneForManager.name}
+                Assign to {selectedZoneForManager.name}
               </h2>
               <button
                 onClick={() => setShowManagerModal(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
                 ✕
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4 border-b">
+              <button
+                onClick={() => setAssignmentTab('managers')}
+                className={`px-4 py-2 font-medium text-sm transition ${
+                  assignmentTab === 'managers'
+                    ? 'border-b-2 border-blue-600 text-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Managers
+              </button>
+              <button
+                onClick={() => setAssignmentTab('delivery-partners')}
+                className={`px-4 py-2 font-medium text-sm transition ${
+                  assignmentTab === 'delivery-partners'
+                    ? 'border-b-2 border-green-600 text-green-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Delivery Partners
               </button>
             </div>
 
@@ -638,21 +680,40 @@ export default function AdminDeliveryZones() {
             {loadingManagers ? (
               <div className="py-8 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-600 mt-2">Loading managers...</p>
+                <p className="text-gray-600 mt-2">Loading...</p>
               </div>
-            ) : availableManagers.length === 0 ? (
-              <p className="text-gray-600 text-sm py-4">No admin users available to assign.</p>
+            ) : assignmentTab === 'managers' ? (
+              availableManagers.length === 0 ? (
+                <p className="text-gray-600 text-sm py-4">No managers available to assign.</p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {availableManagers.map(manager => (
+                    <button
+                      key={manager._id}
+                      onClick={() => handleAssignManager(manager._id)}
+                      disabled={saving}
+                      className="w-full text-left p-3 border rounded hover:bg-blue-50 transition"
+                    >
+                      <div className="font-medium text-gray-900">{manager.name}</div>
+                      <div className="text-xs text-gray-500">{manager.email}</div>
+                    </button>
+                  ))}
+                </div>
+              )
+            ) : availableDeliveryPartners.length === 0 ? (
+              <p className="text-gray-600 text-sm py-4">No delivery partners available to assign.</p>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {availableManagers.map(manager => (
+                {availableDeliveryPartners.map(partner => (
                   <button
-                    key={manager._id}
-                    onClick={() => handleAssignManager(manager._id)}
+                    key={partner._id}
+                    onClick={() => handleAssignManager(partner._id)}
                     disabled={saving}
-                    className="w-full text-left p-3 border rounded hover:bg-blue-50 transition"
+                    className="w-full text-left p-3 border rounded hover:bg-green-50 transition"
                   >
-                    <div className="font-medium text-gray-900">{manager.name}</div>
-                    <div className="text-xs text-gray-500">{manager.email}</div>
+                    <div className="font-medium text-gray-900">{partner.name}</div>
+                    <div className="text-xs text-gray-500">{partner.email}</div>
+                    <div className="text-xs text-green-600 mt-1">🚗 Delivery Partner</div>
                   </button>
                 ))}
               </div>

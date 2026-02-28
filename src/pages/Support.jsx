@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Headphones, Mail, MessageSquare, ShieldCheck, Sparkles, Timer } from 'lucide-react'
 import { createSupportTicket, fetchSupportFaqs, sendSupportMessage } from '../services/supportService'
+import { useAuth } from '../context/AuthContext'
 import VirtualizedMessageList from '../components/ui/VirtualizedMessageList'
 import './Support.css'
 
@@ -30,6 +31,7 @@ const QUICK_STATS = [
 const faqCache = {}
 
 export default function Support() {
+  const { user } = useAuth()
   const [language, setLanguage] = useState(sessionStorage.getItem('supportLang') || 'en')
   const [faqs, setFaqs] = useState([])
   const [messages, setMessages] = useState([])
@@ -146,7 +148,7 @@ export default function Support() {
     setIsTyping(true)
 
     try {
-      const response = await sendSupportMessage(text, language)
+      const response = await sendSupportMessage(text, language, null, user?._id)
       appendMessage('bot', response.reply)
       setQuickReplies(response.quickReplies || [])
     } catch (err) {
@@ -155,7 +157,7 @@ export default function Support() {
     } finally {
       setIsTyping(false)
     }
-  }, [language, appendMessage])
+  }, [language, appendMessage, user])
 
   const handleQuickReply = useCallback((question) => {
     handleSend(question)

@@ -27,6 +27,7 @@ import Profile from './pages/Profile'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
 import Orders from './pages/Orders'
+import LiveOrderTracking from './components/tracking/LiveOrderTracking'
 import NewArrivalsPage from './pages/NewArrivals'
 import BestSellersPage from './pages/BestSellers'
 import About from './pages/About'
@@ -110,11 +111,11 @@ function App() {
             <Routes>
               {/* Admin Routes - Separate layout */}
               <Route path="/admin" element={
-                <RoleBasedRoute requiredRole={ROLES.ADMIN}>
+                <RoleBasedRoute requiredRole={[ROLES.ADMIN, 'delivery_partner']}>
                   <AdminLayout />
                 </RoleBasedRoute>
               }>
-                <Route index element={<AdminDashboard />} />
+                <Route index element={<AdminOrders />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="products/add" element={<AddProduct />} />
@@ -148,6 +149,7 @@ function App() {
                       <Route path="/checkout" element={<Checkout />} />
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/orders/:id" element={<OrderConfirmation />} />
+                      <Route path="/order/:orderId/track" element={<LiveOrderTracking />} />
                       <Route path="/wishlist" element={<Wishlist />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/features" element={<Features />} />

@@ -1,11 +1,20 @@
 // src/pages/admin/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { IndianRupee, Package, Users, ShoppingCart, TrendingUp } from "lucide-react";
 import adminAPI from "../../services/adminAPI";
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
+import { useAuth } from '../../context/AuthContext'
+import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 
 export default function AdminDashboard() {
+  const { user } = useAuth()
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  
+  if (isDeliveryPartner) {
+    return <Navigate to="/admin/orders" replace />
+  }
+
   const navigate = useNavigate();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);

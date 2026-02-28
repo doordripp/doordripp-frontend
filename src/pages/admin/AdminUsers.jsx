@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, Navigate } from 'react-router-dom'
 import { UserPlus, Search, Filter, Edit, Trash2, Shield, User, X } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
 import adminAPI from '../../services/adminAPI'
+import { useAuth } from '../../context/AuthContext'
+import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 
 export default function AdminUsers() {
+  const { user } = useAuth()
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  
+  if (isDeliveryPartner) {
+    return <Navigate to="/admin/orders" replace />
+  }
+
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -17,6 +26,7 @@ export default function AdminUsers() {
     { value: 'all', label: 'All Roles' },
     { value: 'admin', label: 'Admin' },
     { value: 'manager', label: 'Manager' },
+    { value: 'delivery_partner', label: 'Delivery Partner' },
     { value: 'customer', label: 'Customer' }
   ]
 
@@ -122,6 +132,8 @@ export default function AdminUsers() {
         return 'bg-red-100 text-red-800'
       case 'manager':
         return 'bg-purple-100 text-purple-800'
+      case 'delivery_partner':
+        return 'bg-green-100 text-green-800'
       case 'customer':
         return 'bg-blue-100 text-blue-800'
       default:
@@ -134,6 +146,8 @@ export default function AdminUsers() {
       case 'admin':
         return <Shield size={14} />
       case 'manager':
+        return <Shield size={14} />
+      case 'delivery_partner':
         return <Shield size={14} />
       case 'customer':
         return <User size={14} />
@@ -170,6 +184,7 @@ export default function AdminUsers() {
         >
           <option value="customer">Customer</option>
           <option value="manager">Manager</option>
+          <option value="delivery_partner">Delivery Partner</option>
           <option value="admin">Admin</option>
         </select>
       )
@@ -395,7 +410,7 @@ function UserModal({ user, onSave, onClose }) {
 
   const [errors, setErrors] = useState({})
 
-  const roles = ['customer', 'manager', 'admin']
+  const roles = ['customer', 'manager', 'delivery_partner', 'admin']
 
   const handleSubmit = (e) => {
     e.preventDefault()

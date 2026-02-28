@@ -20,6 +20,12 @@ export default function RoleChangeModal({ user, onSubmit, onClose }) {
       color: 'blue'
     },
     {
+      id: 'delivery_partner',
+      name: 'Delivery Partner',
+      description: 'Can view and update delivery status for assigned areas only',
+      color: 'green'
+    },
+    {
       id: 'admin',
       name: 'Admin',
       description: 'Full system access and management capabilities',
@@ -58,6 +64,7 @@ export default function RoleChangeModal({ user, onSubmit, onClose }) {
     const colors = {
       gray: 'border-gray-300 bg-gray-50',
       blue: 'border-blue-300 bg-blue-50',
+      green: 'border-green-300 bg-green-50',
       red: 'border-red-300 bg-red-50'
     }
     return colors[color] || 'border-gray-300 bg-gray-50'
@@ -67,6 +74,7 @@ export default function RoleChangeModal({ user, onSubmit, onClose }) {
     const colors = {
       gray: 'accent-gray-600',
       blue: 'accent-blue-600',
+      green: 'accent-green-600',
       red: 'accent-red-600'
     }
     return colors[color] || 'accent-gray-600'
@@ -157,6 +165,8 @@ export default function RoleChangeModal({ user, onSubmit, onClose }) {
                       className={`inline-flex items-center px-4 py-2 rounded-lg font-medium text-sm ${
                         roleObj?.id === 'admin'
                           ? 'bg-red-100 text-red-700'
+                          : roleObj?.id === 'delivery_partner'
+                          ? 'bg-green-100 text-green-700'
                           : roleObj?.id === 'manager'
                           ? 'bg-blue-100 text-blue-700'
                           : 'bg-gray-100 text-gray-700'

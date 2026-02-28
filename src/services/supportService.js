@@ -5,8 +5,8 @@ export async function fetchSupportFaqs(language = 'en') {
   return response.data
 }
 
-export async function sendSupportMessage(message, language = 'en', questionId) {
-  const response = await api.post('/support/chat', { message, language, questionId })
+export async function sendSupportMessage(message, language = 'en', questionId, userId = null) {
+  const response = await api.post('/support/chat', { message, language, questionId, userId })
   return response.data
 }
 

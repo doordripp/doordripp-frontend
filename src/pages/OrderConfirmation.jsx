@@ -3,6 +3,7 @@ import { Link, useLocation, useParams, useNavigate } from 'react-router-dom'
 import { apiGet, apiPost } from '../services/apiClient'
 import InvoiceViewer from '../components/invoices/InvoiceViewer'
 import { transformOrderToInvoice, transformInvoiceApiToTemplate } from '../components/invoices/invoice-utils'
+import CompactOrderTracking from '../components/tracking/CompactOrderTracking'
 
 export default function OrderConfirmation() {
   const { id } = useParams()
@@ -301,14 +302,31 @@ export default function OrderConfirmation() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-2">
-                  <button onClick={() => window.location.assign('/')} className="w-full px-4 py-2 bg-black text-white rounded-md">Continue shopping</button>
-                  <Link to={`/orders/${order._id || order.id}`} className="w-full text-center px-4 py-2 border rounded-md">Track order</Link>
-                  <button onClick={downloadInvoice} className="w-full px-4 py-2 bg-white border rounded-md">
+                <div className="mt-4 flex flex-col gap-3">
+                  {/* Live Tracking Widget */}
+                  {order.deliveryPartner?.riderId && (
+                    <div>
+                      <CompactOrderTracking 
+                        orderId={order._id || order.id} 
+                        token={localStorage.getItem('token')}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Action Buttons */}
+                  <button onClick={() => window.location.assign('/')} className="w-full px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">Continue shopping</button>
+                  
+                  <Link to={`/order/${order._id || order.id}/track`} className="w-full text-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition font-semibold">
+                    📍 Track Order
+                  </Link>
+                  
+                  <button onClick={downloadInvoice} className="w-full px-4 py-2 bg-white border rounded-md hover:bg-gray-50 transition">
                     {invoiceLoading ? 'Preparing invoice...' : 'Download invoice'}
                   </button>
-                  <button onClick={handleShare} className="w-full px-4 py-2 bg-white border rounded-md">Share order {shareStatus && <span className="ml-2 text-sm text-gray-500">{shareStatus}</span>}</button>
-                  <button onClick={() => setShowReturnModal(true)} className="w-full px-4 py-2 bg-red-50 text-red-700 border rounded-md">Request return / replace</button>
+                  
+                  <button onClick={handleShare} className="w-full px-4 py-2 bg-white border rounded-md hover:bg-gray-50 transition">Share order {shareStatus && <span className="ml-2 text-sm text-gray-500">{shareStatus}</span>}</button>
+                  
+                  <button onClick={() => setShowReturnModal(true)} className="w-full px-4 py-2 bg-red-50 text-red-700 border rounded-md hover:bg-red-100 transition">Request return / replace</button>
                 </div>
               </div>
             </aside>

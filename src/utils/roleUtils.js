@@ -1,7 +1,10 @@
 // Role Management Utilities
 export const ROLES = {
   USER: 'user',
+  CUSTOMER: 'customer',
   ADMIN: 'admin',
+  MANAGER: 'manager',
+  DELIVERY_PARTNER: 'delivery_partner',
   SUPER_ADMIN: 'super_admin'
 };
 
@@ -10,22 +13,37 @@ const normalizeRole = (role) => (role || '').toLowerCase().trim();
 
 export const checkRole = (userRoles, requiredRole) => {
   if (!userRoles) return false;
+  if (!requiredRole) return false;
   
   // Handle both array and string formats
   const roles = Array.isArray(userRoles) ? userRoles : [userRoles];
+  const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
   
   // Normalize all roles to lowercase
   const normalizedRoles = roles.map(normalizeRole);
-  const normalizedRequired = normalizeRole(requiredRole);
+  const normalizedRequiredRoles = requiredRoles.map(normalizeRole);
+
+  // Direct exact-role check (supports array input)
+  if (normalizedRequiredRoles.some(role => normalizedRoles.includes(role))) {
+    return true;
+  }
   
   // Role hierarchy: super_admin > admin > user
   const roleHierarchy = {
     [ROLES.USER]: 1,
+    [ROLES.CUSTOMER]: 1,
+    [ROLES.MANAGER]: 2,
+    [ROLES.DELIVERY_PARTNER]: 2,
     [ROLES.ADMIN]: 2,
     [ROLES.SUPER_ADMIN]: 3
   };
   
-  // Check if user has the required role or higher
+  // Fallback hierarchy check for single required role
+  if (normalizedRequiredRoles.length !== 1) {
+    return false;
+  }
+
+  const normalizedRequired = normalizedRequiredRoles[0];
   const userHighestRole = Math.max(...normalizedRoles.map(role => roleHierarchy[role] || 0));
   return userHighestRole >= roleHierarchy[normalizedRequired];
 };
@@ -40,4 +58,15 @@ export const hasAdminAccess = (user) => {
   const roleArray = Array.isArray(roles) ? roles : [roles];
   const normalizedRoles = roleArray.map(normalizeRole);
   return normalizedRoles.includes(ROLES.ADMIN) || normalizedRoles.includes(ROLES.SUPER_ADMIN);
+};
+
+export const hasDeliveryPartnerAccess = (user) => {
+  if (!user) return false;
+
+  const roles = user.roles || user.role;
+  if (!roles) return false;
+
+  const roleArray = Array.isArray(roles) ? roles : [roles];
+  const normalizedRoles = roleArray.map(normalizeRole);
+  return normalizedRoles.includes(ROLES.DELIVERY_PARTNER);
 };
