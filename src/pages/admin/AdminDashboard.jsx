@@ -1,11 +1,20 @@
 // src/pages/admin/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom';
-import { DollarSign, Package, Users, ShoppingCart, TrendingUp } from "lucide-react";
+import { useNavigate, Navigate } from 'react-router-dom';
+import { IndianRupee, Package, Users, ShoppingCart, TrendingUp } from "lucide-react";
 import adminAPI from "../../services/adminAPI";
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
+import { useAuth } from '../../context/AuthContext'
+import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 
 export default function AdminDashboard() {
+  const { user } = useAuth()
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  
+  if (isDeliveryPartner) {
+    return <Navigate to="/admin/orders" replace />
+  }
+
   const navigate = useNavigate();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -33,7 +42,7 @@ export default function AdminDashboard() {
             <p className="text-sm font-medium text-purple-900">Manage Users</p>
           </button>
           <button onClick={() => navigate('/admin/reports')} className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-center transition-colors">
-            <DollarSign className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+            <IndianRupee className="w-8 h-8 text-orange-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-orange-900">View Reports</p>
           </button>
         </div>
@@ -155,14 +164,14 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Sales</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalSales)}</p>
+              <p className="text-2xl font-bold text-gray-900">N.A</p>
               <p className="text-sm text-green-600 flex items-center mt-1">
                 <TrendingUp size={16} className="mr-1" />
                 {stats.salesGrowth} from last month
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
-              <DollarSign className="w-6 h-6 text-green-600" />
+              <IndianRupee className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </div>

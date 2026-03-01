@@ -65,8 +65,8 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
     
     // Company details (hardcoded)
     company: {
-      name: 'DoorDripp Pvt Ltd',
-      pan: 'AAMCD3799E',
+      name: 'DoorDripp',
+      // pan removed for privacy
       address: 'LandCraft Metro Homes, Muradnagar, Ghaziabad, Uttar Pradesh – 201206',
       phone: '+91-9286819663',
       email: 'support@doordripp.com',
@@ -168,10 +168,6 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
 
       {/* Company Details Section */}
       <div className="company-details-bar">
-        <div className="detail-item">
-          <span className="label">PAN:</span>
-          <span className="value">{data.company.pan}</span>
-        </div>
         <div className="detail-item">
           <span className="label">Email:</span>
           <span className="value">{data.company.email}</span>

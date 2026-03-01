@@ -45,6 +45,7 @@ export function TrialButton({ product, className = '' }) {
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       className={`flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-semibold transition-all duration-200 ${btnStyle} ${className}`}
     >

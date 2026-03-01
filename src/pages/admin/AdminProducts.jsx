@@ -6,6 +6,13 @@ import { formatCurrency } from '../../utils/adminHelpers'
 import adminAPI from '../../services/adminAPI'
 
 export default function AdminProducts() {
+  const { user } = useAuth()
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  
+  if (isDeliveryPartner) {
+    return <Navigate to="/admin/orders" replace />
+  }
+
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')

@@ -27,6 +27,7 @@ import Profile from './pages/Profile'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
 import Orders from './pages/Orders'
+import LiveOrderTracking from './components/tracking/LiveOrderTracking'
 import NewArrivalsPage from './pages/NewArrivals'
 import BestSellersPage from './pages/BestSellers'
 import About from './pages/About'
@@ -34,6 +35,9 @@ import Features from './pages/Features'
 import Works from './pages/Works'
 import Career from './pages/Career'
 import Support from './pages/Support'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsAndConditions from './pages/TermsAndConditions'
+import DeliveryDetails from './pages/DeliveryDetails'
 import TrialPage from './features/trial/TrialPage'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AuthenticatedRoute from './features/auth/AuthenticatedRoute'
@@ -71,135 +75,36 @@ function WishlistSyncHandler() {
 }
 
 /**
- * Production-Ready Scroll Restoration Component
+ * Global Scroll to Top Component
  * 
- * Implements Amazon-like scroll behavior:
- * - Forward navigation: Scroll to top
- * - Back/Forward buttons: Restore previous scroll position
- * - Uses sessionStorage for persistence
- * - Handles edge cases and cleanup
+ * Scrolls to top on every page navigation
+ * Simple and reliable - no conflicts with individual page implementations
  * 
  * @returns {null} This component doesn't render anything
  */
 function ScrollToTop() {
-  const { pathname, key } = useLocation()
-  const isBackNavigationRef = useRef(false)
-  const lastPathnameRef = useRef(pathname)
-  const lastKeyRef = useRef(key)
+  const { pathname, search } = useLocation()
 
-  // Initialize scroll restoration on mount
   useEffect(() => {
     // Disable browser's automatic scroll restoration
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual'
     }
 
-    // Listen for browser back/forward button navigation
-    const handlePopState = () => {
-      isBackNavigationRef.current = true
-    }
-
-    window.addEventListener('popstate', handlePopState)
-
-    // Cleanup on unmount
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-      // Restore browser's default behavior on unmount
-      if ('scrollRestoration' in window.history) {
-        window.history.scrollRestoration = 'auto'
-      }
-    }
-  }, [])
-
-  // Handle scroll position save and restore on route change
-  useEffect(() => {
-    const scrollStorageKey = `doordripp_scroll_${lastPathnameRef.current}`
+    // Scroll to top immediately on route change
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     
-    // Save scroll position before leaving current page
-    if (lastPathnameRef.current !== pathname) {
-      const currentScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop
-      
-      try {
-        sessionStorage.setItem(scrollStorageKey, currentScrollY.toString())
-        // Optional: Store timestamp for cache invalidation
-        sessionStorage.setItem(`${scrollStorageKey}_time`, Date.now().toString())
-      } catch {
-        // Handle sessionStorage quota exceeded or disabled
-        console.warn('Failed to save scroll position')
-      }
-    }
+    // Double-check after DOM updates
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    })
+    
+    // Final fallback for slow-loading content
+    setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    }, 100)
 
-    // Determine if this is back/forward navigation
-    const isBackOrForward = isBackNavigationRef.current
-
-    if (isBackOrForward) {
-      // BACK/FORWARD NAVIGATION: Restore scroll position
-      const savedScrollKey = `doordripp_scroll_${pathname}`
-      const savedScroll = sessionStorage.getItem(savedScrollKey)
-      
-      if (savedScroll) {
-        const scrollPosition = parseInt(savedScroll, 10)
-        
-        // Use multiple timing strategies to ensure scroll restoration works
-        // Immediate attempt
-        window.scrollTo(0, scrollPosition)
-        
-        // Delayed attempt after DOM render
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: scrollPosition, left: 0, behavior: 'auto' })
-        })
-        
-        // Final attempt for slow-loading content
-        setTimeout(() => {
-          const currentScroll = window.scrollY || window.pageYOffset
-          // Only scroll if we haven't reached the target position
-          if (Math.abs(currentScroll - scrollPosition) > 10) {
-            window.scrollTo({ top: scrollPosition, left: 0, behavior: 'auto' })
-          }
-        }, 100)
-      } else {
-        // No saved position, scroll to top
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-      }
-      
-      // Reset back navigation flag
-      isBackNavigationRef.current = false
-    } else {
-      // FORWARD NAVIGATION: Scroll to top
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-      
-      // Ensure scroll to top happens after render
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-      })
-    }
-
-    // Update refs for next navigation
-    lastPathnameRef.current = pathname
-    lastKeyRef.current = key
-  }, [pathname, key])
-
-  // Cleanup old scroll positions from sessionStorage
-  useEffect(() => {
-    try {
-      const CACHE_DURATION = 30 * 60 * 1000 // 30 minutes
-      const now = Date.now()
-      
-      // Check and clean up old entries on mount
-      Object.keys(sessionStorage).forEach((key) => {
-        if (key.startsWith('doordripp_scroll_') && key.endsWith('_time')) {
-          const timestamp = parseInt(sessionStorage.getItem(key) || '0', 10)
-          if (now - timestamp > CACHE_DURATION) {
-            const scrollKey = key.replace('_time', '')
-            sessionStorage.removeItem(scrollKey)
-            sessionStorage.removeItem(key)
-          }
-        }
-      })
-    } catch {
-      // Silently fail if sessionStorage is not available
-    }
-  }, [])
+  }, [pathname, search])
 
   return null
 }
@@ -216,11 +121,11 @@ function App() {
             <Routes>
               {/* Admin Routes - Separate layout */}
               <Route path="/admin" element={
-                <RoleBasedRoute requiredRole={ROLES.ADMIN}>
+                <RoleBasedRoute requiredRole={[ROLES.ADMIN, 'delivery_partner']}>
                   <AdminLayout />
                 </RoleBasedRoute>
               }>
-                <Route index element={<AdminDashboard />} />
+                <Route index element={<AdminOrders />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="products/add" element={<AddProduct />} />
@@ -256,12 +161,16 @@ function App() {
                       <Route path="/checkout" element={<Checkout />} />
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/orders/:id" element={<OrderConfirmation />} />
+                      <Route path="/order/:orderId/track" element={<LiveOrderTracking />} />
                       <Route path="/wishlist" element={<Wishlist />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/features" element={<Features />} />
                       <Route path="/works" element={<Works />} />
                       <Route path="/career" element={<Career />} />
                       <Route path="/support" element={<Support />} />
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/terms" element={<TermsAndConditions />} />
+                      <Route path="/delivery" element={<DeliveryDetails />} />
                     </Routes>
                   </main>
                   {/* Global Newsletter Section - Appears on all pages */}

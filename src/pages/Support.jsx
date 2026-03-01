@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Headphones, Mail, MessageSquare, ShieldCheck, Sparkles, Timer } from 'lucide-react'
 import { createSupportTicket, fetchSupportFaqs, sendSupportMessage } from '../services/supportService'
+import { useAuth } from '../context/AuthContext'
+import VirtualizedMessageList from '../components/ui/VirtualizedMessageList'
 import './Support.css'
 
 const LANGUAGE_META = {
@@ -26,7 +28,10 @@ const QUICK_STATS = [
   { icon: MessageSquare, label: 'Daily chats', value: '2.4k+' }
 ]
 
+const faqCache = {}
+
 export default function Support() {
+  const { user } = useAuth()
   const [language, setLanguage] = useState(sessionStorage.getItem('supportLang') || 'en')
   const [faqs, setFaqs] = useState([])
   const [messages, setMessages] = useState([])
@@ -36,6 +41,7 @@ export default function Support() {
   const [ticketStatus, setTicketStatus] = useState({ state: 'idle', message: '' })
   const [ticketForm, setTicketForm] = useState({ name: '', email: '', orderId: '', message: '' })
   const scrollRef = useRef(null)
+  const saveDebounce = useRef(null)
 
   const meta = LANGUAGE_META[language] || LANGUAGE_META.en
   const storageKey = `supportChatHistory:${language}`
@@ -48,10 +54,21 @@ export default function Support() {
     let isMounted = true
 
     const loadFaqs = async () => {
+      // Check cache first
+      if (faqCache[language]) {
+        if (isMounted) {
+          setFaqs(faqCache[language])
+        }
+        return
+      }
+
       try {
         const data = await fetchSupportFaqs(language)
         if (!isMounted) return
-        setFaqs(data.faqs || [])
+        const faqList = data.faqs || []
+        // Cache FAQs for current language
+        faqCache[language] = faqList
+        setFaqs(faqList)
       } catch (err) {
         if (!isMounted) return
         setFaqs([])
@@ -64,6 +81,32 @@ export default function Support() {
       isMounted = false
     }
   }, [language])
+
+  // Debounced sessionStorage save
+  useEffect(() => {
+    // Clear previous timeout
+    if (saveDebounce.current) {
+      clearTimeout(saveDebounce.current)
+    }
+
+    // Debounce the save by 1 second
+    saveDebounce.current = setTimeout(() => {
+      sessionStorage.setItem(storageKey, JSON.stringify(messages))
+    }, 1000)
+
+    return () => {
+      if (saveDebounce.current) {
+        clearTimeout(saveDebounce.current)
+      }
+    }
+  }, [messages, storageKey])
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [messages, isTyping])
 
   useEffect(() => {
     const saved = sessionStorage.getItem(storageKey)
@@ -86,24 +129,17 @@ export default function Support() {
     ])
   }, [storageKey, meta.greeting])
 
-  useEffect(() => {
-    sessionStorage.setItem(storageKey, JSON.stringify(messages))
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [messages, storageKey])
-
   const defaultQuickReplies = useMemo(() => {
     return faqs.slice(0, 6).map(faq => faq.question)
   }, [faqs])
 
   const visibleQuickReplies = quickReplies.length ? quickReplies : defaultQuickReplies
 
-  const appendMessage = (role, text) => {
+  const appendMessage = useCallback((role, text) => {
     setMessages(prev => [...prev, { id: `${Date.now()}-${Math.random()}`, role, text }])
-  }
+  }, [])
 
-  const handleSend = async (payloadText) => {
+  const handleSend = useCallback(async (payloadText) => {
     const text = payloadText.trim()
     if (!text) return
 
@@ -112,7 +148,7 @@ export default function Support() {
     setIsTyping(true)
 
     try {
-      const response = await sendSupportMessage(text, language)
+      const response = await sendSupportMessage(text, language, null, user?._id)
       appendMessage('bot', response.reply)
       setQuickReplies(response.quickReplies || [])
     } catch (err) {
@@ -121,13 +157,13 @@ export default function Support() {
     } finally {
       setIsTyping(false)
     }
-  }
+  }, [language, appendMessage, user])
 
-  const handleQuickReply = (question) => {
+  const handleQuickReply = useCallback((question) => {
     handleSend(question)
-  }
+  }, [handleSend])
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = useCallback(async (event) => {
     event.preventDefault()
     setTicketStatus({ state: 'loading', message: '' })
 
@@ -143,12 +179,12 @@ export default function Support() {
     } catch (err) {
       setTicketStatus({ state: 'error', message: 'Unable to submit. Please try again.' })
     }
-  }
+  }, [ticketForm, language])
 
-  const handleClearChat = () => {
+  const handleClearChat = useCallback(() => {
     setMessages([{ id: `${Date.now()}-greeting`, role: 'bot', text: meta.greeting }])
     setQuickReplies([])
-  }
+  }, [meta.greeting])
 
   return (
     <section className="support-page min-h-screen pt-24 pb-16">
@@ -252,25 +288,11 @@ export default function Support() {
                 </select>
               </div>
 
-              <div ref={scrollRef} className="mt-6 h-[420px] overflow-y-auto space-y-4 pr-2">
-                {messages.map((message) => (
-                  <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`chat-bubble ${message.role}`}>
-                      <p className="text-sm leading-relaxed">{message.text}</p>
-                    </div>
-                  </div>
-                ))}
-
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="typing-bubble">
-                      <span className="typing-dot" />
-                      <span className="typing-dot" />
-                      <span className="typing-dot" />
-                    </div>
-                  </div>
-                )}
-              </div>
+              <VirtualizedMessageList 
+                messages={messages} 
+                isTyping={isTyping} 
+                scrollRef={scrollRef} 
+              />
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {visibleQuickReplies.map((item) => (

@@ -3,9 +3,17 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import adminAPI from "../../../services/adminAPI";
 import ImageUploader from "../../../components/Admin/ImageUploader";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import { hasDeliveryPartnerAccess } from "../../../utils/roleUtils";
 
 export default function AddProduct() {
+  const { user } = useAuth();
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user);
+  
+  if (isDeliveryPartner) {
+    return <Navigate to="/admin/orders" replace />;
+  }
   const {
     register,
     handleSubmit,

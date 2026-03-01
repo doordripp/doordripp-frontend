@@ -21,6 +21,7 @@ export default function MobileMenu() {
       title: 'Quick Links',
       links: [
         { name: 'All Products', href: '/products' },
+        { name: 'Trial Room', href: '/trial-room' },
         { name: 'New Arrivals', href: '/#new-arrivals' },
         { name: 'Best Sellers', href: '/#top-selling' },
         { name: 'About', href: '/about' },

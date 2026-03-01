@@ -177,6 +177,7 @@ export default function Navbar() {
 					<Link to="/products" className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>All Products</Link>
 					<button onClick={() => scrollToSection('new-arrivals')} className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>New Arrivals</button>
 					<button onClick={() => scrollToSection('top-selling')} className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>Best Sellers</button>
+					<Link to="/trial-room" className="hover:text-black/70 transition-colors duration-200 font-medium" onMouseEnter={closeAllDropdowns}>Trial Room</Link>
 			</nav>
 
 				{/* Search */}
@@ -204,11 +205,20 @@ export default function Navbar() {
 					{user ? (
 						<div className="flex items-center gap-3">
 							<Link to="/profile" className="p-1 hover:opacity-70 transition-opacity duration-200 group">
-								{user.avatar ? (
-									<img src={user.avatar} alt="avatar" className="h-7 w-7 rounded-full object-cover" />
-								) : (
-									<User className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-								)}
+								{user.avatar && user.avatar.trim() !== '' ? (
+									<img
+										src={user.avatar}
+										alt="avatar"
+										className="h-7 w-7 rounded-full object-cover"
+										onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+									/>
+								) : null}
+								<span
+									style={{ display: user.avatar && user.avatar.trim() !== '' ? 'none' : 'flex' }}
+									className="h-7 w-7 rounded-full bg-black text-white items-center justify-center text-xs font-bold group-hover:scale-110 transition-transform duration-200"
+								>
+									{user.name ? user.name.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+								</span>
 							</Link>
 						</div>
 					) : (

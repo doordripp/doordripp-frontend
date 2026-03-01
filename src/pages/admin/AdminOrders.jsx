@@ -3,8 +3,12 @@ import { Package, Search, Filter, Eye, Truck, CheckCircle, X } from 'lucide-reac
 import { AdminButton, AdminTable } from '../../components/ui'
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
 import { apiGet, apiPut } from '../../services/apiClient'
+import { useAuth } from '../../context/AuthContext'
+import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 
 export default function AdminOrders() {
+  const { user } = useAuth()
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -22,10 +26,11 @@ export default function AdminOrders() {
     { value: 'all', label: 'All Orders' },
     { value: 'pending', label: 'Pending' },
     { value: 'confirmed', label: 'Confirmed' },
+    { value: 'packed', label: 'Packed' },
     { value: 'processing', label: 'Processing' },
     { value: 'shipped', label: 'Shipped' },
     { value: 'delivered', label: 'Delivered' },
-    { value: 'cancelled', label: 'Cancelled' }
+    ...(isDeliveryPartner ? [] : [{ value: 'cancelled', label: 'Cancelled' }])
   ]
 
   useEffect(() => {
@@ -64,6 +69,8 @@ export default function AdminOrders() {
         return 'bg-yellow-100 text-yellow-800'
       case 'confirmed':
         return 'bg-indigo-100 text-indigo-800'
+      case 'packed':
+        return 'bg-cyan-100 text-cyan-800'
       case 'processing':
         return 'bg-blue-100 text-blue-800'
       case 'shipped':
@@ -83,6 +90,8 @@ export default function AdminOrders() {
         return <Package size={14} />
       case 'confirmed':
         return <CheckCircle size={14} />
+      case 'packed':
+        return <Package size={14} />
       case 'processing':
         return <Package size={14} />
       case 'shipped':
@@ -151,11 +160,22 @@ export default function AdminOrders() {
             onChange={(e) => handleStatusChange(order.id, e.target.value)}
             className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
           >
-            {statusOptions.filter(opt => opt.value !== 'all').map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            {isDeliveryPartner ? (
+              <>
+                <option value="packed">Packed</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+              </>
+            ) : (
+              <>
+                {statusOptions.filter(opt => opt.value !== 'all').map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </>
+            )}
           </select>
         </div>
       )
@@ -203,11 +223,15 @@ export default function AdminOrders() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-          <p className="text-gray-600">Manage customer orders and track shipments</p>
+          <h1 className="text-2xl font-bold text-gray-900">{isDeliveryPartner ? 'My Deliveries' : 'Orders'}</h1>
+          <p className="text-gray-600">
+            {isDeliveryPartner 
+              ? 'View and update delivery status for orders in your assigned area' 
+              : 'Manage customer orders and track shipments'}
+          </p>
         </div>
         <div className="text-sm text-gray-500">
-          {filteredOrders.length} orders
+          {filteredOrders.length} {isDeliveryPartner ? 'deliveries' : 'orders'}
         </div>
       </div>
 
@@ -258,10 +282,15 @@ export default function AdminOrders() {
 
 // Order Details Modal Component
 function OrderDetailsModal({ order, onClose, onStatusChange }) {
+  const { user } = useAuth()
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800'
+      case 'packed':
+        return 'bg-cyan-100 text-cyan-800'
       case 'processing':
         return 'bg-blue-100 text-blue-800'
       case 'shipped':
@@ -278,6 +307,8 @@ function OrderDetailsModal({ order, onClose, onStatusChange }) {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending':
+        return <Package size={14} />
+      case 'packed':
         return <Package size={14} />
       case 'processing':
         return <Package size={14} />
@@ -331,11 +362,23 @@ function OrderDetailsModal({ order, onClose, onStatusChange }) {
                   }}
                   className="text-sm border border-gray-300 rounded px-2 py-1"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="cancelled">Cancelled</option>
+                  {isDeliveryPartner ? (
+                    <>
+                      <option value="packed">Packed</option>
+                      <option value="processing">Processing</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="pending">Pending</option>
+                      <option value="packed">Packed</option>
+                      <option value="processing">Processing</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="cancelled">Cancelled</option>
+                    </>
+                  )}
                 </select>
               </div>
               <p className="text-sm text-gray-600 mt-2">

@@ -20,9 +20,12 @@ export default function RoleBasedRoute({ children, requiredRole }) {
     return <Navigate to="/login" replace />;
   }
   
-  // Check if user has required role
+  // Check if user has required role (supports array or single role)
   const userRoles = user.roles || user.role;
-  if (!checkRole(userRoles, requiredRole)) {
+  const rolesArray = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+  
+  const hasAccess = rolesArray.some(role => checkRole(userRoles, role));
+  if (!hasAccess) {
     return <Navigate to="/" replace />;
   }
   

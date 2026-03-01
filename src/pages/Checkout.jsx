@@ -67,11 +67,6 @@ export default function Checkout() {
   // Recalculate Total with selected delivery fee and potential trial fee (no GST)
   const finalTotal = cartTotals.subtotal + selectedDeliveryOption.charge + trialFee
 
-  // Ensure checkout opens at top
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-  }, [])
-
   // Load Razorpay script on mount
   useEffect(() => {
     const script = document.createElement('script')
@@ -139,9 +134,11 @@ export default function Checkout() {
       }
       
       // Reload addresses
-      loadSavedAddresses()
+      await loadSavedAddresses()
     } catch (err) {
-      toast.error(err.message || 'Failed to delete address')
+      console.error('Error deleting address:', err)
+      const msg = err?.message || err?.error || 'Failed to delete address'
+      toast.error(typeof msg === 'string' ? msg : 'Failed to delete address')
     }
   }
 

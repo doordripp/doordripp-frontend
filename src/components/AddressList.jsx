@@ -51,14 +51,12 @@ const AddressList = ({ onSelectAddress, onEditAddress }) => {
 
     try {
       const data = await apiDelete(`/addresses/${addressId}`);
-
-      if (data.success) {
-        toast.success('Address deleted');
-        loadAddresses();
-      }
+      toast.success('Address deleted');
+      await loadAddresses();
     } catch (error) {
       console.error('Error deleting address:', error);
-      toast.error('Failed to delete address');
+      const msg = error?.message || error?.error || 'Failed to delete address';
+      toast.error(typeof msg === 'string' ? msg : 'Failed to delete address');
     }
   };
 
