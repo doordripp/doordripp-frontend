@@ -15,7 +15,7 @@ import {
 import L from 'leaflet'
 import { haversineDistance, formatDistance, formatETA, calculateETA } from '../../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://doordripp-backend.onrender.com'
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 // Bike icon for rider
 const bikeIcon = L.icon({
