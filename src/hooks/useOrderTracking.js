@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { io } from 'socket.io-client'
 import { getOSRMRoute } from '../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://doordripp-backend.onrender.com'
 
 export function useOrderTracking(orderId, token, role = 'customer') {
   const [riderLocation, setRiderLocation] = useState(null)

@@ -26,7 +26,7 @@ import {
   decodePolyline
 } from '../../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://doordripp-backend.onrender.com'
 
 // Custom bike icon for rider
 const bikeIcon = L.icon({

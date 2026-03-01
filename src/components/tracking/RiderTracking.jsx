@@ -9,7 +9,7 @@ import { useParams } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { getDistanceInMeters } from '../../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://doordripp-backend.onrender.com'
 const MIN_DISTANCE_THRESHOLD = 20 // meters
 const UPDATE_INTERVAL = 5000 // 5 seconds
 
