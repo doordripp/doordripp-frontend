@@ -25,6 +25,8 @@ export default function AdminSidebar() {
           <Item to="/admin/customers">Customers</Item>
         <Item to="/admin/reports">Reports</Item>
         <Item to="/admin/delivery-zones">Delivery Areas</Item>
+        <Item to="/admin/banners">Promo Banners</Item>
+        <Item to="/admin/categories">Categories</Item>
       </nav>
     </aside>
   );
