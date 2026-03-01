@@ -48,6 +48,18 @@ const adminAPI = {
   deleteDeliveryZone: async (id) => (await api.delete(`/admin/delivery-zones/${id}`)).data,
   toggleDeliveryZoneStatus: async (id) => (await api.patch(`/admin/delivery-zones/${id}/toggle`)).data,
   getDeliveryZoneStats: async () => (await api.get("/admin/delivery-zones/stats")).data,
+
+  // Banners & Content
+  getBanners: async (q = {}) => (await api.get("/content/banners", { params: q })).data,
+  createBanner: async (data) => (await api.post("/content/banners", data)).data,
+  updateBannerStatus: async (id, isActive) => (await api.patch(`/content/banners/${id}`, { isActive })).data,
+  deleteBanner: async (id) => (await api.delete(`/content/banners/${id}`)).data,
+
+  // Categories
+  getCategories: async (q = {}) => (await api.get("/content/categories", { params: q })).data,
+  createCategory: async (data) => (await api.post("/content/categories", data)).data,
+  updateCategoryStatus: async (id, isActive) => (await api.patch(`/content/categories/${id}`, { isActive })).data,
+  deleteCategory: async (id) => (await api.delete(`/content/categories/${id}`)).data,
 };
 
 export default adminAPI;

@@ -42,7 +42,17 @@ import TrialPage from './features/trial/TrialPage'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AuthenticatedRoute from './features/auth/AuthenticatedRoute'
 import AdminLayout from './layout/AdminLayout'
-import { AdminDashboard, AdminProducts, AdminOrders, AdminUsers, AdminCustomers, AdminReports, AdminDeliveryZones } from './pages/admin'
+import { 
+  AdminDashboard, 
+  AdminProducts, 
+  AdminOrders, 
+  AdminUsers, 
+  AdminCustomers, 
+  AdminReports, 
+  AdminDeliveryZones, 
+  AdminBanners,
+  AdminCategories 
+} from './pages/admin'
 import AddProduct from './features/admin/products/AddProduct'
 import { ROLES } from './utils/roleUtils'
 
@@ -124,6 +134,8 @@ function App() {
                 <Route path="customers" element={<AdminCustomers />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="delivery-zones" element={<AdminDeliveryZones />} />
+                <Route path="banners" element={<AdminBanners />} />
+                <Route path="categories" element={<AdminCategories />} />
               </Route>
 
               {/* Main App Routes */}
