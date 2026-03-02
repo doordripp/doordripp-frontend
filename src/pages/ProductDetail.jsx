@@ -21,6 +21,21 @@ import ImageZoom from '../components/ui/ImageZoom'
 
 
 /* ============================
+   UTILITY FUNCTIONS
+   ============================ */
+
+// Safe JSON parser
+const tryParseJSON = (jsonString) => {
+  if (!jsonString) return {}
+  if (typeof jsonString === 'object') return jsonString
+  try {
+    return JSON.parse(jsonString)
+  } catch {
+    return {}
+  }
+}
+
+/* ============================
    TITLE FORMATTERS (UI ONLY)
    ============================ */
 
@@ -46,9 +61,11 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedSize, setSelectedSize] = useState('')
+  const [selectedColor, setSelectedColor] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
+  const [activeTab, setActiveTab] = useState('specifications')
   const [recommendedProducts, setRecommendedProducts] = useState([])
   
   // Handle review submission to refresh product rating
@@ -86,12 +103,16 @@ export default function ProductDetail() {
           category: p.category,
           subcategory: p.subcategory,
           description: p.description,
+          details: typeof p.details === 'string' ? tryParseJSON(p.details) : p.details,
           sizes: p.sizes || [],
           colors: p.colors || []
         })
 
         if (p.sizes?.length) setSelectedSize(p.sizes[0])
         else setSelectedSize('M')
+
+        if (p.colors?.length) setSelectedColor(p.colors[0])
+        else setSelectedColor('')
 
       } catch (err) {
         setProduct(null)
@@ -263,6 +284,41 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {/* COLOR SELECTOR */}
+              {product.colors && product.colors.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                      Color
+                    </span>
+                    <span className="text-sm text-gray-500 font-medium">Selected: {selectedColor}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {product.colors.map((color) => (
+                      <button
+                        type="button"
+                        key={color.name || color}
+                        onClick={() => setSelectedColor(color.name || color)}
+                        className={`w-12 h-12 rounded-full border-3 transition-all duration-200 flex items-center justify-center ${
+                          (selectedColor === (color.name || color))
+                            ? 'border-black scale-110 shadow-md'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                        style={{ 
+                          backgroundColor: color.hex || '#ccc',
+                          borderColor: (selectedColor === (color.name || color)) ? '#000' : '#ddd'
+                        }}
+                        title={color.name || color}
+                      >
+                        {(selectedColor === (color.name || color)) && (
+                          <div className="w-3 h-3 bg-white rounded-full"></div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* QUANTITY */}
               <div className="space-y-3">
                 <span className="text-sm font-bold uppercase tracking-wider text-gray-900">
@@ -297,7 +353,7 @@ export default function ProductDetail() {
                   addToCart({ ...product, image: product.images[0] }, { 
                     quantity, 
                     size: selectedSize, 
-                    color: 'Default' 
+                    color: selectedColor || 'Default' 
                   })
                   setIsAddedToCart(true)
                   setTimeout(() => setIsAddedToCart(false), 1500)
@@ -334,6 +390,68 @@ export default function ProductDetail() {
             </div>
           </div>
         )}
+
+        {/* ================= SPECIFICATIONS & DESCRIPTION ================= */}
+        <div className="mt-16 pt-10 border-t border-gray-200">
+          <div className="max-w-2xl">
+            {/* Tabs */}
+            <div className="flex gap-8 border-b border-gray-200 mb-6">
+              <button
+                onClick={() => setActiveTab('specifications')}
+                className={`pb-4 font-bold uppercase text-sm tracking-wide transition-colors ${
+                  activeTab === 'specifications'
+                    ? 'text-gray-900 border-b-2 border-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Specification
+              </button>
+              <button
+                onClick={() => setActiveTab('description')}
+                className={`pb-4 font-bold uppercase text-sm tracking-wide transition-colors ${
+                  activeTab === 'description'
+                    ? 'text-gray-900 border-b-2 border-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Description
+              </button>
+            </div>
+
+            {/* Specifications Tab */}
+            {activeTab === 'specifications' && (
+              <div className="space-y-4">
+                {product.details ? (
+                  <div className="bg-gray-50 p-6 rounded-lg">
+                    <div className="grid grid-cols-3 gap-4">
+                      {Object.entries(product.details).map(([key, value], idx) => (
+                        <div key={idx} className="space-y-2">
+                          <p className="text-xs uppercase text-gray-600 font-medium tracking-wide">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </p>
+                          <p className="text-sm text-gray-900 font-medium">
+                            {Array.isArray(value) ? value.join(', ') : value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No specifications available for this product.</p>
+                )}
+              </div>
+            )}
+
+            {/* Description Tab */}
+            {activeTab === 'description' && (
+              <div className="space-y-4">
+                <div className="text-gray-700 text-sm leading-relaxed">
+                  {product.description || 'No description available for this product.'}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* ================= REVIEWS SECTION (Bottom) ================= */}
         <div id="reviews" className="mt-20 pt-10 border-t border-gray-200">

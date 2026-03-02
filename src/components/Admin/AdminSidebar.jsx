@@ -24,16 +24,6 @@ export default function AdminSidebar() {
       </div>
 
       <nav className="flex flex-col gap-1">
-<<<<<<< HEAD
-        <Item to="/admin/dashboard">Dashboard</Item>
-        <Item to="/admin/products">Products</Item>
-        <Item to="/admin/orders">Orders</Item>
-          <Item to="/admin/customers">Customers</Item>
-        <Item to="/admin/reports">Reports</Item>
-        <Item to="/admin/delivery-zones">Delivery Areas</Item>
-        <Item to="/admin/banners">Promo Banners</Item>
-        <Item to="/admin/categories">Categories</Item>
-=======
         {isDeliveryPartner ? (
           <>
             <Item to="/admin/orders">My Deliveries</Item>
@@ -46,9 +36,10 @@ export default function AdminSidebar() {
             <Item to="/admin/customers">Customers</Item>
             <Item to="/admin/reports">Reports</Item>
             <Item to="/admin/delivery-zones">Delivery Areas</Item>
+            <Item to="/admin/banners">Promo Banners</Item>
+            <Item to="/admin/categories">Categories</Item>
           </>
         )}
->>>>>>> ff33da3ca5cd613e2d05532326326034d0e25dc7
       </nav>
     </aside>
   );

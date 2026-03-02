@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Package, Search, Filter, Eye, Truck, CheckCircle, X } from 'lucide-react'
+import { Package, Search, Filter, Eye, Truck, CheckCircle, X, MapPin, ExternalLink } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
-import { apiGet, apiPut } from '../../services/apiClient'
+import { apiGet, apiPut, apiPost } from '../../services/apiClient'
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 
@@ -50,6 +50,8 @@ export default function AdminOrders() {
           trialFee: o.trialFee || 0,
           deliveryFee: o.deliveryFee || 0,
           items: o.items || [],
+          deliveryPartner: o.deliveryPartner,
+          shippingAddress: o.shippingAddress,
           shipping: { address: toAddressLine(o.shippingAddress), method: 'Standard Delivery' }
         }))
         setOrders(mapped)
@@ -205,8 +207,50 @@ export default function AdminOrders() {
       setOrders(orders.map(order => 
         order.id === orderId ? { ...order, status: newStatus } : order
       ))
+      // Update selected order if it's open
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus })
+      }
     } catch (e) {
       console.error('Failed to update order status:', e)
+      alert('Failed to update order status')
+    }
+  }
+
+  const handleAcceptDelivery = async (orderId) => {
+    try {
+      const response = await apiPost(`/admin/orders/${orderId}/accept`, {})
+      
+      // Refresh orders list
+      const query = statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : ''
+      const res = await apiGet(`/admin/orders${query}`)
+      const mapped = (res.orders || []).map(o => ({
+        id: o.id || o._id,
+        customer: { name: o.customer || 'Unknown', email: o.customerEmail || '' },
+        date: o.date || o.createdAt,
+        total: o.total || 0,
+        status: o.status || 'pending',
+        isTrial: o.isTrial || false,
+        trialItems: o.trialItems || [],
+        trialFee: o.trialFee || 0,
+        deliveryFee: o.deliveryFee || 0,
+        items: o.items || [],
+        deliveryPartner: o.deliveryPartner,
+        shippingAddress: o.shippingAddress,
+        shipping: { address: toAddressLine(o.shippingAddress), method: 'Standard Delivery' }
+      }))
+      setOrders(mapped)
+      
+      // Update selected order
+      if (selectedOrder?.id === orderId) {
+        const updatedOrder = mapped.find(o => o.id === orderId)
+        setSelectedOrder(updatedOrder)
+      }
+      
+      alert('Delivery accepted successfully! You can now start tracking.')
+    } catch (e) {
+      console.error('Failed to accept delivery:', e)
+      alert(e.response?.data?.error || 'Failed to accept delivery')
     }
   }
 
@@ -274,6 +318,7 @@ export default function AdminOrders() {
           order={selectedOrder}
           onClose={() => setShowOrderDetails(false)}
           onStatusChange={handleStatusChange}
+          onAcceptDelivery={handleAcceptDelivery}
         />
       )}
     </div>
@@ -281,9 +326,19 @@ export default function AdminOrders() {
 }
 
 // Order Details Modal Component
-function OrderDetailsModal({ order, onClose, onStatusChange }) {
+function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery }) {
   const { user } = useAuth()
   const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  const [accepting, setAccepting] = useState(false)
+
+  const handleAccept = async () => {
+    setAccepting(true)
+    try {
+      await onAcceptDelivery(order.id)
+    } finally {
+      setAccepting(false)
+    }
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -386,6 +441,93 @@ function OrderDetailsModal({ order, onClose, onStatusChange }) {
               </p>
             </div>
           </div>
+
+          {/* Accept Delivery Button (for delivery partners) */}
+          {isDeliveryPartner && !order.deliveryPartner?.riderId && ['pending', 'confirmed', 'packed'].includes(order.status) && (
+            <div className="md:col-span-2">
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Ready to deliver?</h3>
+                    <p className="text-sm text-gray-700">
+                      Accept this order to start delivery and enable real-time tracking for the customer.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleAccept}
+                    disabled={accepting}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {accepting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Accepting...
+                      </>
+                    ) : (
+                      <>
+                        <Truck size={18} />
+                        Accept Delivery
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delivery Partner Info & Tracking */}
+          {order.deliveryPartner?.riderId && (
+            <div className="md:col-span-2">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    {order.deliveryPartner.photo && (
+                      <img 
+                        src={order.deliveryPartner.photo} 
+                        alt="Delivery Partner"
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    )}
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">Delivery Partner Assigned</h3>
+                      <p className="text-sm text-blue-700">{order.deliveryPartner.name}</p>
+                      {order.deliveryPartner.phone && (
+                        <p className="text-xs text-gray-600">{order.deliveryPartner.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <a
+                      href={`/order/${order.id}/track`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center gap-2 text-sm"
+                    >
+                      <MapPin size={16} />
+                      Live Tracking
+                      <ExternalLink size={14} />
+                    </a>
+                    {isDeliveryPartner && (
+                      <button
+                        onClick={() => {
+                          const trackingUrl = `${window.location.origin}/order/${order.id}/track`;
+                          navigator.clipboard.writeText(trackingUrl);
+                          alert('Tracking link copied to clipboard! Share it with the customer.');
+                        }}
+                        className="px-4 py-2 bg-white border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 flex items-center justify-center gap-2 text-sm"
+                      >
+                        📋 Copy Tracking Link
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600">
+                  The customer can track this order in real-time at: 
+                  <span className="font-mono ml-1">/order/{order.id}/track</span>
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Shipping Information */}
           <div className="space-y-4 md:col-span-2">

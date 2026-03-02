@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
+import { Navigate } from 'react-router-dom'
 import { Plus, Edit, Trash2, Search, Filter, RefreshCw } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
 import { ImageKitUploader } from '../../components/Admin'
 import { formatCurrency } from '../../utils/adminHelpers'
+import { useAuth } from '../../context/AuthContext'
+import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 import adminAPI from '../../services/adminAPI'
 
 export default function AdminProducts() {
@@ -346,6 +349,27 @@ export default function AdminProducts() {
 
 // Product Modal Component
 function ProductModal({ product, onSave, onClose, saving }) {
+  // Parse existing details
+  const parseDetails = (details) => {
+    if (!details) return {}
+    if (typeof details === 'object') return details
+    try {
+      return JSON.parse(details)
+    } catch {
+      return {}
+    }
+  }
+
+  // Convert object to array for editing
+  const detailsToArray = (details) => {
+    const parsed = parseDetails(details)
+    return Object.entries(parsed).map(([key, value], idx) => ({
+      id: Date.now() + idx,
+      key,
+      value
+    }))
+  }
+
   const [formData, setFormData] = useState({
     name: product?.name || '',
     price: product?.price || '',
@@ -355,7 +379,6 @@ function ProductModal({ product, onSave, onClose, saving }) {
     subcategory: product?.subcategory || '',
     dressStyle: product?.dressStyle || '',
     description: product?.description || '',
-    details: product?.details || '',
     images: product?.images || [],
     colors: product?.colors || [],
     sizes: product?.sizes || [],
@@ -364,6 +387,8 @@ function ProductModal({ product, onSave, onClose, saving }) {
     isBestSeller: product?.isBestSeller || false,
     isFeatured: product?.isFeatured || false
   })
+
+  const [specifications, setSpecifications] = useState(detailsToArray(product?.details))
 
   const categories = ['Men', 'Women', 'Accessories', 'Footwear']
   const subcategories = ['T-shirts', 'Shirts', 'Jeans', 'Shorts', 'Hoodies', 'Jackets', 'Dresses', 'Tops', 'Suits', 'Outfits', 'Kurtis', 'Casual Partywear', 'Bags', 'Watches', 'Belts', 'Sunglasses', 'Wallets', 'Caps', 'Sneakers', 'Boots', 'Formal Shoes', 'Sports Shoes', 'Casual Shoes', 'Sandals']
@@ -386,14 +411,6 @@ function ProductModal({ product, onSave, onClose, saving }) {
     e.preventDefault()
     
     // Validation
-    if (formData.sizes.length === 0) {
-      alert('Please select at least one size.')
-      return
-    }
-    if (formData.colors.length === 0) {
-      alert('Please select at least one color.')
-      return
-    }
     if (formData.images.length === 0) {
       alert('Please upload at least one product image.')
       return
@@ -406,6 +423,14 @@ function ProductModal({ product, onSave, onClose, saving }) {
       ? Math.round(((originalPrice - price) / originalPrice) * 100) 
       : null
 
+    // Convert specifications array to object
+    const detailsObject = specifications.reduce((acc, spec) => {
+      if (spec.key.trim() !== '') {
+        acc[spec.key] = spec.value
+      }
+      return acc
+    }, {})
+
     onSave({
       ...formData,
       price: price,
@@ -414,7 +439,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
       stock: parseInt(formData.stock),
       image: formData.images[0] || '', // First image as main image
       rating: formData.rating,
-      details: formData.details,
+      details: JSON.stringify(detailsObject),
       dressStyle: formData.dressStyle || ''
     })
   }
@@ -426,6 +451,26 @@ function ProductModal({ product, onSave, onClose, saving }) {
         ? prev.sizes.filter(s => s !== size)
         : [...prev.sizes, size]
     }))
+  }
+
+  const addSpecification = () => {
+    setSpecifications(prev => [...prev, { id: Date.now(), key: '', value: '' }])
+  }
+
+  const updateSpecificationKey = (id, newKey) => {
+    setSpecifications(prev => 
+      prev.map(spec => spec.id === id ? { ...spec, key: newKey } : spec)
+    )
+  }
+
+  const updateSpecificationValue = (id, newValue) => {
+    setSpecifications(prev => 
+      prev.map(spec => spec.id === id ? { ...spec, value: newValue } : spec)
+    )
+  }
+
+  const removeSpecification = (id) => {
+    setSpecifications(prev => prev.filter(spec => spec.id !== id))
   }
   
   const toggleColor = (colorHex) => {
@@ -481,16 +526,19 @@ function ProductModal({ product, onSave, onClose, saving }) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Subcategory <span className="text-gray-400 text-xs">(optional)</span>
               </label>
-              <select
+              <input
+                type="text"
+                list="subcategories-list"
                 value={formData.subcategory}
                 onChange={(e) => setFormData({...formData, subcategory: e.target.value})}
+                placeholder="Select or type custom subcategory"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select subcategory</option>
+              />
+              <datalist id="subcategories-list">
                 {subcategories.map(sub => (
-                  <option key={sub} value={sub}>{sub}</option>
+                  <option key={sub} value={sub} />
                 ))}
-              </select>
+              </datalist>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -562,7 +610,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Available Sizes * <span className="text-red-500 font-bold">(Required)</span>
+              Available Sizes <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {(formData.category === 'Footwear' ? shoeSizes : availableSizes).map(size => (
@@ -580,14 +628,11 @@ function ProductModal({ product, onSave, onClose, saving }) {
                 </button>
               ))}
             </div>
-            {formData.sizes.length === 0 && (
-              <p className="mt-1 text-xs text-red-500 font-medium">Please select at least one size</p>
-            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Available Colors * <span className="text-red-500 font-bold">(Required)</span>
+              Available Colors <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <div className="flex flex-wrap gap-3">
               {availableColors.map(color => (
@@ -613,9 +658,6 @@ function ProductModal({ product, onSave, onClose, saving }) {
                 </button>
               ))}
             </div>
-            {formData.colors.length === 0 && (
-              <p className="mt-1 text-xs text-red-500 font-medium">Please select at least one color</p>
-            )}
           </div>
 
           <div>
@@ -687,16 +729,51 @@ function ProductModal({ product, onSave, onClose, saving }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Details (long / rich text)
-            </label>
-            <textarea
-              rows={6}
-              value={formData.details}
-              onChange={(e) => setFormData({...formData, details: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Detailed product information, specs, materials, care instructions..."
-            />
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Product Specifications <span className="text-gray-400 text-xs">(optional)</span>
+              </label>
+              <button
+                type="button"
+                onClick={addSpecification}
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                <Plus size={14} /> Add Specification
+              </button>
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
+              {specifications.map((spec) => (
+                <div key={spec.id} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={spec.key}
+                    onChange={(e) => updateSpecificationKey(spec.id, e.target.value)}
+                    placeholder="e.g., Material"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={spec.value}
+                    onChange={(e) => updateSpecificationValue(spec.id, e.target.value)}
+                    placeholder="e.g., Cotton"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeSpecification(spec.id)}
+                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    title="Remove specification"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+              {specifications.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No specifications added yet. Click "Add Specification" to add details.
+                </p>
+              )}
+            </div>
           </div>
 
           <div>

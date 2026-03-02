@@ -58,10 +58,13 @@ import { ROLES } from './utils/roleUtils'
 
 // Component to sync wishlist when user logs in/out
 function WishlistSyncHandler() {
-  const { user } = useAuth()
+  const { user, initializing } = useAuth()
   const { syncWishlist, clearWishlist } = useWishlist()
 
   useEffect(() => {
+    // Wait for auth initialization to complete
+    if (initializing) return
+    
     if (user) {
       // Sync wishlist when user logs in
       syncWishlist()
@@ -69,7 +72,7 @@ function WishlistSyncHandler() {
       // Clear wishlist when user logs out
       clearWishlist()
     }
-  }, [user, syncWishlist, clearWishlist])
+  }, [user, initializing, syncWishlist, clearWishlist])
 
   return null
 }
