@@ -52,6 +52,7 @@ const adminAPI = {
   // Banners & Content
   getBanners: async (q = {}) => (await api.get("/content/banners", { params: q })).data,
   createBanner: async (data) => (await api.post("/content/banners", data)).data,
+  updateBanner: async (id, data) => (await api.put(`/content/banners/${id}`, data)).data,
   updateBannerStatus: async (id, isActive) => (await api.patch(`/content/banners/${id}`, { isActive })).data,
   deleteBanner: async (id) => (await api.delete(`/content/banners/${id}`)).data,
 

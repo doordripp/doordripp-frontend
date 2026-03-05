@@ -1,5 +1,5 @@
 import './App.css'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useLayoutEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Navbar } from './components/navigation'
 import { Footer, Newsletter } from './layout'
@@ -50,7 +50,6 @@ import {
   AdminCustomers, 
   AdminReports, 
   AdminDeliveryZones, 
-  AdminBanners,
   AdminCategories 
 } from './pages/admin'
 import AddProduct from './features/admin/products/AddProduct'
@@ -78,35 +77,121 @@ function WishlistSyncHandler() {
 }
 
 /**
- * Global Scroll to Top Component
+ * Professional Scroll Restoration System
  * 
- * Scrolls to top on every page navigation
- * Simple and reliable - no conflicts with individual page implementations
+ * Implements Amazon/Flipkart-style scroll behavior:
+ * - Forward navigation (clicking links) → Scroll to top IMMEDIATELY
+ * - Back button (browser back) → Restore previous scroll position
+ * 
+ * Uses useLayoutEffect for synchronous execution before browser paint
  * 
  * @returns {null} This component doesn't render anything
  */
-function ScrollToTop() {
-  const { pathname, search } = useLocation()
+function ScrollRestoration() {
+  const { pathname, search, key } = useLocation()
+  const scrollPositions = useRef({})
+  const lastLocationKey = useRef(key)
+  const isRestoringScroll = useRef(false)
 
+  // Setup - disable browser scroll restoration
   useEffect(() => {
-    // Disable browser's automatic scroll restoration
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual'
     }
+  }, [])
 
-    // Scroll to top immediately on route change
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-    
-    // Double-check after DOM updates
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-    })
-    
-    // Final fallback for slow-loading content
-    setTimeout(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-    }, 100)
+  // Scroll handler - runs BEFORE paint for immediate effect
+  useLayoutEffect(() => {
+    const routeKey = `${pathname}${search}`
+    const locationChanged = lastLocationKey.current !== key
 
+    if (!locationChanged) return
+
+    const scrollToPosition = (y) => {
+      window.scrollTo(0, y)
+      document.documentElement.scrollTop = y
+      document.body.scrollTop = y
+    }
+
+    // Check if this is a back/forward navigation
+    const isBackOrForward = 
+      window.performance?.navigation?.type === 2 || // TYPE_BACK_FORWARD
+      window.performance?.getEntriesByType?.('navigation')[0]?.type === 'back_forward'
+
+    if (isBackOrForward && scrollPositions.current[routeKey] !== undefined) {
+      // BACK/FORWARD: Restore saved position
+      const savedPosition = scrollPositions.current[routeKey]
+      isRestoringScroll.current = true
+      
+      scrollToPosition(savedPosition)
+      requestAnimationFrame(() => scrollToPosition(savedPosition))
+      setTimeout(() => scrollToPosition(savedPosition), 10)
+      setTimeout(() => scrollToPosition(savedPosition), 50)
+      setTimeout(() => {
+        scrollToPosition(savedPosition)
+        isRestoringScroll.current = false
+      }, 100)
+    } else {
+      // FORWARD NAVIGATION: Save current position and scroll to top
+      if (lastLocationKey.current) {
+        const lastRouteKey = `${window.location.pathname}${window.location.search}`
+        scrollPositions.current[lastRouteKey] = window.scrollY
+      }
+
+      // Scroll to top IMMEDIATELY (before paint)
+      scrollToPosition(0)
+    }
+
+    lastLocationKey.current = key
+  }, [pathname, search, key])
+
+  // Additional scroll-to-top enforcement after DOM updates
+  useEffect(() => {
+    if (isRestoringScroll.current) return
+
+    const scrollToTop = () => {
+      window.scrollTo(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }
+
+    // Multiple checkpoints to handle async content
+    scrollToTop()
+    requestAnimationFrame(scrollToTop)
+    setTimeout(scrollToTop, 0)
+    setTimeout(scrollToTop, 10)
+    setTimeout(scrollToTop, 50)
+    setTimeout(scrollToTop, 100)
+    setTimeout(scrollToTop, 200)
+    
+    // Wait for images to load and scroll to top again
+    const images = document.querySelectorAll('img[src]')
+    if (images.length > 0) {
+      let loadedCount = 0
+      const totalImages = Math.min(images.length, 10) // Only check first 10 images
+      
+      const onImageLoad = () => {
+        loadedCount++
+        scrollToTop()
+        if (loadedCount >= totalImages) {
+          scrollToTop()
+        }
+      }
+      
+      images.forEach((img, index) => {
+        if (index >= 10) return // Skip after 10 images
+        if (img.complete) {
+          onImageLoad()
+        } else {
+          img.addEventListener('load', onImageLoad, { once: true })
+          img.addEventListener('error', onImageLoad, { once: true })
+        }
+      })
+    }
+    
+    // Final safety scroll after all content loads
+    setTimeout(scrollToTop, 500)
+    setTimeout(scrollToTop, 1000)
   }, [pathname, search])
 
   return null
@@ -119,7 +204,7 @@ function App() {
         <CartProvider>
           <WishlistProvider>
             <TrialProvider>
-              <ScrollToTop />
+              <ScrollRestoration />
               <WishlistSyncHandler />
             <Routes>
               {/* Admin Routes - Separate layout */}
@@ -137,7 +222,6 @@ function App() {
                 <Route path="customers" element={<AdminCustomers />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="delivery-zones" element={<AdminDeliveryZones />} />
-                <Route path="banners" element={<AdminBanners />} />
                 <Route path="categories" element={<AdminCategories />} />
               </Route>
 

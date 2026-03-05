@@ -5,7 +5,8 @@ import {
   Plus,
   Minus,
   ShoppingCart,
-  Check
+  Check,
+  Heart
 } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
@@ -56,6 +57,7 @@ const formatTitleForBreadcrumb = (title = '') => {
 export default function ProductDetail() {
   const { id } = useParams()
   const { addToCart } = useCart()
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -65,6 +67,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1)
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
+  const [specsExpanded, setSpecsExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState('specifications')
   const [recommendedProducts, setRecommendedProducts] = useState([])
   
@@ -104,6 +107,7 @@ export default function ProductDetail() {
           subcategory: p.subcategory,
           description: p.description,
           details: typeof p.details === 'string' ? tryParseJSON(p.details) : p.details,
+          keyFeatures: Array.isArray(p.keyFeatures) ? p.keyFeatures : [],
           sizes: p.sizes || [],
           colors: p.colors || []
         })
@@ -190,10 +194,34 @@ export default function ProductDetail() {
           {/* ================= INFO ================= */}
           <div className="space-y-6 flex flex-col">
 
-            {/* FULL PRODUCT TITLE */}
-            <h1 className="text-3xl font-bold text-gray-900 leading-snug">
-              {formatTitleFull(product.name)}
-            </h1>
+            {/* FULL PRODUCT TITLE + WISHLIST */}
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-3xl font-bold text-gray-900 leading-snug flex-1">
+                {formatTitleFull(product.name)}
+              </h1>
+              <button
+                type="button"
+                onClick={() => {
+                  const productId = product.id || product._id
+                  if (isInWishlist(productId)) {
+                    removeFromWishlist(productId)
+                  } else {
+                    addToWishlist({ ...product, image: product.images[0] })
+                  }
+                }}
+                className="flex-shrink-0 p-3 rounded-full border-2 border-gray-200 hover:border-red-500 hover:bg-red-50 transition-all duration-200 group"
+                title={isInWishlist(product.id || product._id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              >
+                <Heart
+                  size={24}
+                  className={`transition-all duration-200 ${
+                    isInWishlist(product.id || product._id)
+                      ? 'fill-red-500 text-red-500'
+                      : 'text-gray-600 group-hover:text-red-500'
+                  }`}
+                />
+              </button>
+            </div>
 
             {/* RATING */}
             <div className="flex items-center gap-3">
@@ -284,41 +312,6 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* COLOR SELECTOR */}
-              {product.colors && product.colors.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold uppercase tracking-wider text-gray-900">
-                      Color
-                    </span>
-                    <span className="text-sm text-gray-500 font-medium">Selected: {selectedColor}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {product.colors.map((color) => (
-                      <button
-                        type="button"
-                        key={color.name || color}
-                        onClick={() => setSelectedColor(color.name || color)}
-                        className={`w-12 h-12 rounded-full border-3 transition-all duration-200 flex items-center justify-center ${
-                          (selectedColor === (color.name || color))
-                            ? 'border-black scale-110 shadow-md'
-                            : 'border-gray-200 hover:border-gray-400'
-                        }`}
-                        style={{ 
-                          backgroundColor: color.hex || '#ccc',
-                          borderColor: (selectedColor === (color.name || color)) ? '#000' : '#ddd'
-                        }}
-                        title={color.name || color}
-                      >
-                        {(selectedColor === (color.name || color)) && (
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* QUANTITY */}
               <div className="space-y-3">
                 <span className="text-sm font-bold uppercase tracking-wider text-gray-900">
@@ -391,27 +384,42 @@ export default function ProductDetail() {
           </div>
         )}
 
+        {/* ================= KEY FEATURES ================= */}
+        {product.keyFeatures && product.keyFeatures.length > 0 && (
+          <div className="mt-16 pt-10 border-t border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Key Features</h2>
+            <ul className="space-y-2 pl-1">
+              {product.keyFeatures.map((feature, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-800 flex-shrink-0"></span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* ================= SPECIFICATIONS & DESCRIPTION ================= */}
-        <div className="mt-16 pt-10 border-t border-gray-200">
-          <div className="max-w-2xl">
+        <div className="mt-16 pt-10 border-t border-gray-100">
+          <div className="max-w-3xl">
             {/* Tabs */}
-            <div className="flex gap-8 border-b border-gray-200 mb-6">
+            <div className="flex gap-1 mb-8 bg-gray-100 rounded-full p-1 w-fit">
               <button
                 onClick={() => setActiveTab('specifications')}
-                className={`pb-4 font-bold uppercase text-sm tracking-wide transition-colors ${
+                className={`px-6 py-2.5 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 ${
                   activeTab === 'specifications'
-                    ? 'text-gray-900 border-b-2 border-gray-900'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-black text-white shadow-md'
+                    : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
-                Specification
+                Specifications
               </button>
               <button
                 onClick={() => setActiveTab('description')}
-                className={`pb-4 font-bold uppercase text-sm tracking-wide transition-colors ${
+                className={`px-6 py-2.5 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 ${
                   activeTab === 'description'
-                    ? 'text-gray-900 border-b-2 border-gray-900'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-black text-white shadow-md'
+                    : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
                 Description
@@ -420,34 +428,83 @@ export default function ProductDetail() {
 
             {/* Specifications Tab */}
             {activeTab === 'specifications' && (
-              <div className="space-y-4">
-                {product.details ? (
-                  <div className="bg-gray-50 p-6 rounded-lg">
-                    <div className="grid grid-cols-3 gap-4">
-                      {Object.entries(product.details).map(([key, value], idx) => (
-                        <div key={idx} className="space-y-2">
-                          <p className="text-xs uppercase text-gray-600 font-medium tracking-wide">
-                            {key.replace(/([A-Z])/g, ' $1').trim()}
-                          </p>
-                          <p className="text-sm text-gray-900 font-medium">
-                            {Array.isArray(value) ? value.join(', ') : value}
-                          </p>
+              <div>
+                {product.details && Object.keys(product.details).length > 0 ? (
+                  (() => {
+                    const entries = Object.entries(product.details).filter(
+                      ([, value]) => value && !(Array.isArray(value) && value.length === 0)
+                    );
+                    const visibleEntries = specsExpanded ? entries : entries.slice(0, 6);
+                    const hasMore = entries.length > 6;
+                    return (
+                      <>
+                        <div className="relative">
+                          <div className="flex flex-wrap gap-3">
+                            {visibleEntries.map(([key, value], idx) => (
+                              <div
+                                key={idx}
+                                className="bg-gray-50 hover:bg-gray-100 rounded-2xl px-5 py-3.5 transition-colors duration-200 border border-gray-100"
+                              >
+                                <span className="text-[11px] uppercase tracking-[0.12em] text-gray-400 block mb-0.5">{key}</span>
+                                <span className="text-[14px] text-gray-900 font-semibold block">{Array.isArray(value) ? value.join(', ') : value}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {!specsExpanded && hasMore && (
+                            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none rounded-b-2xl" />
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        {hasMore && (
+                          <button
+                            onClick={() => setSpecsExpanded(!specsExpanded)}
+                            className="mt-5 mx-auto flex items-center gap-2 px-5 py-2 rounded-full border border-gray-900 text-gray-900 text-xs font-bold uppercase tracking-wider hover:bg-gray-900 hover:text-white transition-all duration-300"
+                          >
+                            {specsExpanded ? 'Show Less' : 'View All'}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${specsExpanded ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()
                 ) : (
-                  <p className="text-gray-500 text-sm">No specifications available for this product.</p>
+                  <p className="text-gray-400 text-sm italic">No specifications available for this product.</p>
                 )}
               </div>
             )}
 
             {/* Description Tab */}
             {activeTab === 'description' && (
-              <div className="space-y-4">
-                <div className="text-gray-700 text-sm leading-relaxed">
-                  {product.description || 'No description available for this product.'}
-                </div>
+              <div>
+                {product.description ? (
+                  <>
+                    <div className="relative">
+                      <div
+                        className={`text-gray-600 text-[15px] leading-[1.9] whitespace-pre-line transition-all duration-300 ${
+                          !descExpanded ? 'line-clamp-6' : ''
+                        }`}
+                      >
+                        {product.description}
+                      </div>
+                      {!descExpanded && product.description.split('\n').length > 4 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                      )}
+                    </div>
+                    {product.description.split('\n').length > 4 && (
+                      <button
+                        onClick={() => setDescExpanded(!descExpanded)}
+                        className="mt-3 text-sm font-semibold text-black hover:text-gray-600 transition-colors flex items-center gap-1.5 group"
+                      >
+                        {descExpanded ? (
+                          <><span>Show Less</span><span className="transition-transform group-hover:-translate-y-0.5">&uarr;</span></>
+                        ) : (
+                          <><span>Read More</span><span className="transition-transform group-hover:translate-y-0.5">&darr;</span></>
+                        )}
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-gray-400 text-sm italic">No description available for this product.</p>
+                )}
               </div>
             )}
           </div>

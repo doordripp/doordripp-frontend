@@ -379,6 +379,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
     subcategory: product?.subcategory || '',
     dressStyle: product?.dressStyle || '',
     description: product?.description || '',
+    keyFeatures: (product?.keyFeatures || []).join('\n'),
     images: product?.images || [],
     colors: product?.colors || [],
     sizes: product?.sizes || [],
@@ -388,7 +389,13 @@ function ProductModal({ product, onSave, onClose, saving }) {
     isFeatured: product?.isFeatured || false
   })
 
-  const [specifications, setSpecifications] = useState(detailsToArray(product?.details))
+  // Build specifications text from existing product details or use defaults
+  const existingSpecs = detailsToArray(product?.details)
+  const defaultSpecsText = 'Product Type: \nColor: \nFit: \nPattern: \nSleeve Length: \nNeck/Collar: \nClosure Type: \nFabric Type: \nOccasion: \nCare Instructions: \nSeason: \nCountry of Origin: '
+  const existingSpecsText = existingSpecs.length > 0
+    ? existingSpecs.map(s => `${s.key}: ${s.value}`).join('\n')
+    : defaultSpecsText
+  const [specificationsText, setSpecificationsText] = useState(existingSpecsText)
 
   const categories = ['Men', 'Women', 'Accessories', 'Footwear']
   const subcategories = ['T-shirts', 'Shirts', 'Jeans', 'Shorts', 'Hoodies', 'Jackets', 'Dresses', 'Tops', 'Suits', 'Outfits', 'Kurtis', 'Casual Partywear', 'Bags', 'Watches', 'Belts', 'Sunglasses', 'Wallets', 'Caps', 'Sneakers', 'Boots', 'Formal Shoes', 'Sports Shoes', 'Casual Shoes', 'Sandals']
@@ -423,13 +430,24 @@ function ProductModal({ product, onSave, onClose, saving }) {
       ? Math.round(((originalPrice - price) / originalPrice) * 100) 
       : null
 
-    // Convert specifications array to object
-    const detailsObject = specifications.reduce((acc, spec) => {
-      if (spec.key.trim() !== '') {
-        acc[spec.key] = spec.value
-      }
-      return acc
-    }, {})
+    // Parse specifications text (each line = "Key: Value")
+    const detailsObject = specificationsText
+      .split('\n')
+      .reduce((acc, line) => {
+        const colonIdx = line.indexOf(':')
+        if (colonIdx > 0) {
+          const key = line.substring(0, colonIdx).trim()
+          const value = line.substring(colonIdx + 1).trim()
+          if (key) acc[key] = value
+        }
+        return acc
+      }, {})
+
+    // Parse key features (each line = one bullet point)
+    const keyFeaturesArr = formData.keyFeatures
+      .split('\n')
+      .map(l => l.replace(/^[\s\u2022\-*]+/, '').trim())
+      .filter(Boolean)
 
     onSave({
       ...formData,
@@ -437,9 +455,10 @@ function ProductModal({ product, onSave, onClose, saving }) {
       originalPrice: originalPrice,
       discount: discount,
       stock: parseInt(formData.stock),
-      image: formData.images[0] || '', // First image as main image
+      image: formData.images[0] || '',
       rating: formData.rating,
       details: JSON.stringify(detailsObject),
+      keyFeatures: keyFeaturesArr,
       dressStyle: formData.dressStyle || ''
     })
   }
@@ -453,25 +472,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
     }))
   }
 
-  const addSpecification = () => {
-    setSpecifications(prev => [...prev, { id: Date.now(), key: '', value: '' }])
-  }
 
-  const updateSpecificationKey = (id, newKey) => {
-    setSpecifications(prev => 
-      prev.map(spec => spec.id === id ? { ...spec, key: newKey } : spec)
-    )
-  }
-
-  const updateSpecificationValue = (id, newValue) => {
-    setSpecifications(prev => 
-      prev.map(spec => spec.id === id ? { ...spec, value: newValue } : spec)
-    )
-  }
-
-  const removeSpecification = (id) => {
-    setSpecifications(prev => prev.filter(spec => spec.id !== id))
-  }
   
   const toggleColor = (colorHex) => {
     setFormData(prev => ({
@@ -632,36 +633,6 @@ function ProductModal({ product, onSave, onClose, saving }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Available Colors <span className="text-gray-400 text-xs">(optional)</span>
-            </label>
-            <div className="flex flex-wrap gap-3">
-              {availableColors.map(color => (
-                <button
-                  key={color.hex}
-                  type="button"
-                  onClick={() => toggleColor(color.hex)}
-                  className={`group flex items-center gap-2 px-3 py-2 rounded-md border-2 transition-all ${
-                    formData.colors.includes(color.hex)
-                      ? 'border-black bg-gray-50'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                  title={color.name}
-                >
-                  <div 
-                    className="w-6 h-6 rounded-full border-2 border-gray-300"
-                    style={{ backgroundColor: color.hex }}
-                  />
-                  <span className="text-sm">{color.name}</span>
-                  {formData.colors.includes(color.hex) && (
-                    <span className="text-xs text-black">✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
               Collections & Features
             </label>
             <div className="space-y-3 bg-gray-50 p-4 rounded-md">
@@ -728,52 +699,34 @@ function ProductModal({ product, onSave, onClose, saving }) {
             />
           </div>
 
+          {/* Key Features */}
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Product Specifications <span className="text-gray-400 text-xs">(optional)</span>
-              </label>
-              <button
-                type="button"
-                onClick={addSpecification}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
-              >
-                <Plus size={14} /> Add Specification
-              </button>
-            </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
-              {specifications.map((spec) => (
-                <div key={spec.id} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={spec.key}
-                    onChange={(e) => updateSpecificationKey(spec.id, e.target.value)}
-                    placeholder="e.g., Material"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                  />
-                  <input
-                    type="text"
-                    value={spec.value}
-                    onChange={(e) => updateSpecificationValue(spec.id, e.target.value)}
-                    placeholder="e.g., Cotton"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeSpecification(spec.id)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                    title="Remove specification"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-              {specifications.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No specifications added yet. Click "Add Specification" to add details.
-                </p>
-              )}
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Key Features <span className="text-gray-400 text-xs">(each line = one bullet point)</span>
+            </label>
+            <textarea
+              rows={5}
+              value={formData.keyFeatures}
+              onChange={(e) => setFormData({...formData, keyFeatures: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder={"Premium textured fabric\nElegant tailored fit\nClassic black color\nClean back panel design\nDurable stitching and structured build\nSuitable for formal and semi-formal occasions"}
+            />
+            <p className="text-[11px] text-gray-400 mt-1">Write one feature per line. Each line will appear as a bullet point on the product page.</p>
+          </div>
+
+          {/* Product Specifications */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product Specifications <span className="text-gray-400 text-xs">(each line = Label: Value)</span>
+            </label>
+            <textarea
+              rows={12}
+              value={specificationsText}
+              onChange={(e) => setSpecificationsText(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+              placeholder={"Product Type: Blazer / Formal Coat\nColor: Black\nFit: Slim Fit\nPattern: Solid\nSleeve Length: Full Sleeve\nNeck/Collar: Notched Lapel\nClosure Type: Button\nFabric Type: Polyester Blend\nOccasion: Formal\nCare Instructions: Dry Clean Only\nSeason: All Season\nCountry of Origin: India"}
+            />
+            <p className="text-[11px] text-gray-400 mt-1">Write one specification per line in <strong>Label: Value</strong> format. You can add or remove lines freely.</p>
           </div>
 
           <div>

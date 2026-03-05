@@ -163,14 +163,9 @@ VITE_IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_imagekit_id`}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {uploadedImages.map((imageUrl, index) => (
                 <div key={index} className="relative group">
-                  <IKImage
-                    path={imageUrl}
-                    transformation={[{
-                      height: 200,
-                      width: 200,
-                      crop: 'at_max',
-                      quality: 80,
-                    }]}
+                  <img
+                    src={imageUrl}
+                    alt={`Product ${index + 1}`}
                     className="w-full h-40 object-cover rounded-lg border border-gray-200"
                   />
                   <button
