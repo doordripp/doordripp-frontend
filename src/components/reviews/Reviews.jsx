@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Star, ThumbsUp, CheckCircle, Upload, X } from 'lucide-react'
+import { Star, ThumbsUp, CheckCircle, Upload, X, ChevronDown, Filter } from 'lucide-react'
 import { IKContext, IKUpload } from 'imagekitio-react'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
@@ -158,21 +158,31 @@ export default function Reviews({ productId, onReviewSubmitted }) {
   // Rating distribution bar
   const RatingBar = ({ stars, count, total }) => {
     const percentage = total > 0 ? (count / total) * 100 : 0
+    const isActive = filterRating === stars.toString()
+    
     return (
       <button
         onClick={() => setFilterRating(filterRating === stars.toString() ? 'all' : stars.toString())}
-        className={`flex items-center gap-3 w-full group hover:bg-gray-100 py-1.5 px-2 rounded-lg transition-colors ${
-          filterRating === stars.toString() ? 'bg-gray-100' : ''
+        className={`flex items-center gap-3 w-full group hover:bg-gray-100 py-2 px-3 rounded-lg transition-all duration-200 ${
+          isActive ? 'bg-gray-100 ring-2 ring-gray-300' : ''
         }`}
       >
-        <span className="text-sm font-medium w-12 text-gray-700">{stars} star</span>
-        <div className="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
+        <span className={`text-sm font-semibold w-14 ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
+          {stars} star
+        </span>
+        <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
           <div
-            className="h-full bg-yellow-400 rounded-full transition-all duration-500"
+            className={`h-full rounded-full transition-all duration-500 ${
+              isActive 
+                ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' 
+                : 'bg-gradient-to-r from-yellow-300 to-yellow-400'
+            }`}
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <span className="text-sm text-gray-500 w-10 text-right">{count}</span>
+        <span className={`text-sm font-medium w-12 text-right ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>
+          {count}
+        </span>
       </button>
     )
   }
@@ -180,13 +190,17 @@ export default function Reviews({ productId, onReviewSubmitted }) {
   return (
     <div className="bg-white">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Ratings & Reviews</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-1">Ratings & Reviews</h2>
+          <p className="text-gray-500 text-sm">See what customers are saying</p>
+        </div>
         {isUserLoggedIn && (
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors text-sm"
+            className="bg-gradient-to-r from-gray-900 to-black text-white px-8 py-3.5 rounded-full font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 text-sm inline-flex items-center justify-center gap-2 group"
           >
+            <Star size={18} className="group-hover:rotate-12 transition-transform duration-200" />
             Write a Review
           </button>
         )}
@@ -351,11 +365,15 @@ export default function Reviews({ productId, onReviewSubmitted }) {
       )}
 
       {!isUserLoggedIn && (
-        <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-center border border-gray-100">
-          <p className="text-gray-600 mb-3">Want to share your experience?</p>
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-8 mb-8 text-center border-2 border-gray-200 shadow-sm">
+          <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+            <Star className="text-gray-600" size={28} />
+          </div>
+          <p className="text-gray-700 font-semibold mb-4 text-lg">Want to share your experience?</p>
+          <p className="text-gray-500 text-sm mb-5">Sign in to write a review and help others make informed decisions</p>
           <a
             href="/login"
-            className="inline-block bg-black text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-gray-800 transition-colors"
+            className="inline-block bg-gradient-to-r from-gray-900 to-black text-white px-8 py-3.5 rounded-full text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
           >
             Sign in to write a review
           </a>
@@ -365,22 +383,25 @@ export default function Reviews({ productId, onReviewSubmitted }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column - Rating Summary */}
         <div className="lg:col-span-4">
-          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+          <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-6 border-2 border-gray-200 shadow-md sticky top-24">
             {/* Overall Rating */}
-            <div className="text-center mb-6 pb-6 border-b border-gray-200">
-              <div className="text-5xl font-bold text-gray-900 mb-2">
+            <div className="text-center mb-6 pb-6 border-b-2 border-gray-200">
+              <div className="text-6xl font-extrabold bg-gradient-to-br from-gray-900 to-gray-600 bg-clip-text text-transparent mb-3">
                 {stats?.averageRating?.toFixed(1) || '0.0'}
               </div>
-              <div className="flex justify-center mb-2">
-                <StarRating rating={stats?.averageRating || 0} size={22} />
+              <div className="flex justify-center mb-3">
+                <StarRating rating={stats?.averageRating || 0} size={24} />
               </div>
-              <p className="text-gray-500 text-sm">
-                {stats?.totalReviews || 0} {stats?.totalReviews === 1 ? 'review' : 'reviews'}
+              <p className="text-gray-600 text-sm font-medium">
+                Based on {stats?.totalReviews || 0} {stats?.totalReviews === 1 ? 'review' : 'reviews'}
               </p>
             </div>
 
             {/* Rating Distribution */}
-            <div className="space-y-1">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Rating Breakdown
+              </p>
               {[5, 4, 3, 2, 1].map(stars => (
                 <RatingBar
                   key={stars}
@@ -394,7 +415,7 @@ export default function Reviews({ productId, onReviewSubmitted }) {
             {filterRating !== 'all' && (
               <button
                 onClick={() => setFilterRating('all')}
-                className="w-full mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="w-full mt-5 py-2.5 text-sm text-blue-600 hover:text-white hover:bg-blue-600 font-semibold border-2 border-blue-600 rounded-lg transition-all duration-200"
               >
                 Clear filter
               </button>
@@ -404,40 +425,61 @@ export default function Reviews({ productId, onReviewSubmitted }) {
 
         {/* Right Column - Reviews List */}
         <div className="lg:col-span-8">
-          {/* Sort */}
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-gray-600 font-medium">
-              {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
-              {filterRating !== 'all' && <span className="text-gray-400"> • {filterRating} star</span>}
-            </p>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black text-gray-700"
-            >
-              <option value="newest">Most Recent</option>
-              <option value="highest">Highest Rated</option>
-              <option value="lowest">Lowest Rated</option>
-              <option value="helpful">Most Helpful</option>
-            </select>
+          {/* Sort & Filter Bar */}
+          <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Review Count */}
+              <div className="flex items-center gap-2">
+                <Filter size={18} className="text-gray-400" />
+                <p className="text-gray-700 font-semibold">
+                  {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
+                  {filterRating !== 'all' && (
+                    <span className="text-gray-500 font-normal ml-1">
+                      • {filterRating} star{filterRating !== '1' && 's'}
+                    </span>
+                  )}
+                </p>
+              </div>
+              
+              {/* Sort Dropdown */}
+              <div className="relative">
+                <label htmlFor="sort-reviews" className="sr-only">Sort reviews</label>
+                <select
+                  id="sort-reviews"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="pl-4 pr-10 py-2.5 bg-white border-2 border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all cursor-pointer appearance-none shadow-sm hover:shadow-md"
+                  style={{ minWidth: '180px' }}
+                >
+                  <option value="newest">Most Recent</option>
+                  <option value="highest">Highest Rated</option>
+                  <option value="lowest">Lowest Rated</option>
+                  <option value="helpful">Most Helpful</option>
+                </select>
+                <ChevronDown 
+                  size={18} 
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Reviews List */}
           {loading ? (
-            <div className="text-center py-16">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-black mx-auto"></div>
-              <p className="text-gray-500 mt-4">Loading reviews...</p>
+            <div className="text-center py-20 bg-gradient-to-br from-gray-50 to-white rounded-2xl border-2 border-gray-200">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-black mx-auto"></div>
+              <p className="text-gray-600 font-medium mt-6">Loading reviews...</p>
             </div>
           ) : reviews.length === 0 ? (
-            <div className="text-center py-16 bg-gray-50 rounded-2xl border border-gray-100">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="text-gray-400" size={32} />
+            <div className="text-center py-20 bg-gradient-to-br from-gray-50 to-white rounded-2xl border-2 border-gray-200 shadow-sm">
+              <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <Star className="text-gray-400" size={40} />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Reviews Yet</h3>
-              <p className="text-gray-500">Be the first to share your thoughts about this product</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No Reviews Yet</h3>
+              <p className="text-gray-500 max-w-sm mx-auto">Be the first to share your thoughts about this product</p>
             </div>
           ) : (
-            <div className="space-y-0 divide-y divide-gray-100">
+            <div className="space-y-0 divide-y divide-gray-200 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               {reviews.map((review) => (
                 <ReviewCard
                   key={review._id}
@@ -459,26 +501,26 @@ function ReviewCard({ review, onVoteHelpful, currentUserId }) {
   const isOwnReview = currentUserId === review.user?._id
 
   return (
-    <div className="py-6">
+    <div className="py-6 px-6 hover:bg-gray-50 transition-colors duration-200">
       {/* Header */}
-      <div className="flex items-start gap-4 mb-3">
+      <div className="flex items-start gap-4 mb-4">
         {/* Avatar */}
-        <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+        <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-md">
           {review.user?.name?.charAt(0)?.toUpperCase() || 'U'}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-gray-900">{review.user?.name || 'Customer'}</span>
+            <span className="font-bold text-gray-900">{review.user?.name || 'Customer'}</span>
             {review.isVerifiedPurchase && (
-              <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                <CheckCircle size={12} />
+              <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold border border-green-200">
+                <CheckCircle size={13} />
                 Verified Buyer
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 mt-1">
-            <StarRating rating={review.rating} size={16} />
-            <span className="text-sm text-gray-400">
+          <div className="flex items-center gap-3 mt-1.5">
+            <StarRating rating={review.rating} size={17} />
+            <span className="text-sm text-gray-500 font-medium">
               {new Date(review.createdAt).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -491,7 +533,7 @@ function ReviewCard({ review, onVoteHelpful, currentUserId }) {
 
       {/* Content */}
       <div className="pl-16">
-        <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+        <p className="text-gray-800 leading-relaxed text-[15px]">{review.comment}</p>
 
         {Array.isArray(review.images) && review.images.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
@@ -501,12 +543,12 @@ function ReviewCard({ review, onVoteHelpful, currentUserId }) {
                 href={imageUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity"
+                className="block rounded-xl overflow-hidden border-2 border-gray-200 hover:border-gray-400 hover:shadow-md transition-all duration-200 transform hover:scale-105"
               >
                 <img
                   src={imageUrl}
                   alt={`Review image ${index + 1}`}
-                  className="w-full h-28 object-cover"
+                  className="w-full h-32 object-cover"
                   loading="lazy"
                 />
               </a>
@@ -516,15 +558,17 @@ function ReviewCard({ review, onVoteHelpful, currentUserId }) {
 
         {/* Actions */}
         {!isOwnReview && (
-          <div className="flex items-center gap-4 mt-4">
+          <div className="flex items-center gap-4 mt-5">
             <button
               onClick={() => onVoteHelpful(review._id)}
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors group"
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-black font-medium transition-all duration-200 group hover:bg-gray-100 px-3 py-2 rounded-lg"
             >
-              <ThumbsUp size={16} className="group-hover:scale-110 transition-transform" />
+              <ThumbsUp size={17} className="group-hover:scale-110 transition-transform duration-200" />
               <span>Helpful</span>
               {review.helpfulVotes > 0 && (
-                <span className="text-gray-400">({review.helpfulVotes})</span>
+                <span className="bg-gray-200 group-hover:bg-gray-300 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold transition-colors">
+                  {review.helpfulVotes}
+                </span>
               )}
             </button>
           </div>
