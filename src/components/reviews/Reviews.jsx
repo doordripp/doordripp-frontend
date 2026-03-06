@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Star, ThumbsUp, CheckCircle, User, ChevronDown, Filter } from 'lucide-react'
+import { Star, ThumbsUp, CheckCircle, Upload, X } from 'lucide-react'
+import { IKContext, IKUpload } from 'imagekitio-react'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
 import StarRating from '../ui/StarRating'
+import { imagekitConfig, isImageKitConfigured } from '../../config/imagekit'
 
 export default function Reviews({ productId, onReviewSubmitted }) {
   const { user } = useAuth()
@@ -10,18 +12,20 @@ export default function Reviews({ productId, onReviewSubmitted }) {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  
+  const [uploadingImage, setUploadingImage] = useState(false)
+
   // Form state
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
     rating: 0,
-    comment: ''
+    comment: '',
+    images: []
   })
-  
+
   // Filter state
   const [sortBy, setSortBy] = useState('newest')
   const [filterRating, setFilterRating] = useState('all')
-  
+
   const isUserLoggedIn = user && (user.id || user._id)
 
   // Fetch reviews
@@ -31,16 +35,16 @@ export default function Reviews({ productId, onReviewSubmitted }) {
       const params = {
         page: 1,
         limit: 50,
-        sortBy: sortBy
+        sortBy
       }
-      
+
       if (filterRating !== 'all') {
         params.rating = filterRating
       }
-      
+
       const response = await api.get(`/reviews/product/${productId}`, { params })
       const { reviews: newReviews, stats: newStats } = response.data
-      
+
       setReviews(newReviews || [])
       setStats(newStats)
     } catch (error) {
@@ -54,32 +58,37 @@ export default function Reviews({ productId, onReviewSubmitted }) {
     fetchReviews()
   }, [productId, sortBy, filterRating])
 
+  const resetForm = () => {
+    setShowForm(false)
+    setFormData({ rating: 0, comment: '', images: [] })
+    setUploadingImage(false)
+  }
+
   // Submit review
   const handleSubmitReview = async (e) => {
     e.preventDefault()
-    
+
     if (formData.rating === 0 || !formData.comment) {
       alert('Please provide a rating and comment')
       return
     }
-    
+
     setSubmitting(true)
     try {
       const response = await api.post(`/reviews/product/${productId}`, {
         rating: formData.rating,
-        comment: formData.comment
+        comment: formData.comment,
+        images: formData.images
       })
-      
-      setShowForm(false)
-      setFormData({ rating: 0, comment: '' })
-      
+
+      resetForm()
+
       // Refresh reviews
       await fetchReviews()
-      
+
       if (onReviewSubmitted) {
         onReviewSubmitted(response.data.review)
       }
-      
     } catch (error) {
       console.error('Error submitting review:', error)
       alert(error.response?.data?.error || 'Failed to submit review')
@@ -94,7 +103,7 @@ export default function Reviews({ productId, onReviewSubmitted }) {
       alert('Please login to vote')
       return
     }
-    
+
     try {
       await api.post(`/reviews/${reviewId}/vote`, { vote: 'helpful' })
       fetchReviews()
@@ -103,11 +112,54 @@ export default function Reviews({ productId, onReviewSubmitted }) {
     }
   }
 
+  const removeSelectedImage = (indexToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, index) => index !== indexToRemove)
+    }))
+  }
+
+  const validateReviewImage = (file) => {
+    const maxSize = 5 * 1024 * 1024
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only JPG, PNG, and WebP images are allowed')
+      return false
+    }
+
+    if (file.size > maxSize) {
+      alert('Each image must be less than 5MB')
+      return false
+    }
+
+    if (formData.images.length >= 5) {
+      alert('You can upload up to 5 photos per review')
+      return false
+    }
+
+    return true
+  }
+
+  const authenticator = async () => {
+    const response = await fetch(imagekitConfig.authenticationEndpoint, {
+      credentials: 'include'
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to get upload authorization')
+    }
+
+    const data = await response.json()
+    const { signature, expire, token } = data
+    return { signature, expire, token }
+  }
+
   // Rating distribution bar
   const RatingBar = ({ stars, count, total }) => {
     const percentage = total > 0 ? (count / total) * 100 : 0
     return (
-      <button 
+      <button
         onClick={() => setFilterRating(filterRating === stars.toString() ? 'all' : stars.toString())}
         className={`flex items-center gap-3 w-full group hover:bg-gray-100 py-1.5 px-2 rounded-lg transition-colors ${
           filterRating === stars.toString() ? 'bg-gray-100' : ''
@@ -115,7 +167,7 @@ export default function Reviews({ productId, onReviewSubmitted }) {
       >
         <span className="text-sm font-medium w-12 text-gray-700">{stars} star</span>
         <div className="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full bg-yellow-400 rounded-full transition-all duration-500"
             style={{ width: `${percentage}%` }}
           />
@@ -158,11 +210,11 @@ export default function Reviews({ productId, onReviewSubmitted }) {
                     onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
                     className="p-1 transition-transform hover:scale-110"
                   >
-                    <Star 
-                      size={36} 
+                    <Star
+                      size={36}
                       className={`${
-                        star <= formData.rating 
-                          ? 'text-yellow-400 fill-yellow-400' 
+                        star <= formData.rating
+                          ? 'text-yellow-400 fill-yellow-400'
                           : 'text-gray-300 hover:text-yellow-300'
                       } transition-colors`}
                     />
@@ -171,11 +223,19 @@ export default function Reviews({ productId, onReviewSubmitted }) {
               </div>
               {formData.rating > 0 && (
                 <p className="text-sm text-gray-500 mt-2">
-                  {formData.rating === 5 ? 'Excellent!' : formData.rating === 4 ? 'Very Good' : formData.rating === 3 ? 'Good' : formData.rating === 2 ? 'Fair' : 'Poor'}
+                  {formData.rating === 5
+                    ? 'Excellent!'
+                    : formData.rating === 4
+                    ? 'Very Good'
+                    : formData.rating === 3
+                    ? 'Good'
+                    : formData.rating === 2
+                    ? 'Fair'
+                    : 'Poor'}
                 </p>
               )}
             </div>
-            
+
             {/* Comment */}
             <div className="mb-5">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -189,7 +249,86 @@ export default function Reviews({ productId, onReviewSubmitted }) {
                 placeholder="What did you like or dislike about this product? How was the quality?"
               />
             </div>
-            
+
+            {/* Add photos */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Add photos
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Share up to 5 images (JPG, PNG, WebP, max 5MB each)
+              </p>
+
+              {isImageKitConfigured() ? (
+                <IKContext
+                  publicKey={imagekitConfig.publicKey}
+                  urlEndpoint={imagekitConfig.urlEndpoint}
+                  authenticator={authenticator}
+                >
+                  <IKUpload
+                    id="review-photo-upload"
+                    className="hidden"
+                    folder="/reviews"
+                    fileName={`review-${productId}-${Date.now()}.jpg`}
+                    validateFile={validateReviewImage}
+                    onUploadStart={() => setUploadingImage(true)}
+                    onSuccess={(res) => {
+                      setUploadingImage(false)
+                      if (res?.url) {
+                        setFormData(prev => ({
+                          ...prev,
+                          images: prev.images.length < 5 ? [...prev.images, res.url] : prev.images
+                        }))
+                      }
+                    }}
+                    onError={(err) => {
+                      console.error('Review image upload failed:', err)
+                      setUploadingImage(false)
+                      alert('Failed to upload image. Please try again.')
+                    }}
+                  />
+
+                  <label
+                    htmlFor="review-photo-upload"
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors ${
+                      formData.images.length >= 5 || uploadingImage
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'cursor-pointer hover:bg-gray-100'
+                    }`}
+                  >
+                    <Upload size={16} />
+                    {uploadingImage ? 'Uploading...' : 'Add Photos'}
+                  </label>
+                </IKContext>
+              ) : (
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 inline-block">
+                  Photo upload is temporarily unavailable (ImageKit is not configured).
+                </p>
+              )}
+
+              {formData.images.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
+                  {formData.images.map((imageUrl, index) => (
+                    <div key={`${imageUrl}-${index}`} className="relative">
+                      <img
+                        src={imageUrl}
+                        alt={`Review upload ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedImage(index)}
+                        className="absolute top-1 right-1 p-1 rounded-full bg-black text-white opacity-90 hover:opacity-100"
+                        aria-label={`Remove image ${index + 1}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Actions */}
             <div className="flex gap-3">
               <button
@@ -201,10 +340,7 @@ export default function Reviews({ productId, onReviewSubmitted }) {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setFormData({ rating: 0, comment: '' })
-                }}
+                onClick={resetForm}
                 className="px-6 py-3 text-gray-600 font-medium hover:text-gray-900 transition-colors"
               >
                 Cancel
@@ -217,8 +353,8 @@ export default function Reviews({ productId, onReviewSubmitted }) {
       {!isUserLoggedIn && (
         <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-center border border-gray-100">
           <p className="text-gray-600 mb-3">Want to share your experience?</p>
-          <a 
-            href="/login" 
+          <a
+            href="/login"
             className="inline-block bg-black text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-gray-800 transition-colors"
           >
             Sign in to write a review
@@ -227,7 +363,6 @@ export default function Reviews({ productId, onReviewSubmitted }) {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
         {/* Left Column - Rating Summary */}
         <div className="lg:col-span-4">
           <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
@@ -243,11 +378,11 @@ export default function Reviews({ productId, onReviewSubmitted }) {
                 {stats?.totalReviews || 0} {stats?.totalReviews === 1 ? 'review' : 'reviews'}
               </p>
             </div>
-            
+
             {/* Rating Distribution */}
             <div className="space-y-1">
               {[5, 4, 3, 2, 1].map(stars => (
-                <RatingBar 
+                <RatingBar
                   key={stars}
                   stars={stars}
                   count={stats?.ratingDistribution?.[stars] || 0}
@@ -255,9 +390,9 @@ export default function Reviews({ productId, onReviewSubmitted }) {
                 />
               ))}
             </div>
-            
+
             {filterRating !== 'all' && (
-              <button 
+              <button
                 onClick={() => setFilterRating('all')}
                 className="w-full mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
@@ -304,9 +439,9 @@ export default function Reviews({ productId, onReviewSubmitted }) {
           ) : (
             <div className="space-y-0 divide-y divide-gray-100">
               {reviews.map((review) => (
-                <ReviewCard 
-                  key={review._id} 
-                  review={review} 
+                <ReviewCard
+                  key={review._id}
+                  review={review}
                   onVoteHelpful={handleVoteHelpful}
                   currentUserId={user?.id || user?._id}
                 />
@@ -322,7 +457,7 @@ export default function Reviews({ productId, onReviewSubmitted }) {
 // Review Card Component
 function ReviewCard({ review, onVoteHelpful, currentUserId }) {
   const isOwnReview = currentUserId === review.user?._id
-  
+
   return (
     <div className="py-6">
       {/* Header */}
@@ -353,13 +488,32 @@ function ReviewCard({ review, onVoteHelpful, currentUserId }) {
           </div>
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="pl-16">
-        <p className="text-gray-700 leading-relaxed">
-          {review.comment}
-        </p>
-        
+        <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+
+        {Array.isArray(review.images) && review.images.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+            {review.images.map((imageUrl, index) => (
+              <a
+                key={`${review._id}-image-${index}`}
+                href={imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity"
+              >
+                <img
+                  src={imageUrl}
+                  alt={`Review image ${index + 1}`}
+                  className="w-full h-28 object-cover"
+                  loading="lazy"
+                />
+              </a>
+            ))}
+          </div>
+        )}
+
         {/* Actions */}
         {!isOwnReview && (
           <div className="flex items-center gap-4 mt-4">
