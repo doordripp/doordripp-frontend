@@ -6,6 +6,7 @@ import ShopMenu from './ShopMenu'
 import MobileMenu from './MobileMenu'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
+import Logo from '../ui/Logo'
 
 export default function Navbar() {
 	const [showBanner, setShowBanner] = useState(true)
@@ -16,7 +17,7 @@ export default function Navbar() {
 	const closeTimeoutRef = useRef(null)
 	const navigate = useNavigate()
 	const { cartTotals, toggleDrawer } = useCart()
-	const { user, logout } = useAuth()
+	const { user } = useAuth()
 
 	const handleSearch = (searchQuery) => {
 		if (searchQuery.trim()) {
@@ -122,7 +123,10 @@ export default function Navbar() {
 
 			<div className="flex w-full items-center gap-4 px-3 py-3">
 				{/* Left: Brand */}
-				<a href="/" className="shrink-0 text-xl font-extrabold tracking-wide" onMouseEnter={closeAllDropdowns}>DOORDRIPP</a>
+				<a href="/" className="shrink-0 flex items-center gap-3 group" onMouseEnter={closeAllDropdowns}>
+					<Logo size={32} className="group-hover:scale-105 transition-transform duration-200" />
+					<span className="text-xl font-extrabold tracking-wide">DOORDRIPP</span>
+				</a>
 
 				{/* Middle: Nav links */}
 				<nav className="hidden md:flex items-center gap-6 text-sm">

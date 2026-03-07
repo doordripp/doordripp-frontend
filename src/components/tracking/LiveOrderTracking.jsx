@@ -26,7 +26,8 @@ import {
   decodePolyline
 } from '../../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
 // Custom bike icon for rider
 const bikeIcon = L.icon({
@@ -79,7 +80,7 @@ export default function LiveOrderTracking() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`${SOCKET_URL}/api/orders/${orderId}`, {
+        const response = await fetch(`${API_URL}/orders/${orderId}`, {
           headers: { Authorization: `Bearer ${tokenRef.current}` }
         })
         const data = await response.json()
