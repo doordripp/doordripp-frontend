@@ -6,7 +6,10 @@ import {
   Minus,
   ShoppingCart,
   Check,
-  Heart
+  Heart,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
@@ -18,7 +21,6 @@ import { optimizeImage } from '../config/imagekit'
 import Breadcrumb, { buildProductBreadcrumb } from '../components/ui/Breadcrumb'
 import { useAuth } from '../context/AuthContext'
 import { TrialButton } from '../features/trial/TrialButton'
-import ImageZoom from '../components/ui/ImageZoom'
 
 
 /* ============================
@@ -70,6 +72,7 @@ export default function ProductDetail() {
   const [specsExpanded, setSpecsExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState('specifications')
   const [recommendedProducts, setRecommendedProducts] = useState([])
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   
   // Handle review submission to refresh product rating
   const handleReviewSubmitted = async (review) => {
@@ -141,6 +144,25 @@ export default function ProductDetail() {
       })
   }, [product])
 
+  const imageCount = product?.images?.length || 0
+
+  useEffect(() => {
+    if (!isLightboxOpen || imageCount === 0) return
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsLightboxOpen(false)
+      } else if (event.key === 'ArrowLeft') {
+        setSelectedImage((prev) => (prev === 0 ? imageCount - 1 : prev - 1))
+      } else if (event.key === 'ArrowRight') {
+        setSelectedImage((prev) => (prev === imageCount - 1 ? 0 : prev + 1))
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isLightboxOpen, imageCount])
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading…</div>
   }
@@ -151,6 +173,20 @@ export default function ProductDetail() {
 
   const images = product.images
   const isOutOfStock = (product.stock ?? 0) <= 0
+  const hasMultipleImages = images.length > 1
+
+  const goToPrevImage = () => {
+    if (!hasMultipleImages) return
+    setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+  }
+
+  const goToNextImage = () => {
+    if (!hasMultipleImages) return
+    setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+  }
+
+  const openLightbox = () => setIsLightboxOpen(true)
+  const closeLightbox = () => setIsLightboxOpen(false)
 
   return (
     <div className="min-h-screen bg-white">
@@ -163,11 +199,48 @@ export default function ProductDetail() {
 
           {/* ================= IMAGES ================= */}
           <div className="space-y-4">
-            <ImageZoom
-              key={selectedImage}
-              src={optimizeImage(images[selectedImage], { width: 800 })}
-              alt={product.name}
-            />
+            <div className="relative aspect-square bg-gray-50 rounded-3xl overflow-hidden shadow-sm border border-gray-100">
+              <button
+                type="button"
+                onClick={openLightbox}
+                className="w-full h-full block z-0"
+                aria-label="Open product image"
+              >
+                <img
+                  key={selectedImage}
+                  src={optimizeImage(images[selectedImage], { width: 800 })}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.02]"
+                />
+              </button>
+
+              {hasMultipleImages && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      goToPrevImage()
+                    }}
+                    className="absolute top-1/2 left-3 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center text-gray-800 hover:bg-white transition-colors"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      goToNextImage()
+                    }}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center text-gray-800 hover:bg-white transition-colors"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </>
+              )}
+            </div>
 
             <div className="grid grid-cols-4 gap-4">
               {images.map((img, i) => (
@@ -516,6 +589,75 @@ export default function ProductDetail() {
             productId={product.id} 
             onReviewSubmitted={handleReviewSubmitted}
           />
+        </div>
+      </div>
+
+      <div
+        className={`fixed inset-0 z-50 bg-black/45 backdrop-blur-sm transition-all duration-300 ${
+          isLightboxOpen
+            ? 'opacity-100 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={closeLightbox}
+          className="absolute inset-0 z-0"
+          aria-label="Close enlarged image"
+        />
+        <div className="absolute inset-0 z-10 flex items-center justify-center p-4 sm:p-8">
+          <div
+            style={{ willChange: 'transform, opacity' }}
+            className={`relative w-full max-w-4xl max-h-[90vh] transition-all duration-300 ${
+              isLightboxOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-2'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={optimizeImage(images[selectedImage], { width: 1600 })}
+              alt={product.name}
+              className="w-full h-auto max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                closeLightbox()
+              }}
+              className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black transition-colors"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+
+            {hasMultipleImages && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToPrevImage()
+                  }}
+                  className="absolute top-1/2 left-3 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 text-gray-900 border border-gray-200 flex items-center justify-center hover:bg-white transition-colors"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToNextImage()
+                  }}
+                  className="absolute top-1/2 right-3 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 text-gray-900 border border-gray-200 flex items-center justify-center hover:bg-white transition-colors"
+                  aria-label="Next image"
+                >
+                  <ChevronRight size={22} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
