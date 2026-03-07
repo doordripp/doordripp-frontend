@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Star, ThumbsUp, CheckCircle, Upload, X } from 'lucide-react'
+import { Star, ThumbsUp, CheckCircle, Upload, X, Pencil, Trash2 } from 'lucide-react'
 import { IKContext, IKUpload } from 'imagekitio-react'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
@@ -13,6 +13,8 @@ export default function Reviews({ productId, onReviewSubmitted }) {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [updatingReviewId, setUpdatingReviewId] = useState(null)
+  const [deletingReviewId, setDeletingReviewId] = useState(null)
 
   // Form state
   const [showForm, setShowForm] = useState(false)
@@ -105,10 +107,48 @@ export default function Reviews({ productId, onReviewSubmitted }) {
     }
 
     try {
+      // Backend now handles toggle: same vote again removes it.
       await api.post(`/reviews/${reviewId}/vote`, { vote: 'helpful' })
-      fetchReviews()
+      await fetchReviews()
     } catch (error) {
       console.error('Error voting:', error)
+    }
+  }
+
+  const handleUpdateReview = async (reviewId, payload) => {
+    setUpdatingReviewId(reviewId)
+    try {
+      await api.put(`/reviews/${reviewId}`, payload)
+      await fetchReviews()
+      if (onReviewSubmitted) {
+        onReviewSubmitted({ _id: reviewId })
+      }
+      return true
+    } catch (error) {
+      console.error('Error updating review:', error)
+      alert(error.response?.data?.error || 'Failed to update review')
+      return false
+    } finally {
+      setUpdatingReviewId(null)
+    }
+  }
+
+  const handleDeleteReview = async (reviewId) => {
+    const confirmed = window.confirm('Delete this review?')
+    if (!confirmed) return
+
+    setDeletingReviewId(reviewId)
+    try {
+      await api.delete(`/reviews/${reviewId}`)
+      await fetchReviews()
+      if (onReviewSubmitted) {
+        onReviewSubmitted({ _id: reviewId, deleted: true })
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error)
+      alert(error.response?.data?.error || 'Failed to delete review')
+    } finally {
+      setDeletingReviewId(null)
     }
   }
 
@@ -443,7 +483,11 @@ export default function Reviews({ productId, onReviewSubmitted }) {
                   key={review._id}
                   review={review}
                   onVoteHelpful={handleVoteHelpful}
+                  onUpdateReview={handleUpdateReview}
+                  onDeleteReview={handleDeleteReview}
                   currentUserId={user?.id || user?._id}
+                  updatingReviewId={updatingReviewId}
+                  deletingReviewId={deletingReviewId}
                 />
               ))}
             </div>
@@ -455,8 +499,96 @@ export default function Reviews({ productId, onReviewSubmitted }) {
 }
 
 // Review Card Component
-function ReviewCard({ review, onVoteHelpful, currentUserId }) {
-  const isOwnReview = currentUserId === review.user?._id
+function ReviewCard({
+  review,
+  onVoteHelpful,
+  onUpdateReview,
+  onDeleteReview,
+  currentUserId,
+  updatingReviewId,
+  deletingReviewId
+}) {
+  const ownId = String(currentUserId || '')
+  const reviewUserId = String(review.user?._id || review.user?.id || '')
+  const isOwnReview = ownId && ownId === reviewUserId
+  const [isEditing, setIsEditing] = useState(false)
+  const [editRating, setEditRating] = useState(review.rating || 0)
+  const [editComment, setEditComment] = useState(review.comment || '')
+  const [editImages, setEditImages] = useState(Array.isArray(review.images) ? review.images : [])
+  const [uploadingEditImage, setUploadingEditImage] = useState(false)
+
+  const userHelpfulVote = Array.isArray(review.votedUsers) && review.votedUsers.some(v => {
+    const voteUserId = String(v?.user?._id || v?.user || '')
+    return voteUserId === ownId && v?.vote === 'helpful'
+  })
+
+  const isUpdatingThisReview = updatingReviewId === review._id
+  const isDeletingThisReview = deletingReviewId === review._id
+
+  useEffect(() => {
+    setEditRating(review.rating || 0)
+    setEditComment(review.comment || '')
+    setEditImages(Array.isArray(review.images) ? review.images : [])
+  }, [review.rating, review.comment, review.images])
+
+  const handleSaveEdit = async () => {
+    if (editRating === 0 || !editComment.trim()) {
+      alert('Please provide a rating and comment')
+      return
+    }
+    const ok = await onUpdateReview(review._id, {
+      rating: editRating,
+      comment: editComment.trim(),
+      images: editImages
+    })
+    if (ok) {
+      setIsEditing(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setEditRating(review.rating || 0)
+    setEditComment(review.comment || '')
+    setEditImages(Array.isArray(review.images) ? review.images : [])
+    setUploadingEditImage(false)
+  }
+
+  const validateEditImage = (file) => {
+    const maxSize = 5 * 1024 * 1024
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only JPG, PNG, and WebP images are allowed')
+      return false
+    }
+
+    if (file.size > maxSize) {
+      alert('Each image must be less than 5MB')
+      return false
+    }
+
+    if (editImages.length >= 5) {
+      alert('You can upload up to 5 photos per review')
+      return false
+    }
+
+    return true
+  }
+
+  const editImageAuthenticator = async () => {
+    const response = await fetch(imagekitConfig.authenticationEndpoint, {
+      credentials: 'include'
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to get upload authorization')
+    }
+
+    const data = await response.json()
+    const { signature, expire, token } = data
+    return { signature, expire, token }
+  }
 
   return (
     <div className="py-6">
@@ -491,44 +623,199 @@ function ReviewCard({ review, onVoteHelpful, currentUserId }) {
 
       {/* Content */}
       <div className="pl-16">
-        <p className="text-gray-700 leading-relaxed">{review.comment}</p>
-
-        {Array.isArray(review.images) && review.images.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-            {review.images.map((imageUrl, index) => (
-              <a
-                key={`${review._id}-image-${index}`}
-                href={imageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity"
+        {isEditing ? (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rating
+              </label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setEditRating(star)}
+                    className="p-0.5"
+                  >
+                    <Star
+                      size={20}
+                      className={`${
+                        star <= editRating
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Review
+              </label>
+              <textarea
+                value={editComment}
+                onChange={(e) => setEditComment(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none"
+              />
+            </div>
+            {editImages.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Photos</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {editImages.map((imageUrl, index) => (
+                    <div key={`${imageUrl}-${index}`} className="relative">
+                      <img
+                        src={imageUrl}
+                        alt={`Review image ${index + 1}`}
+                        className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditImages(prev => prev.filter((_, i) => i !== index))}
+                        className="absolute top-1 right-1 p-1 rounded-full bg-black text-white"
+                        aria-label={`Remove image ${index + 1}`}
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="mb-4">
+              {isImageKitConfigured() ? (
+                <IKContext
+                  publicKey={imagekitConfig.publicKey}
+                  urlEndpoint={imagekitConfig.urlEndpoint}
+                  authenticator={editImageAuthenticator}
+                >
+                  <IKUpload
+                    id={`review-edit-photo-upload-${review._id}`}
+                    className="hidden"
+                    folder="/reviews"
+                    fileName={`review-edit-${review._id}-${Date.now()}.jpg`}
+                    validateFile={validateEditImage}
+                    onUploadStart={() => setUploadingEditImage(true)}
+                    onSuccess={(res) => {
+                      setUploadingEditImage(false)
+                      if (res?.url) {
+                        setEditImages(prev => (prev.length < 5 ? [...prev, res.url] : prev))
+                      }
+                    }}
+                    onError={(err) => {
+                      console.error('Review edit image upload failed:', err)
+                      setUploadingEditImage(false)
+                      alert('Failed to upload image. Please try again.')
+                    }}
+                  />
+                  <label
+                    htmlFor={`review-edit-photo-upload-${review._id}`}
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors ${
+                      editImages.length >= 5 || uploadingEditImage
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'cursor-pointer hover:bg-gray-100'
+                    }`}
+                  >
+                    <Upload size={14} />
+                    {uploadingEditImage ? 'Uploading...' : 'Add Photos'}
+                  </label>
+                </IKContext>
+              ) : (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 inline-block">
+                  Photo upload is unavailable (ImageKit is not configured).
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                disabled={isUpdatingThisReview}
+                className="px-4 py-2 text-sm font-semibold bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
               >
-                <img
-                  src={imageUrl}
-                  alt={`Review image ${index + 1}`}
-                  className="w-full h-28 object-cover"
-                  loading="lazy"
-                />
-              </a>
-            ))}
+                {isUpdatingThisReview ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                disabled={isUpdatingThisReview}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
+        ) : (
+          <>
+            <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+
+            {Array.isArray(review.images) && review.images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+                {review.images.map((imageUrl, index) => (
+                  <a
+                    key={`${review._id}-image-${index}`}
+                    href={imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Review image ${index + 1}`}
+                      className="w-full h-28 object-cover"
+                      loading="lazy"
+                    />
+                  </a>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* Actions */}
-        {!isOwnReview && (
-          <div className="flex items-center gap-4 mt-4">
+        <div className="flex items-center gap-4 mt-4">
+          {!isOwnReview && (
             <button
               onClick={() => onVoteHelpful(review._id)}
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors group"
+              className={`flex items-center gap-2 text-sm transition-colors group ${
+                userHelpfulVote ? 'text-blue-700' : 'text-gray-500 hover:text-gray-900'
+              }`}
             >
-              <ThumbsUp size={16} className="group-hover:scale-110 transition-transform" />
+              <ThumbsUp
+                size={16}
+                className={`group-hover:scale-110 transition-transform ${userHelpfulVote ? 'fill-blue-700' : ''}`}
+              />
               <span>Helpful</span>
               {review.helpfulVotes > 0 && (
                 <span className="text-gray-400">({review.helpfulVotes})</span>
               )}
             </button>
-          </div>
-        )}
+          )}
+
+          {isOwnReview && !isEditing && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
+              >
+                <Pencil size={14} />
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteReview(review._id)}
+                disabled={isDeletingThisReview}
+                className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
+              >
+                <Trash2 size={14} />
+                {isDeletingThisReview ? 'Deleting...' : 'Delete'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
