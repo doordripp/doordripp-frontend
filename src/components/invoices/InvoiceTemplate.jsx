@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import './InvoiceTemplate.css'
 
 /**
@@ -57,6 +57,10 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
     trialFee: 0,
     deliveryFee: 100,
     deliveryType: 'Standard',
+    voucherCode: '',
+    voucherDiscount: 0,
+    totalBeforeDiscount: null,
+    total: null,
     
     // Payment details
     paymentMode: 'UPI',
@@ -67,7 +71,7 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
     company: {
       name: 'DoorDripp',
       // pan removed for privacy
-      address: 'LandCraft Metro Homes, Muradnagar, Ghaziabad, Uttar Pradesh – 201206',
+      address: 'LandCraft Metro Homes, Muradnagar, Ghaziabad, Uttar Pradesh - 201206',
       phone: '+91-9286819663',
       email: 'support@doordripp.com',
       website: 'www.doordripp.com'
@@ -75,10 +79,22 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
   }
   
   const data = { ...defaultData, ...invoiceData }
+
+  const formatCurrency = (value) => {
+    const amount = Number(value ?? 0)
+    if (Number.isNaN(amount)) return 'INR 0.00'
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2
+    }).format(amount)
+  }
   
   // Calculate totals
-  const subtotal = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
-  const grandTotal = subtotal + (data.trialFee || 0) + (data.deliveryFee || 0)
+  const subtotal = data.items.reduce((sum, item) => sum + ((item.unitPrice || 0) * (item.quantity || 0)), 0)
+  const voucherDiscount = Number(data.voucherDiscount || data.discountAmount || 0)
+  const totalBeforeDiscount = Number(data.totalBeforeDiscount || (subtotal + (data.trialFee || 0) + (data.deliveryFee || 0)))
+  const grandTotal = data.total != null ? Number(data.total) : Math.max(0, totalBeforeDiscount - voucherDiscount)
   
   // Convert amount to words (Indian format)
   const amountInWords = (amount) => {
@@ -150,7 +166,7 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
       {/* Header Section */}
       <div className="invoice-header">
         <div className="header-left">
-          <div className="company-logo-placeholder">📦</div>
+          <div className="company-logo-placeholder">DD</div>
           <div>
             <h1 className="company-name">{data.company.name}</h1>
             <p className="company-tagline">Fast Fashion, Fresh Every Day</p>
@@ -181,7 +197,7 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
       {/* Address Section */}
       <div className="address-section">
         <div className="address-block">
-          <h3 className="address-title">🏢 BILLED FROM (Seller)</h3>
+          <h3 className="address-title">BILLED FROM (Seller)</h3>
           <div className="address-content">
             <p className="company-address">{data.company.name}</p>
             <p>{data.company.address}</p>
@@ -189,7 +205,7 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
         </div>
 
         <div className="address-block">
-          <h3 className="address-title">👤 BILLED TO (Customer)</h3>
+          <h3 className="address-title">BILLED TO (Customer)</h3>
           <div className="address-content">
             <p className="customer-name">{data.customerName}</p>
             <p>{data.billingAddress.street}</p>
@@ -205,7 +221,7 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
         </div>
 
         <div className="address-block">
-          <h3 className="address-title">🚚 SHIPPED TO</h3>
+          <h3 className="address-title">SHIPPED TO</h3>
           <div className="address-content">
             <p className="customer-name">{data.customerName}</p>
             <p>{data.shippingAddress.street}</p>
@@ -241,8 +257,8 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
                   <div className="product-desc">{item.description}</div>
                 </td>
                 <td className="col-qty">{item.quantity}</td>
-                <td className="col-price">₹{item.unitPrice.toFixed(2)}</td>
-                <td className="col-total">₹{(item.unitPrice * item.quantity).toFixed(2)}</td>
+                <td className="col-price">{formatCurrency(item.unitPrice)}</td>
+                <td className="col-total">{formatCurrency((item.unitPrice || 0) * (item.quantity || 0))}</td>
               </tr>
             ))}
           </tbody>
@@ -257,6 +273,9 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
             <p><strong>Mode:</strong> {data.paymentMode}</p>
             <p><strong>Transaction ID:</strong> {data.transactionId}</p>
             <p><strong>Status:</strong> <span className="badge-success">{data.paymentStatus}</span></p>
+            {voucherDiscount > 0 && (
+              <p><strong>Coupon:</strong> {data.voucherCode || 'Applied'} ({formatCurrency(voucherDiscount)} off)</p>
+            )}
           </div>
 
           <div className="amount-in-words">
@@ -269,21 +288,27 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
           <div className="summary-table">
             <div className="summary-row">
               <span className="summary-label">Subtotal:</span>
-              <span className="summary-value">₹{subtotal.toFixed(2)}</span>
+              <span className="summary-value">{formatCurrency(subtotal)}</span>
             </div>
             {data.isTrial && (
               <div className="summary-row">
                 <span className="summary-label">Trial Service Fee:</span>
-                <span className="summary-value">₹{(data.trialFee || 0).toFixed(2)}</span>
+                <span className="summary-value">{formatCurrency(data.trialFee || 0)}</span>
               </div>
             )}
             <div className="summary-row">
               <span className="summary-label">Delivery Fee ({data.deliveryType || 'Standard'}):</span>
-              <span className="summary-value">₹{(data.deliveryFee || 0).toFixed(2)}</span>
+              <span className="summary-value">{formatCurrency(data.deliveryFee || 0)}</span>
             </div>
+            {voucherDiscount > 0 && (
+              <div className="summary-row">
+                <span className="summary-label">Coupon {data.voucherCode ? `(${data.voucherCode})` : ''}:</span>
+                <span className="summary-value">-{formatCurrency(voucherDiscount)}</span>
+              </div>
+            )}
             <div className="summary-row grand-total">
-              <span className="summary-label">GRAND TOTAL:</span>
-              <span className="summary-value">₹{grandTotal.toFixed(2)}</span>
+              <span className="summary-label">{voucherDiscount > 0 ? 'PAYABLE TOTAL:' : 'GRAND TOTAL:'}</span>
+              <span className="summary-value">{formatCurrency(grandTotal)}</span>
             </div>
           </div>
         </div>
@@ -313,9 +338,9 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
       {/* Support Section */}
       <div className="support-section">
         <h4>Need Help?</h4>
-        <p>📧 Email: <strong>{data.company.email}</strong></p>
-        <p>📞 Phone: <strong>{data.company.phone}</strong></p>
-        <p>🌐 Website: <strong>{data.company.website}</strong></p>
+        <p>Email: <strong>{data.company.email}</strong></p>
+        <p>Phone: <strong>{data.company.phone}</strong></p>
+        <p>Website: <strong>{data.company.website}</strong></p>
         <p className="thank-you-message">
           Thank you for shopping with DoorDripp! We appreciate your business and look forward to serving you again.
         </p>
@@ -328,3 +353,11 @@ export default function InvoiceTemplate({ invoiceData = {}, forPrint = false }) 
     </div>
   )
 }
+
+
+
+
+
+
+
+

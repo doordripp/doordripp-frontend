@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -10,9 +10,9 @@ import { Trash2, Edit } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 const DELIVERY_OPTIONS = [
-  { id: 'priority', label: 'Priority Delivery', sublabel: 'Fastest', eta: '25 minutes', charge: 120, badge: '🔥' },
-  { id: 'standard', label: 'Standard Delivery', sublabel: 'Best Value', eta: '35 minutes', charge: 100, badge: '⭐' },
-  { id: 'regular', label: 'Regular Delivery', sublabel: 'Economical', eta: '45 minutes', charge: 80, badge: '🚚' }
+  { id: 'priority', label: 'Priority Delivery', sublabel: 'Fastest', eta: '25 minutes', charge: 120, badge: 'FAST' },
+  { id: 'standard', label: 'Standard Delivery', sublabel: 'Best Value', eta: '35 minutes', charge: 100, badge: 'BEST' },
+  { id: 'regular', label: 'Regular Delivery', sublabel: 'Economical', eta: '45 minutes', charge: 80, badge: 'ECO' }
 ]
 
 export default function Checkout() {
@@ -20,6 +20,11 @@ export default function Checkout() {
     items, 
     cartTotals, 
     clearCart, 
+    promoCode,
+    promoLoading,
+    promoError,
+    applyPromoCode,
+    removePromoCode,
     isTrialCheckout: cartIsTrial,
     trialFee: cartTrialFee,
     trialItems: cartTrialItems,
@@ -53,6 +58,9 @@ export default function Checkout() {
   const [error, setError] = useState('')
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
   const [editingAddress, setEditingAddress] = useState(null)
+  const [voucherCodeInput, setVoucherCodeInput] = useState('')
+  const [voucherError, setVoucherError] = useState('')
+  const [voucherInfo, setVoucherInfo] = useState('')
 
   const hasItems = items && items.length > 0
 
@@ -64,8 +72,8 @@ export default function Checkout() {
   // Get active delivery option data
   const selectedDeliveryOption = DELIVERY_OPTIONS.find(o => o.id === deliveryType) || DELIVERY_OPTIONS[2]
   
-  // Recalculate Total with selected delivery fee and potential trial fee (no GST)
-  const finalTotal = cartTotals.subtotal + selectedDeliveryOption.charge + trialFee
+  const subtotalAfterCoupon = Math.max(cartTotals.subtotal - (cartTotals.discountAmount || 0), 0)
+  const payableTotal = subtotalAfterCoupon + selectedDeliveryOption.charge + trialFee
 
   // Load Razorpay script on mount
   useEffect(() => {
@@ -170,8 +178,41 @@ export default function Checkout() {
     loadSavedAddresses() // Refresh list since it might have been saved
   }
 
+  const handleApplyVoucher = async () => {
+    setVoucherError('')
+    setVoucherInfo('')
+
+    const normalizedCode = voucherCodeInput.trim().toUpperCase()
+    if (!normalizedCode) {
+      setVoucherError('Enter a voucher code')
+      return
+    }
+
+    if (!hasItems) {
+      setVoucherError('Add items to cart before applying a voucher')
+      return
+    }
+
+    const result = await applyPromoCode(normalizedCode)
+    if (result.success) {
+      setVoucherCodeInput('')
+      setVoucherInfo(`Coupon ${result.code} applied on subtotal`)
+      return
+    }
+
+    setVoucherError(result.error || 'Failed to apply voucher')
+  }
+
+  const handleRemoveVoucher = () => {
+    removePromoCode()
+    setVoucherError('')
+    setVoucherInfo('Coupon removed')
+  }
+
   const handlePlaceOrder = async () => {
     setError('')
+    setVoucherInfo('')
+    setVoucherError('')
     if (!selectedAddress) {
       setError('Please select a delivery address')
       return
@@ -219,7 +260,8 @@ export default function Checkout() {
           // Include coordinates for zone matching
           latitude: selectedAddress.latitude,
           longitude: selectedAddress.longitude
-        }
+        },
+        ...(promoCode ? { voucherCode: promoCode } : {})
       }
       
       const response = await apiPost('/orders', orderData)
@@ -244,7 +286,7 @@ export default function Checkout() {
               contact: user?.phone || ''
             },
             handler: async (response) => {
-              console.log('✅ Payment successful:', response)
+              console.log('Payment successful:', response)
               try {
                 // Verify payment on backend
                 const verifyResponse = await apiPost(`/orders/${order._id}/verify-payment`, {
@@ -257,6 +299,7 @@ export default function Checkout() {
                   // Payment verified - clear cart and reset delivery
                   if (isTrialCheckout) clearTrial()
                   clearCart()
+                  setVoucherCodeInput('')
                   localStorage.removeItem('doordripp_delivery_type')
                   setDeliveryType('regular')
                   
@@ -289,6 +332,7 @@ export default function Checkout() {
         } else {
           // Fallback if Razorpay not loaded - just confirm order
           clearCart()
+          setVoucherCodeInput('')
           navigate(`/orders/${order._id}`, { state: { order, paymentSuccess: true } })
         }
       } else {
@@ -511,6 +555,53 @@ export default function Checkout() {
                   ))
                 )}
               </div>
+
+              <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Voucher Code</div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={voucherCodeInput}
+                    onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase())}
+                    placeholder="Enter code (e.g. SAVE100)"
+                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-red-500"
+                    disabled={placing || promoLoading}
+                  />
+                  {promoCode ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveVoucher}
+                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                      disabled={placing}
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleApplyVoucher}
+                      className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+                      disabled={placing || promoLoading || !voucherCodeInput.trim()}
+                    >
+                      {promoLoading ? 'Applying...' : 'Apply'}
+                    </button>
+                  )}
+                </div>
+                {promoCode && (
+                  <p className="mt-2 text-xs font-semibold text-green-700">
+                    Applied {promoCode} • You save ₹{cartTotals.discountAmount.toFixed(2)} on subtotal
+                  </p>
+                )}
+                {!promoCode && voucherInfo && (
+                  <p className="mt-2 text-xs font-semibold text-gray-600">{voucherInfo}</p>
+                )}
+                {voucherError && (
+                  <p className="mt-2 text-xs font-semibold text-red-600">{voucherError}</p>
+                )}
+                {!voucherError && promoError && (
+                  <p className="mt-2 text-xs font-semibold text-red-600">{promoError}</p>
+                )}
+              </div>
               
               <div className="border-t border-gray-300 pt-4 space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
@@ -533,9 +624,16 @@ export default function Checkout() {
                   <span className="font-bold text-green-700">₹{selectedDeliveryOption.charge.toFixed(2)}</span>
                 </div>
 
+                {promoCode && (
+                  <div className="flex justify-between text-green-700">
+                    <span className="text-sm font-semibold">Coupon ({promoCode})</span>
+                    <span className="font-bold">-₹{cartTotals.discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
                 <div className="pt-4 border-t border-gray-300 border-dashed flex justify-between items-center text-xl font-black">
-                  <span>Grand Total</span>
-                  <span className="text-2xl">₹{finalTotal.toFixed(2)}</span>
+                  <span>{promoCode ? 'Payable Total' : 'Grand Total'}</span>
+                  <span className="text-2xl">₹{payableTotal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -585,7 +683,7 @@ export default function Checkout() {
 
               {/* Dynamic ETA Info */}
               <div className="mb-4 px-3 py-2 bg-yellow-50 border border-yellow-100 rounded-lg flex items-center gap-2 text-xs text-yellow-800">
-                <span className="animate-pulse">⏳</span>
+                <span className="animate-pulse">ETA</span>
                 <span>Estimated arrival: <strong>{selectedDeliveryOption.eta}</strong></span>
               </div>
 
@@ -610,9 +708,9 @@ export default function Checkout() {
                     Processing...
                   </>
                 ) : isTrialCheckout ? (
-                  `Pay ₹${finalTotal.toFixed(2)} & Start Trial`
+                  `Pay ₹${payableTotal.toFixed(2)} & Start Trial`
                 ) : (
-                  'Place Order'
+                  `Place Order | ₹${payableTotal.toFixed(2)}`
                 )}
               </button>
             </div>
@@ -621,3 +719,6 @@ export default function Checkout() {
       </div>
   )
 }
+
+
+

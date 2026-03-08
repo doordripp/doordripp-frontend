@@ -1,7 +1,7 @@
 // src/pages/admin/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, Navigate } from 'react-router-dom';
-import { IndianRupee, Package, Users, ShoppingCart, TrendingUp } from "lucide-react";
+import { IndianRupee, Package, Users, ShoppingCart, TrendingUp, TicketPercent } from "lucide-react";
 import adminAPI from "../../services/adminAPI";
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
 import { useAuth } from '../../context/AuthContext'
@@ -28,7 +28,7 @@ export default function AdminDashboard() {
     return (
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <button onClick={() => navigate('/admin/products')} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition-colors">
             <Package className="w-8 h-8 text-blue-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-blue-900">Add Product</p>
@@ -44,6 +44,10 @@ export default function AdminDashboard() {
           <button onClick={() => navigate('/admin/reports')} className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-center transition-colors">
             <IndianRupee className="w-8 h-8 text-orange-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-orange-900">View Reports</p>
+          </button>
+          <button onClick={() => navigate('/admin/vouchers')} className="p-4 bg-rose-50 hover:bg-rose-100 rounded-lg text-center transition-colors">
+            <TicketPercent className="w-8 h-8 text-rose-600 mx-auto mb-2" />
+            <p className="text-sm font-medium text-rose-900">Add Coupon</p>
           </button>
         </div>
       </div>
@@ -106,6 +110,8 @@ export default function AdminDashboard() {
           id: order.id || order._id,
           customer: order.customer || 'Unknown',
           amount: order.total || 0,
+          voucherDiscount: order.voucherDiscount || 0,
+          voucherCode: order.voucher?.code || '',
           status: order.status || 'pending',
           date: order.date
         }));
@@ -267,6 +273,11 @@ export default function AdminDashboard() {
                   </div>
                   <div className="text-right">
                     <p className="font-medium text-gray-900">{formatCurrency(order.amount)}</p>
+                    {order.voucherDiscount > 0 && (
+                      <p className="text-xs text-green-700">
+                        Saved {formatCurrency(order.voucherDiscount)}{order.voucherCode ? ` (${order.voucherCode})` : ''}
+                      </p>
+                    )}
                     <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
                       {order.status}
                     </span>

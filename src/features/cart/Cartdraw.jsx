@@ -12,6 +12,9 @@ export default function CartDrawer() {
     updateQuantity,
     removeFromCart,
     promoCode,
+    voucherDetails,
+    promoLoading,
+    promoError,
     applyPromoCode,
     removePromoCode,
     isTrialCheckout,
@@ -21,13 +24,13 @@ export default function CartDrawer() {
   const [promoInput, setPromoInput] = useState('')
   const [promoMessage, setPromoMessage] = useState('')
 
-  const handlePromoSubmit = (e) => {
+  const handlePromoSubmit = async (e) => {
     e.preventDefault()
     if (!promoInput.trim()) return
     
-    const result = applyPromoCode(promoInput.trim())
+    const result = await applyPromoCode(promoInput.trim())
     if (result.success) {
-      setPromoMessage(`${result.discount}% discount applied!`)
+      setPromoMessage(`Coupon ${result.code} applied!`)
       setPromoInput('')
     } else {
       setPromoMessage(result.error)
@@ -214,9 +217,10 @@ export default function CartDrawer() {
                       />
                       <button
                         type="submit"
+                        disabled={promoLoading || !promoInput.trim()}
                         className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
                       >
-                        Apply
+                        {promoLoading ? '...' : 'Apply'}
                       </button>
                     </form>
                   )}
@@ -225,6 +229,9 @@ export default function CartDrawer() {
                     <p className={`mt-2 text-xs ${promoMessage.includes('applied') || promoMessage.includes('removed') ? 'text-green-600' : 'text-red-600'}`}>
                       {promoMessage}
                     </p>
+                  )}
+                  {promoError && !promoMessage && (
+                    <p className="mt-2 text-xs text-red-600">{promoError}</p>
                   )}
                 </div>
 
@@ -237,7 +244,7 @@ export default function CartDrawer() {
                   
                   {cartTotals.discountAmount > 0 && (
                     <div className="flex justify-between text-red-600">
-                      <span>Discount</span>
+                      <span>Coupon ({promoCode})</span>
                       <span>-₹{cartTotals.discountAmount.toFixed(2)}</span>
                     </div>
                   )}
@@ -263,6 +270,11 @@ export default function CartDrawer() {
                     <span>Total</span>
                     <span>₹{cartTotals.total.toFixed(2)}</span>
                   </div>
+                  {voucherDetails?.originalSubtotal > 0 && cartTotals.discountAmount > 0 && (
+                    <p className="text-[11px] text-gray-500">
+                      Coupon applies on subtotal only. Delivery fee remains separate.
+                    </p>
+                  )}
                 </div>
 
                 {/* Action Buttons */}

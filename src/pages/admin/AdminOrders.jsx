@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { Package, Search, Filter, Eye, Truck, CheckCircle, X, MapPin, ExternalLink } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
@@ -44,6 +44,9 @@ export default function AdminOrders() {
           customer: { name: o.customer || 'Unknown', email: o.customerEmail || '' },
           date: o.date || o.createdAt,
           total: o.total || 0,
+          totalBeforeDiscount: o.totalBeforeDiscount || o.total || 0,
+          voucherDiscount: o.voucherDiscount || 0,
+          voucher: o.voucher || null,
           status: o.status || 'pending',
           isTrial: o.isTrial || false,
           trialItems: o.trialItems || [],
@@ -133,7 +136,16 @@ export default function AdminOrders() {
     {
       header: 'Total',
       accessor: 'total',
-      render: (order) => formatCurrency(order.total)
+      render: (order) => (
+        <div>
+          <div>{formatCurrency(order.total)}</div>
+          {order.voucherDiscount > 0 && (
+            <div className="text-xs text-green-700">
+              Saved {formatCurrency(order.voucherDiscount)}{order.voucher?.code ? ` (${order.voucher.code})` : ''}
+            </div>
+          )}
+        </div>
+      )
     },
     {
       header: 'Status',
@@ -229,6 +241,9 @@ export default function AdminOrders() {
         customer: { name: o.customer || 'Unknown', email: o.customerEmail || '' },
         date: o.date || o.createdAt,
         total: o.total || 0,
+        totalBeforeDiscount: o.totalBeforeDiscount || o.total || 0,
+        voucherDiscount: o.voucherDiscount || 0,
+        voucher: o.voucher || null,
         status: o.status || 'pending',
         isTrial: o.isTrial || false,
         trialItems: o.trialItems || [],
@@ -439,6 +454,11 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
               <p className="text-sm text-gray-600 mt-2">
                 Order Date: {new Date(order.date).toLocaleDateString()}
               </p>
+              {order.voucherDiscount > 0 && (
+                <p className="text-sm text-green-700 mt-2">
+                  Coupon: {order.voucher?.code || 'Applied'} (Saved {formatCurrency(order.voucherDiscount)})
+                </p>
+              )}
             </div>
           </div>
 
@@ -575,25 +595,33 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
                     <tr key={index} className="border-t border-gray-300">
                       <td className="px-4 py-2">{item.name}</td>
                       <td className="px-4 py-2">{item.quantity}</td>
-                      <td className="px-4 py-2">₹{item.price.toFixed(2)}</td>
-                      <td className="px-4 py-2">₹{(item.quantity * item.price).toFixed(2)}</td>
+                      <td className="px-4 py-2">{formatCurrency(item.price)}</td>
+                      <td className="px-4 py-2">{formatCurrency(item.quantity * item.price)}</td>
                     </tr>
                   ))}
                   {order.isTrial && (
                     <tr className="border-t border-gray-300 text-indigo-600 font-medium italic">
                       <td className="px-4 py-1" colSpan="3">Trial Service Fee</td>
-                      <td className="px-4 py-1">₹{order.trialFee || 119}</td>
+                      <td className="px-4 py-1">{formatCurrency(order.trialFee || 119)}</td>
                     </tr>
                   )}
                   {order.shippingFee > 0 && (
                     <tr className="border-t border-gray-300 text-gray-500 font-medium italic">
                       <td className="px-4 py-1" colSpan="3">Delivery Fee ({order.shipping?.method || 'Standard'})</td>
-                      <td className="px-4 py-1">₹{order.shippingFee}</td>
+                      <td className="px-4 py-1">{formatCurrency(order.shippingFee)}</td>
+                    </tr>
+                  )}
+                  {order.voucherDiscount > 0 && (
+                    <tr className="border-t border-gray-300 text-green-700 font-medium italic">
+                      <td className="px-4 py-1" colSpan="3">
+                        Voucher Discount {order.voucher?.code ? `(${order.voucher.code})` : ''}
+                      </td>
+                      <td className="px-4 py-1">-{formatCurrency(order.voucherDiscount)}</td>
                     </tr>
                   )}
                   <tr className="border-t-2 border-gray-400 font-semibold bg-gray-100">
-                    <td className="px-4 py-2" colSpan="3">Grand Total</td>
-                    <td className="px-4 py-2">₹{order.total.toFixed(2)}</td>
+                    <td className="px-4 py-2" colSpan="3">{order.voucherDiscount > 0 ? 'Payable Total' : 'Grand Total'}</td>
+                    <td className="px-4 py-2">{formatCurrency(order.total)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -608,3 +636,5 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
     </div>
   )
 }
+
+

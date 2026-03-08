@@ -1,9 +1,8 @@
-import { createContext, useContext, useReducer, useEffect } from 'react'
+import { createContext, useContext, useReducer, useEffect, useState } from 'react'
+import { apiPost } from '../services/apiClient'
 
-// Cart context
 const CartContext = createContext()
 
-// Cart reducer actions
 const CART_ACTIONS = {
   ADD_ITEM: 'ADD_ITEM',
   REMOVE_ITEM: 'REMOVE_ITEM',
@@ -16,29 +15,44 @@ const CART_ACTIONS = {
   SET_TRIAL_MODE: 'SET_TRIAL_MODE'
 }
 
-// Cart reducer
+const calculateSubtotalFromItems = (items = []) =>
+  items.reduce((total, item) => total + (item.price * item.quantity), 0)
+
+const normalizeVoucherResponse = (response, fallbackCode, fallbackSubtotal) => {
+  const code = String(response?.code || fallbackCode || '').toUpperCase().trim()
+  const discountAmount = Number(response?.discount ?? 0)
+  const originalSubtotal = Number(response?.originalPrice ?? fallbackSubtotal)
+  const finalSubtotal = Number(response?.finalPrice ?? Math.max(0, originalSubtotal - discountAmount))
+
+  return {
+    code,
+    discountAmount: Number.isFinite(discountAmount) ? Math.max(discountAmount, 0) : 0,
+    originalSubtotal: Number.isFinite(originalSubtotal) ? Math.max(originalSubtotal, 0) : fallbackSubtotal,
+    finalSubtotal: Number.isFinite(finalSubtotal) ? Math.max(finalSubtotal, 0) : Math.max(0, fallbackSubtotal - (Number.isFinite(discountAmount) ? discountAmount : 0)),
+    discountType: response?.discountType || null,
+    discountValue: Number(response?.discountValue ?? 0) || 0
+  }
+}
+
 const cartReducer = (state, action) => {
   switch (action.type) {
     case CART_ACTIONS.ADD_ITEM: {
       const { product, size, color, quantity = 1 } = action.payload
-      
-      // Check if item already exists with same product, size, and color
+
       const existingItemIndex = state.items.findIndex(
-        item => item.id === product.id && 
-                item.selectedSize === size && 
+        item => item.id === product.id &&
+                item.selectedSize === size &&
                 item.selectedColor === color
       )
 
       let newItems
       if (existingItemIndex !== -1) {
-        // Update existing item quantity
         newItems = state.items.map((item, index) =>
           index === existingItemIndex
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
       } else {
-        // Add new item
         const cartItem = {
           id: product.id,
           name: product.name,
@@ -55,22 +69,20 @@ const cartReducer = (state, action) => {
         newItems = [...state.items, cartItem]
       }
 
-      const newState = {
+      return {
         ...state,
         items: newItems,
-        isDrawerOpen: true // Auto-open drawer when item is added
+        isDrawerOpen: true
       }
-
-      return newState
     }
 
     case CART_ACTIONS.REMOVE_ITEM: {
       const newItems = state.items.filter(
-        item => !(item.id === action.payload.id && 
-                 item.selectedSize === action.payload.selectedSize && 
+        item => !(item.id === action.payload.id &&
+                 item.selectedSize === action.payload.selectedSize &&
                  item.selectedColor === action.payload.selectedColor)
       )
-      
+
       return {
         ...state,
         items: newItems
@@ -79,7 +91,7 @@ const cartReducer = (state, action) => {
 
     case CART_ACTIONS.UPDATE_QUANTITY: {
       const { id, selectedSize, selectedColor, quantity } = action.payload
-      
+
       if (quantity <= 0) {
         return cartReducer(state, {
           type: CART_ACTIONS.REMOVE_ITEM,
@@ -88,8 +100,8 @@ const cartReducer = (state, action) => {
       }
 
       const newItems = state.items.map(item =>
-        item.id === id && 
-        item.selectedSize === selectedSize && 
+        item.id === id &&
+        item.selectedSize === selectedSize &&
         item.selectedColor === selectedColor
           ? { ...item, quantity }
           : item
@@ -106,14 +118,21 @@ const cartReducer = (state, action) => {
         ...state,
         items: [],
         promoCode: null,
-        discount: 0
+        voucher: null
       }
 
-    case CART_ACTIONS.LOAD_CART:
+    case CART_ACTIONS.LOAD_CART: {
+      if (Array.isArray(action.payload)) {
+        return { ...state, items: action.payload }
+      }
+      const payload = action.payload || {}
       return {
         ...state,
-        items: action.payload || []
+        items: payload.items || [],
+        promoCode: payload.promoCode || null,
+        voucher: payload.voucher || null
       }
+    }
 
     case CART_ACTIONS.TOGGLE_DRAWER:
       return {
@@ -122,11 +141,11 @@ const cartReducer = (state, action) => {
       }
 
     case CART_ACTIONS.APPLY_PROMO: {
-      const { code, discountPercent } = action.payload
+      const voucher = action.payload || null
       return {
         ...state,
-        promoCode: code,
-        discount: discountPercent
+        promoCode: voucher?.code || null,
+        voucher
       }
     }
 
@@ -134,7 +153,7 @@ const cartReducer = (state, action) => {
       return {
         ...state,
         promoCode: null,
-        discount: 0
+        voucher: null
       }
 
     case CART_ACTIONS.SET_TRIAL_MODE: {
@@ -153,84 +172,121 @@ const cartReducer = (state, action) => {
   }
 }
 
-// Initial cart state
 const initialState = {
   items: [],
   isDrawerOpen: false,
   promoCode: null,
-  discount: 0, // percentage discount
+  voucher: null,
   isTrialCheckout: false,
   trialFee: 0,
   trialItems: [],
   purchasedItemId: null
 }
 
-// Cart provider component
 export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, initialState)
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoError, setPromoError] = useState('')
 
-  // Load cart from localStorage on mount
   useEffect(() => {
     const savedCart = localStorage.getItem('doordripp-cart')
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart)
-        dispatch({ type: CART_ACTIONS.LOAD_CART, payload: parsedCart.items })
-        if (parsedCart.promoCode) {
-          dispatch({ 
-            type: CART_ACTIONS.APPLY_PROMO, 
-            payload: { code: parsedCart.promoCode, discountPercent: parsedCart.discount } 
-          })
+    if (!savedCart) return
+    try {
+      const parsedCart = JSON.parse(savedCart)
+      dispatch({
+        type: CART_ACTIONS.LOAD_CART,
+        payload: {
+          items: parsedCart.items || [],
+          promoCode: parsedCart.promoCode || null,
+          voucher: parsedCart.voucher || null
         }
-      } catch (error) {
-        console.error('Failed to load cart from localStorage:', error)
-      }
+      })
+    } catch (error) {
+      console.error('Failed to load cart from localStorage:', error)
     }
   }, [])
 
-  // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('doordripp-cart', JSON.stringify({
       items: state.items,
       promoCode: state.promoCode,
-      discount: state.discount
+      voucher: state.voucher
     }))
-  }, [state.items, state.promoCode, state.discount])
+  }, [state.items, state.promoCode, state.voucher])
 
-  // Calculate cart totals with GST
+  const currentSubtotal = calculateSubtotalFromItems(state.items)
+
+  // Keep voucher value synced with cart subtotal changes (security + correctness)
+  useEffect(() => {
+    const shouldValidate = !!state.promoCode && currentSubtotal > 0
+    if (!shouldValidate) return
+
+    const storedSubtotal = Number(state.voucher?.originalSubtotal || 0)
+    if (Math.abs(storedSubtotal - currentSubtotal) <= 0.009) return
+
+    let cancelled = false
+    ;(async () => {
+      setPromoLoading(true)
+      try {
+        const response = await apiPost('/voucher/apply', {
+          code: state.promoCode,
+          cartTotal: currentSubtotal
+        })
+        if (cancelled) return
+        dispatch({
+          type: CART_ACTIONS.APPLY_PROMO,
+          payload: normalizeVoucherResponse(response, state.promoCode, currentSubtotal)
+        })
+        setPromoError('')
+      } catch (e) {
+        if (cancelled) return
+        dispatch({ type: CART_ACTIONS.REMOVE_PROMO })
+        setPromoError(e?.error || e?.message || 'Coupon removed because cart changed or became invalid')
+      } finally {
+        if (!cancelled) setPromoLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentSubtotal, state.promoCode, state.voucher?.originalSubtotal])
+
   const cartTotals = {
     get totalItems() {
       return state.items.reduce((total, item) => total + item.quantity, 0)
     },
     get subtotal() {
-      return state.items.reduce((total, item) => total + (item.price * item.quantity), 0)
+      return currentSubtotal
     },
     get discountAmount() {
-      return (this.subtotal * state.discount) / 100
+      const discount = Number(state.voucher?.discountAmount || 0)
+      if (!Number.isFinite(discount) || discount <= 0) return 0
+      return Math.min(discount, this.subtotal)
+    },
+    get subtotalAfterDiscount() {
+      return Math.max(this.subtotal - this.discountAmount, 0)
     },
     get deliveryFee() {
-      // Default to regular delivery charge if cart not empty
       return this.subtotal > 0 ? 80 : 0
     },
-    // Removed GST charges
     get cgstAmount() {
-      return 0;
+      return 0
     },
     get sgstAmount() {
-      return 0;
+      return 0
     },
     get totalGST() {
-      return 0;
+      return 0
     },
     get trialFee() {
       return state.trialFee || 0
     },
     get total() {
-      return this.subtotal - this.discountAmount + this.deliveryFee + this.trialFee
+      return this.subtotalAfterDiscount + this.deliveryFee + this.trialFee
     }
   }
 
-  // Cart actions
   const addToCart = (product, options = {}) => {
     const legacyOptions = typeof options === 'object' && options !== null && !Array.isArray(options)
       ? options
@@ -285,62 +341,75 @@ export function CartProvider({ children }) {
     dispatch({ type: CART_ACTIONS.TOGGLE_DRAWER, payload: isOpen })
   }
 
-  const applyPromoCode = (code) => {
-    // Simple promo code logic (you can enhance this)
-    const promoCodes = {
-      'WELCOME20': 20,
-      'SAVE10': 10,
-      'FIRST15': 15
+  const applyPromoCode = async (code) => {
+    const normalizedCode = String(code || '').trim().toUpperCase()
+    if (!normalizedCode) {
+      return { success: false, error: 'Enter a valid coupon code' }
     }
-    
-    const discountPercent = promoCodes[code.toUpperCase()]
-    if (discountPercent) {
-      dispatch({
-        type: CART_ACTIONS.APPLY_PROMO,
-        payload: { code: code.toUpperCase(), discountPercent }
+
+    if (currentSubtotal <= 0) {
+      return { success: false, error: 'Add items to cart before applying coupon' }
+    }
+
+    setPromoLoading(true)
+    setPromoError('')
+    try {
+      const response = await apiPost('/voucher/apply', {
+        code: normalizedCode,
+        cartTotal: currentSubtotal
       })
-      return { success: true, discount: discountPercent }
+
+      const voucher = normalizeVoucherResponse(response, normalizedCode, currentSubtotal)
+      dispatch({ type: CART_ACTIONS.APPLY_PROMO, payload: voucher })
+      return {
+        success: true,
+        code: voucher.code,
+        discount: voucher.discountAmount,
+        message: 'Coupon applied successfully'
+      }
+    } catch (e) {
+      const message = e?.error || e?.message || 'Failed to apply coupon'
+      setPromoError(message)
+      return { success: false, error: message }
+    } finally {
+      setPromoLoading(false)
     }
-    
-    return { success: false, error: 'Invalid promo code' }
   }
 
   const removePromoCode = () => {
     dispatch({ type: CART_ACTIONS.REMOVE_PROMO })
+    setPromoError('')
   }
 
   const isInCart = (productId, size = 'M', color = 'default') => {
     return state.items.some(
-      item => item.id === productId && 
-               item.selectedSize === size && 
+      item => item.id === productId &&
+               item.selectedSize === size &&
                item.selectedColor === color
     )
   }
 
   const getCartItemQuantity = (productId, size = 'M', color = 'default') => {
     const item = state.items.find(
-      item => item.id === productId && 
-               item.selectedSize === size && 
+      item => item.id === productId &&
+               item.selectedSize === size &&
                item.selectedColor === color
     )
     return item ? item.quantity : 0
   }
 
   const value = {
-    // State
     items: state.items,
     isDrawerOpen: state.isDrawerOpen,
     promoCode: state.promoCode,
-    discount: state.discount,
+    voucherDetails: state.voucher,
+    promoLoading,
+    promoError,
     isTrialCheckout: state.isTrialCheckout,
     trialFee: state.trialFee,
     trialItems: state.trialItems,
     purchasedItemId: state.purchasedItemId,
-    
-    // Computed values
     cartTotals,
-    
-    // Actions
     addToCart,
     removeFromCart,
     updateQuantity,
@@ -360,7 +429,6 @@ export function CartProvider({ children }) {
   )
 }
 
-// Custom hook to use cart context
 export function useCart() {
   const context = useContext(CartContext)
   if (!context) {

@@ -12,6 +12,9 @@ export default function Cart() {
     updateQuantity,
     removeFromCart,
     promoCode,
+    voucherDetails,
+    promoLoading,
+    promoError,
     applyPromoCode,
     removePromoCode,
     isTrialCheckout,
@@ -68,14 +71,14 @@ export default function Cart() {
   }, [items])
 
   /* ---------------- PROMO ---------------- */
-  const handlePromoSubmit = (e) => {
+  const handlePromoSubmit = async (e) => {
     e.preventDefault()
     if (!promoInput.trim()) return
 
-    const result = applyPromoCode(promoInput.trim())
+    const result = await applyPromoCode(promoInput.trim())
     setPromoMessage(
       result.success
-        ? `Promo code applied! ${result.discount}% discount`
+        ? `Coupon ${result.code} applied!`
         : result.error
     )
 
@@ -227,7 +230,7 @@ export default function Cart() {
 
               {promoCode && (
                 <div className="flex justify-between text-red-600">
-                  <span>Discount ({promoCode})</span>
+                  <span>Coupon ({promoCode})</span>
                   <span>-₹{cartTotals.discountAmount.toFixed(2)}</span>
                 </div>
               )}
@@ -253,6 +256,11 @@ export default function Cart() {
                 <span>Total</span>
                 <span>₹{cartTotals.total.toFixed(2)}</span>
               </div>
+              {voucherDetails?.originalSubtotal > 0 && cartTotals.discountAmount > 0 && (
+                <p className="text-xs text-gray-500">
+                  Coupon applies on subtotal only. Delivery fee remains separate.
+                </p>
+              )}
             </div>
 
             {/* PROMO */}
@@ -277,8 +285,11 @@ export default function Cart() {
                     placeholder="Add promo"
                     className="flex-1 border rounded-lg px-3 py-2"
                   />
-                  <button className="bg-black text-white px-4 rounded-lg">
-                    Apply
+                  <button
+                    disabled={promoLoading || !promoInput.trim()}
+                    className="bg-black text-white px-4 rounded-lg disabled:opacity-50"
+                  >
+                    {promoLoading ? '...' : 'Apply'}
                   </button>
                 </form>
               )}
@@ -286,6 +297,11 @@ export default function Cart() {
               {promoMessage && (
                 <p className="mt-2 text-sm text-green-600">
                   {promoMessage}
+                </p>
+              )}
+              {promoError && !promoMessage && (
+                <p className="mt-2 text-sm text-red-600">
+                  {promoError}
                 </p>
               )}
             </div>

@@ -189,8 +189,8 @@ export default function Support() {
   return (
     <section className="support-page min-h-screen pt-24 pb-16">
       <div className="relative z-10 mx-auto max-w-6xl px-6">
-        <div className="flex flex-col lg:flex-row gap-10">
-          <div className="flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <div className="support-column">
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
               <Sparkles className="h-4 w-4" />
               Always-on Support
@@ -213,7 +213,7 @@ export default function Support() {
               ))}
             </div>
 
-            <div className="mt-8 rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-sm">
+            <div className="support-panel mt-8 rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <Headphones className="h-5 w-5 text-slate-700" />
                 <h3 className="support-font text-lg font-semibold text-slate-900">{meta.contactTitle}</h3>
@@ -222,38 +222,50 @@ export default function Support() {
 
               <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input
-                    className="input-soft"
-                    placeholder="Your name"
-                    value={ticketForm.name}
-                    onChange={(event) => setTicketForm(prev => ({ ...prev, name: event.target.value }))}
-                    required
-                  />
-                  <input
-                    className="input-soft"
-                    type="email"
-                    placeholder="Email"
-                    value={ticketForm.email}
-                    onChange={(event) => setTicketForm(prev => ({ ...prev, email: event.target.value }))}
-                    required
-                  />
+                  <label className="floating-field">
+                    <input
+                      className="floating-input peer"
+                      placeholder=" "
+                      value={ticketForm.name}
+                      onChange={(event) => setTicketForm(prev => ({ ...prev, name: event.target.value }))}
+                      required
+                    />
+                    <span className="floating-label">Your name</span>
+                  </label>
+                  <label className="floating-field">
+                    <input
+                      className="floating-input peer"
+                      type="email"
+                      placeholder=" "
+                      value={ticketForm.email}
+                      onChange={(event) => setTicketForm(prev => ({ ...prev, email: event.target.value }))}
+                      required
+                    />
+                    <span className="floating-label">Email</span>
+                  </label>
                 </div>
-                <input
-                  className="input-soft"
-                  placeholder="Order ID (optional)"
-                  value={ticketForm.orderId}
-                  onChange={(event) => setTicketForm(prev => ({ ...prev, orderId: event.target.value }))}
-                />
-                <textarea
-                  className="input-soft min-h-[120px] rounded-2xl"
-                  placeholder="Tell us what happened"
-                  value={ticketForm.message}
-                  onChange={(event) => setTicketForm(prev => ({ ...prev, message: event.target.value }))}
-                  required
-                />
+                <label className="floating-field">
+                  <input
+                    className="floating-input peer"
+                    placeholder=" "
+                    value={ticketForm.orderId}
+                    onChange={(event) => setTicketForm(prev => ({ ...prev, orderId: event.target.value }))}
+                  />
+                  <span className="floating-label">Order ID (optional)</span>
+                </label>
+                <label className="floating-field floating-field-textarea">
+                  <textarea
+                    className="floating-input floating-textarea peer"
+                    placeholder=" "
+                    value={ticketForm.message}
+                    onChange={(event) => setTicketForm(prev => ({ ...prev, message: event.target.value }))}
+                    required
+                  />
+                  <span className="floating-label">Tell us what happened</span>
+                </label>
 
                 <button
-                  className="btn-primary flex items-center gap-2"
+                  className="support-btn flex items-center gap-2"
                   type="submit"
                   disabled={ticketStatus.state === 'loading'}
                 >
@@ -270,8 +282,8 @@ export default function Support() {
             </div>
           </div>
 
-          <div className="flex-1">
-            <div className="chat-shell rounded-3xl p-6">
+          <div className="support-column">
+            <div className="support-panel chat-shell rounded-3xl p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="support-font text-lg font-semibold text-slate-900">Dripp Assist</p>
@@ -308,12 +320,15 @@ export default function Support() {
               </div>
 
               <div className="mt-5 flex flex-col gap-3">
-                <textarea
-                  className="input-soft min-h-[84px] rounded-2xl"
-                  placeholder={meta.placeholder}
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                />
+                <label className="floating-field floating-field-textarea">
+                  <textarea
+                    className="floating-input floating-textarea peer"
+                    placeholder=" "
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                  />
+                  <span className="floating-label">{meta.placeholder}</span>
+                </label>
                 <div className="flex items-center justify-between">
                   <button
                     className="text-sm text-slate-500 hover:text-slate-700"
@@ -323,7 +338,7 @@ export default function Support() {
                     Clear chat
                   </button>
                   <button
-                    className="btn-primary"
+                    className="support-btn"
                     type="button"
                     onClick={() => handleSend(input)}
                   >

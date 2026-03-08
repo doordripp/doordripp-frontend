@@ -5,6 +5,7 @@ export { default as AdminOrders } from './AdminOrders';
 export { default as AdminUsers } from './AdminUsers';
 export { default as AdminCustomers } from './AdminCustomers';
 export { default as AdminReports } from './AdminReports';
+export { default as AdminVouchers } from './AdminVouchers';
 export { default as AdminDeliveryZones } from './AdminDeliveryZones';
 export { default as AdminWebBanners } from './AdminWebBanners';
 export { default as AdminAppBanners } from './AdminAppBanners';
