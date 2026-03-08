@@ -49,6 +49,7 @@ import {
   AdminUsers, 
   AdminCustomers, 
   AdminReports, 
+  AdminVouchers,
   AdminDeliveryZones, 
   AdminCategories 
 } from './pages/admin'
@@ -221,6 +222,7 @@ function App() {
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="customers" element={<AdminCustomers />} />
                 <Route path="reports" element={<AdminReports />} />
+                <Route path="vouchers" element={<AdminVouchers />} />
                 <Route path="delivery-zones" element={<AdminDeliveryZones />} />
                 <Route path="categories" element={<AdminCategories />} />
               </Route>

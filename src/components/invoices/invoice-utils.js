@@ -236,6 +236,15 @@ export const transformOrderToInvoice = (order) => {
       }
     }),
 
+    isTrial: Boolean(order.isTrial),
+    trialFee: Number(order.trialFee || 0),
+    deliveryFee: Number(order.deliveryFee || 0),
+    deliveryType: order.deliveryType || 'Standard',
+    voucherCode: order.voucher?.code || order.voucherCode || '',
+    voucherDiscount: Number(order.voucherDiscount || order.voucher?.discountAmount || 0),
+    totalBeforeDiscount: Number(order.totalBeforeDiscount || ((order.subtotal || 0) + (order.trialFee || 0) + (order.deliveryFee || 0))),
+    total: order.total != null ? Number(order.total) : null,
+
     paymentMode: order.payment?.method || order.paymentMode || 'Not Specified',
     transactionId: order.payment?.transactionId || order.transactionId || 'N/A',
     paymentStatus: order.payment?.status || order.paymentStatus || 'Pending'
@@ -250,6 +259,12 @@ export const transformInvoiceApiToTemplate = (invoice, items = [], order = null)
 
   const buyer = invoice.buyerAddress || {}
   const shipping = order?.shippingAddress || buyer || {}
+  const deliveryFee = Number(order?.deliveryFee ?? invoice.deliveryFee ?? 0)
+  const trialFee = Number(order?.trialFee ?? invoice.trialFee ?? 0)
+  const voucherCode = order?.voucher?.code || invoice.voucherCode || invoice.voucher?.code || ''
+  const voucherDiscount = Number(order?.voucherDiscount ?? order?.voucher?.discountAmount ?? invoice.voucherDiscount ?? invoice.discountAmount ?? 0)
+  const totalBeforeDiscount = Number(order?.totalBeforeDiscount ?? invoice.totalBeforeDiscount ?? ((order?.subtotal || 0) + trialFee + deliveryFee))
+  const total = order?.total != null ? Number(order.total) : (invoice.totalAmount != null ? Number(invoice.totalAmount) : null)
 
   return {
     invoiceNumber: invoice.invoiceNumber,
@@ -291,6 +306,15 @@ export const transformInvoiceApiToTemplate = (invoice, items = [], order = null)
       sgst: item.sgst || 0,
       totalAmount: item.totalPrice
     })),
+
+    isTrial: Boolean(order?.isTrial),
+    trialFee,
+    deliveryFee,
+    deliveryType: order?.deliveryType || invoice.deliveryType || 'Standard',
+    voucherCode,
+    voucherDiscount,
+    totalBeforeDiscount,
+    total,
 
     paymentMode: invoice.paymentMode || 'Not Specified',
     transactionId: order?.payment?.transactionId || 'N/A',

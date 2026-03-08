@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams, useNavigate } from 'react-router-dom'
 import { apiGet, apiPost } from '../services/apiClient'
 import InvoiceViewer from '../components/invoices/InvoiceViewer'
@@ -80,10 +80,22 @@ export default function OrderConfirmation() {
   if (!order) return <div className="p-8">Order not found.</div>
   const placedAt = order.createdAt ? new Date(order.createdAt) : (order.placedAt ? new Date(order.placedAt) : null)
 
-  const formatCurrency = (v) => {
-    if (v == null) return '₹0.00'
-    try { return `₹${Number(v).toFixed(2)}` } catch { return `₹${v}` }
+  const formatCurrency = (value) => {
+    const amount = Number(value ?? 0)
+    if (Number.isNaN(amount)) return 'INR 0.00'
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2
+    }).format(amount)
   }
+
+  const subtotal = Number(order.subtotal || 0)
+  const deliveryFee = Number(order.deliveryFee || 0)
+  const trialFee = Number(order.trialFee || 0)
+  const voucherDiscount = Number(order.voucherDiscount || order.voucher?.discountAmount || 0)
+  const voucherCode = order.voucher?.code || order.voucherCode || ''
+  const payableTotal = Number(order.total != null ? order.total : Math.max(0, subtotal + deliveryFee + trialFee - voucherDiscount))
 
   const downloadInvoice = async () => {
     try {
@@ -173,12 +185,17 @@ export default function OrderConfirmation() {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Thank you — your order is confirmed</h1>
+              <h1 className="text-2xl font-bold">Thank you - your order is confirmed</h1>
               <p className="text-sm text-gray-600 mt-1">We've received your order and will send updates to your email.</p>
               <div className="mt-3 text-sm text-gray-700">
                 <div>Order ID: <span className="font-mono text-sm">{order._id || order.id}</span></div>
                 {placedAt && <div>Placed on: <span className="text-gray-600">{placedAt.toLocaleString()}</span></div>}
               </div>
+              {voucherDiscount > 0 && (
+                <div className="mt-2 text-sm text-green-700">
+                  Coupon {voucherCode ? <span className="font-semibold">{voucherCode}</span> : 'applied'} - you saved {formatCurrency(voucherDiscount)} on subtotal.
+                </div>
+              )}
             </div>
             <div className="ml-auto text-right">
               <button
@@ -195,9 +212,7 @@ export default function OrderConfirmation() {
               {order.isTrial && order.trialItems && order.trialItems.length > 0 && (
                 <div className="bg-black/5 p-4 rounded-lg mb-6 border border-black/10">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold flex items-center gap-2">
-                       <span className="text-lg">📦</span> Trial Room Package
-                    </h3>
+                    <h3 className="font-bold">Trial Room Package</h3>
                     <span className="text-[10px] font-bold bg-black text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">
                       Trial & Buy Mode
                     </span>
@@ -220,7 +235,7 @@ export default function OrderConfirmation() {
                           <img src={ti.image} alt={ti.name} className="w-full h-24 object-cover rounded-lg mb-2" />
                           <div className="text-[10px] font-bold truncate mb-1">{ti.name}</div>
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black">₹{ti.price}</span>
+                            <span className="text-[10px] font-black">{formatCurrency(ti.price)}</span>
                             <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${isPurchased ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                               {isPurchased ? 'Main Item' : 'Trial Item'}
                             </span>
@@ -253,7 +268,7 @@ export default function OrderConfirmation() {
                         <div className="flex-1">
                           <div className="font-medium">{it.name || prod.name}</div>
                           {prod.seller && <div className="text-xs text-gray-500">Sold by {prod.seller}</div>}
-                          <div className="text-sm text-gray-600 mt-1">Qty: {it.quantity} • {formatCurrency(it.price)}</div>
+                          <div className="text-sm text-gray-600 mt-1">Qty: {it.quantity} x {formatCurrency(it.price)}</div>
                         </div>
                         <div className="text-right font-semibold">{formatCurrency((it.price || 0) * (it.quantity || 1))}</div>
                       </div>
@@ -277,7 +292,7 @@ export default function OrderConfirmation() {
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>{formatCurrency(order.subtotal)}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
                   
                   {order.trialFee > 0 && (
@@ -286,19 +301,25 @@ export default function OrderConfirmation() {
                         <span>Trial Service Fee</span>
                         <span className="text-[10px] text-gray-400">Doorstep trial & returns</span>
                       </div>
-                      <span>{formatCurrency(order.trialFee)}</span>
+                      <span>{formatCurrency(trialFee)}</span>
                     </div>
                   )}
 
                   <div className="flex justify-between">
                     <span>Shipping ({order.deliveryType || 'Standard'})</span>
-                    <span className="text-green-600 font-medium">{formatCurrency(order.deliveryFee || 0)}</span>
+                    <span className="text-green-600 font-medium">{formatCurrency(deliveryFee)}</span>
                   </div>
 
 
+                  {voucherDiscount > 0 && (
+                    <div className="flex justify-between text-green-700">
+                      <span>Coupon {voucherCode ? `(${voucherCode})` : ''}</span>
+                      <span>-{formatCurrency(voucherDiscount)}</span>
+                    </div>
+                  )}
                   <div className="pt-3 border-t border-gray-100 flex justify-between font-black text-gray-900 text-lg">
-                    <span>Grand Total</span>
-                    <span>{formatCurrency(order.total)}</span>
+                    <span>{voucherDiscount > 0 ? 'Payable Total' : 'Grand Total'}</span>
+                    <span>{formatCurrency(payableTotal)}</span>
                   </div>
                 </div>
 
@@ -317,7 +338,7 @@ export default function OrderConfirmation() {
                   <button onClick={() => window.location.assign('/')} className="w-full px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">Continue shopping</button>
                   
                   <Link to={`/order/${order._id || order.id}/track`} className="w-full text-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition font-semibold">
-                    📍 Track Order
+                    Track Order
                   </Link>
                   
                   <button onClick={downloadInvoice} className="w-full px-4 py-2 bg-white border rounded-md hover:bg-gray-50 transition">
@@ -372,3 +393,8 @@ export default function OrderConfirmation() {
 
 // Return modal markup appended outside main component return to avoid hooks issues
 // (we render it conditionally within the component's JSX using state)
+
+
+
+
+

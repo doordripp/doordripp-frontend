@@ -40,6 +40,11 @@ const adminAPI = {
   // Reports (best sellers)
   getBestSellers: async (q = {}) => (await api.get("/admin/reports/best-sellers", { params: q })).data,
 
+  // Vouchers / Coupons
+  getVouchers: async (q = {}) => (await api.get("/admin/vouchers", { params: q })).data,
+  createVoucher: async (data) => (await api.post("/admin/vouchers", data)).data,
+  toggleVoucherStatus: async (id) => (await api.patch(`/admin/vouchers/${id}/toggle`)).data,
+
   // Delivery Zones
   getDeliveryZones: async (q = {}) => (await api.get("/admin/delivery-zones", { params: q })).data,
   getDeliveryZone: async (id) => (await api.get(`/admin/delivery-zones/${id}`)).data,
