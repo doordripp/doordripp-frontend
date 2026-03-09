@@ -25,6 +25,7 @@ const getDeliveryStatus = (order) => {
 
 export default function AdminOrders() {
   const { user } = useAuth()
+  const currentUserId = String(user?._id || user?.id || '')
   const isDeliveryPartner = hasDeliveryPartnerAccess(user)
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -74,6 +75,7 @@ export default function AdminOrders() {
           voucherDiscount: o.voucherDiscount || 0,
           voucher: o.voucher || null,
           status: o.status || 'pending',
+          assignedDeliveryPartner: o.assignedDeliveryPartner,
           deliveryStatus: o.deliveryStatus || LEGACY_TO_DELIVERY_STATUS[o.status] || 'Order Placed',
           statusHistory: o.statusHistory || [],
           isTrial: o.isTrial || false,
@@ -239,6 +241,7 @@ export default function AdminOrders() {
           <select
             value={isDeliveryPartner ? getDeliveryStatus(order) : order.status}
             onChange={(e) => handleStatusChange(order.id, e.target.value)}
+            disabled={isDeliveryPartner && String(order.assignedDeliveryPartner || order.deliveryPartner?.id || order.deliveryPartner?.riderId || '') !== currentUserId}
             className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
           >
             {isDeliveryPartner ? (
@@ -284,6 +287,13 @@ export default function AdminOrders() {
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       if (isDeliveryPartner) {
+        const targetOrder = orders.find((o) => o.id === orderId)
+        const assignedTo = String(targetOrder?.assignedDeliveryPartner || targetOrder?.deliveryPartner?.id || targetOrder?.deliveryPartner?.riderId || '')
+        const isMine = assignedTo && assignedTo === currentUserId
+        if (!isMine) {
+          alert('Please accept this delivery first, or this order is assigned to another delivery partner.')
+          return
+        }
         await apiPatch(`/delivery-partner/orders/${orderId}/status`, { status: newStatus })
       } else {
         await apiPut(`/admin/orders/${orderId}/status`, { status: newStatus })
@@ -335,6 +345,7 @@ export default function AdminOrders() {
         voucherDiscount: o.voucherDiscount || 0,
         voucher: o.voucher || null,
         status: o.status || 'pending',
+        assignedDeliveryPartner: o.assignedDeliveryPartner,
         deliveryStatus: o.deliveryStatus || LEGACY_TO_DELIVERY_STATUS[o.status] || 'Order Placed',
         statusHistory: o.statusHistory || [],
         isTrial: o.isTrial || false,
@@ -592,7 +603,7 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
           </div>
 
           {/* Accept Delivery Button (for delivery partners) */}
-          {isDeliveryPartner && !order.deliveryPartner?.riderId && ['pending', 'confirmed', 'packed'].includes(order.status) && (
+          {isDeliveryPartner && !(order.deliveryPartner?.id || order.deliveryPartner?.riderId) && ['pending', 'confirmed', 'packed'].includes(order.status) && (
             <div className="md:col-span-2">
               <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-6">
                 <div className="flex items-center justify-between">
@@ -625,7 +636,7 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
           )}
 
           {/* Delivery Partner Info & Tracking */}
-          {order.deliveryPartner?.riderId && (
+          {(order.deliveryPartner?.id || order.deliveryPartner?.riderId) && (
             <div className="md:col-span-2">
               <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
                 <div className="flex items-start justify-between mb-3">
