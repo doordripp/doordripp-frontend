@@ -38,6 +38,12 @@ export default function AdminSidebar() {
             <Item to="/admin/vouchers">Coupons</Item>
             <Item to="/admin/delivery-zones">Delivery Areas</Item>
             <Item to="/admin/categories">Categories</Item>
+
+            <div className="px-4 py-2 mt-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Content Management
+            </div>
+            <Item to="/admin/banners-web">Web Banners</Item>
+            <Item to="/admin/banners-app">App Banners</Item>
           </>
         )}
       </nav>

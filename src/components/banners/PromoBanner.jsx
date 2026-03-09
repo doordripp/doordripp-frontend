@@ -24,18 +24,18 @@ export default function PromoBanner() {
         // Fetch ALL banners first, then filter strictly on frontend
         const response = await api.get('/content/banners?activeOnly=true')
         const allBanners = response.data?.banners || []
-        
+
         // STRICT filtering: only show banners that explicitly have platform='website'
-        const websiteBanners = allBanners.filter(b => 
-          b.isActive && 
+        const websiteBanners = allBanners.filter(b =>
+          b.isActive &&
           b.platform === 'website' &&
           b.platform !== undefined &&
           b.platform !== null
         )
-        
+
         console.log('All banners:', allBanners)
         console.log('Website banners after filtering:', websiteBanners)
-        
+
         setBanners(websiteBanners)
       } catch (error) {
         console.error('Failed to fetch banners:', error)
@@ -89,21 +89,13 @@ export default function PromoBanner() {
       <div className="bg-white rounded-3xl shadow-2xl border-4 border-gray-300 overflow-hidden group">
         {/* Banner Image with Link */}
         <div className="relative aspect-video">
-          {currentBanner.link && currentBanner.link !== '#' ? (
-            <Link to={currentBanner.link} className="block h-full">
-              <img
-                src={currentBanner.imageUrl}
-                alt={currentBanner.title}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </Link>
-          ) : (
+          <Link to={currentBanner.link || '/products'} className="block h-full">
             <img
               src={currentBanner.imageUrl}
               alt={currentBanner.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
             />
-          )}
+          </Link>
 
           {/* Navigation Buttons - Only show if multiple banners */}
           {banners.length > 1 && (
@@ -130,11 +122,10 @@ export default function PromoBanner() {
                   <button
                     key={index}
                     onClick={() => setCurrentIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index === currentIndex
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentIndex
                         ? 'bg-white w-6'
                         : 'bg-white/60 hover:bg-white/80'
-                    }`}
+                      }`}
                     aria-label={`Go to banner ${index + 1}`}
                   />
                 ))}

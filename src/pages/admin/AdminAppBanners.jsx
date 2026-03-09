@@ -11,7 +11,7 @@ export default function AdminAppBanners() {
   const [newBanner, setNewBanner] = useState({
     title: '',
     imageUrl: '',
-    link: '#',
+    link: '/products',
     type: 'promo',
     platform: 'app',
     order: 0
@@ -52,7 +52,7 @@ export default function AdminAppBanners() {
       // Force platform to be 'app'
       await adminAPI.createBanner({ ...newBanner, platform: 'app' });
       setShowAddModal(false);
-      setNewBanner({ title: '', imageUrl: '', link: '#', type: 'promo', platform: 'app', order: 0 });
+      setNewBanner({ title: '', imageUrl: '', link: '/products', type: 'promo', platform: 'app', order: 0 });
       fetchBanners();
     } catch (err) {
       console.error('Save error:', err);
@@ -87,9 +87,9 @@ export default function AdminAppBanners() {
       accessor: 'imageUrl',
       render: (banner) => (
         <div className="flex items-center space-x-3">
-          <img 
-            src={banner.imageUrl} 
-            alt={banner.title} 
+          <img
+            src={banner.imageUrl}
+            alt={banner.title}
             className="w-20 h-20 object-cover rounded-lg border shadow-sm aspect-square"
           />
           <div>
@@ -104,20 +104,14 @@ export default function AdminAppBanners() {
         </div>
       )
     },
-    {
-      header: 'Link',
-      accessor: 'link',
-      render: (banner) => (
-        <span className="text-sm text-gray-700">{banner.link}</span>
-      )
-    },
+
     {
       header: 'Actions',
       accessor: '_id',
       render: (banner) => (
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => handleDelete(banner._id)} 
+          <button
+            onClick={() => handleDelete(banner._id)}
             className="text-red-600 hover:text-red-900"
             title="Delete banner"
           >
@@ -130,11 +124,10 @@ export default function AdminAppBanners() {
       header: 'Status',
       accessor: 'isActive',
       render: (banner) => (
-        <button 
+        <button
           onClick={() => toggleStatus(banner._id, banner.isActive)}
-          className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-            banner.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}
+          className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${banner.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}
         >
           {banner.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
           {banner.isActive ? 'Active' : 'Inactive'}
@@ -184,29 +177,16 @@ export default function AdminAppBanners() {
                   Banner Title
                   <span className="text-xs text-gray-500 ml-2">(Will be shown in app)</span>
                 </label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="w-full px-3 py-2 border rounded-lg"
                   placeholder="e.g., Summer Sale 2026"
                   value={newBanner.title}
-                  onChange={(e) => setNewBanner({...newBanner, title: e.target.value})}
+                  onChange={(e) => setNewBanner({ ...newBanner, title: e.target.value })}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  App Redirection Link
-                  <span className="text-xs text-gray-500 ml-2">(Screen/Product to open)</span>
-                </label>
-                <input 
-                  type="text" 
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="/products/men or product_id"
-                  value={newBanner.link}
-                  onChange={(e) => setNewBanner({...newBanner, link: e.target.value})}
-                />
-                <p className="text-xs text-gray-500 mt-1">💡 Use '#' for no action, or product/category path</p>
-              </div>
+
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -214,7 +194,7 @@ export default function AdminAppBanners() {
                 </label>
                 <select
                   value={newBanner.type}
-                  onChange={(e) => setNewBanner({...newBanner, type: e.target.value})}
+                  onChange={(e) => setNewBanner({ ...newBanner, type: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
                 >
                   <option value="promo">Promo Banner</option>
@@ -232,13 +212,13 @@ export default function AdminAppBanners() {
                 <div className="border-2 border-dashed rounded-xl p-4 bg-gray-50">
                   {newBanner.imageUrl ? (
                     <div className="relative group">
-                      <img 
-                        src={newBanner.imageUrl} 
-                        alt="Preview" 
+                      <img
+                        src={newBanner.imageUrl}
+                        alt="Preview"
                         className="w-full h-48 object-cover rounded-lg"
                       />
-                      <button 
-                        onClick={() => setNewBanner({...newBanner, imageUrl: ''})}
+                      <button
+                        onClick={() => setNewBanner({ ...newBanner, imageUrl: '' })}
                         className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -256,13 +236,13 @@ export default function AdminAppBanners() {
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
 
               <div className="flex gap-3 mt-6">
-                <button 
+                <button
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 py-2 border rounded-lg hover:bg-gray-50 font-medium"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleSaveBanner}
                   disabled={saving || !newBanner.imageUrl}
                   className="flex-1 py-2 bg-black text-white rounded-lg hover:bg-gray-800 font-medium disabled:opacity-50"

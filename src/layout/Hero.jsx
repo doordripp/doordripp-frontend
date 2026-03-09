@@ -38,7 +38,7 @@ export default function Hero() {
     const fetchBanners = async () => {
       try {
         setLoading(true)
-        const response = await api.get('/content/banners?activeOnly=true')
+        const response = await api.get('/content/banners?activeOnly=true&platform=website')
         if (response.data.success && response.data.banners.length > 0) {
           setBanners(response.data.banners)
         } else {
@@ -125,11 +125,10 @@ export default function Hero() {
                     <Link
                       key={index}
                       to={banner.link || '/products'}
-                      className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                        index === currentSlide
+                      className={`absolute inset-0 transition-all duration-700 ease-in-out ${index === currentSlide
                           ? 'opacity-100 scale-100 z-10'
                           : 'opacity-0 scale-95 z-0 pointer-events-none'
-                      }`}
+                        }`}
                     >
                       <img
                         src={banner.imageUrl}
@@ -140,14 +139,14 @@ export default function Hero() {
                       />
                     </Link>
                   ))}
-                  
+
                   {/* Loading Placeholder */}
                   {loading && (
                     <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center z-40">
                       <ImageIcon className="w-12 h-12 text-gray-400" />
                     </div>
                   )}
-                  
+
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20 pointer-events-none"></div>
                 </div>
@@ -178,11 +177,10 @@ export default function Hero() {
                     <button
                       key={index}
                       onClick={(e) => { e.preventDefault(); goToSlide(index); }}
-                      className={`transition-all duration-300 rounded-full ${
-                        index === currentSlide
+                      className={`transition-all duration-300 rounded-full ${index === currentSlide
                           ? 'bg-white w-8 h-2'
                           : 'bg-white/60 hover:bg-white/80 w-2 h-2'
-                      }`}
+                        }`}
                       aria-label={`Go to slide ${index + 1}`}
                     />
                   ))}
@@ -192,7 +190,7 @@ export default function Hero() {
 
             {/* Card shadow/border effects */}
             <div className="absolute -inset-1 -z-10 rounded-3xl bg-gradient-to-br from-neutral-200/50 to-neutral-300/30 blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-500"></div>
-            
+
             {/* Subtle accent lines */}
             <div className="absolute -top-3 -left-3 w-20 h-20 border-t-4 border-l-4 border-black/10 rounded-tl-3xl transition-all duration-500 group-hover:w-24 group-hover:h-24 group-hover:border-black/20"></div>
             <div className="absolute -bottom-3 -right-3 w-20 h-20 border-b-4 border-r-4 border-black/10 rounded-br-3xl transition-all duration-500 group-hover:w-24 group-hover:h-24 group-hover:border-black/20"></div>

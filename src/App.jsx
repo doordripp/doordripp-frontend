@@ -42,16 +42,18 @@ import TrialPage from './features/trial/TrialPage'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AuthenticatedRoute from './features/auth/AuthenticatedRoute'
 import AdminLayout from './layout/AdminLayout'
-import { 
-  AdminDashboard, 
-  AdminProducts, 
-  AdminOrders, 
-  AdminUsers, 
-  AdminCustomers, 
-  AdminReports, 
+import {
+  AdminDashboard,
+  AdminProducts,
+  AdminOrders,
+  AdminUsers,
+  AdminCustomers,
+  AdminReports,
   AdminVouchers,
-  AdminDeliveryZones, 
-  AdminCategories 
+  AdminDeliveryZones,
+  AdminCategories,
+  AdminWebBanners,
+  AdminAppBanners
 } from './pages/admin'
 import AddProduct from './features/admin/products/AddProduct'
 import { ROLES } from './utils/roleUtils'
@@ -64,7 +66,7 @@ function WishlistSyncHandler() {
   useEffect(() => {
     // Wait for auth initialization to complete
     if (initializing) return
-    
+
     if (user) {
       // Sync wishlist when user logs in
       syncWishlist()
@@ -115,7 +117,7 @@ function ScrollRestoration() {
     }
 
     // Check if this is a back/forward navigation
-    const isBackOrForward = 
+    const isBackOrForward =
       window.performance?.navigation?.type === 2 || // TYPE_BACK_FORWARD
       window.performance?.getEntriesByType?.('navigation')[0]?.type === 'back_forward'
 
@@ -123,7 +125,7 @@ function ScrollRestoration() {
       // BACK/FORWARD: Restore saved position
       const savedPosition = scrollPositions.current[routeKey]
       isRestoringScroll.current = true
-      
+
       scrollToPosition(savedPosition)
       requestAnimationFrame(() => scrollToPosition(savedPosition))
       setTimeout(() => scrollToPosition(savedPosition), 10)
@@ -164,13 +166,13 @@ function ScrollRestoration() {
     setTimeout(scrollToTop, 50)
     setTimeout(scrollToTop, 100)
     setTimeout(scrollToTop, 200)
-    
+
     // Wait for images to load and scroll to top again
     const images = document.querySelectorAll('img[src]')
     if (images.length > 0) {
       let loadedCount = 0
       const totalImages = Math.min(images.length, 10) // Only check first 10 images
-      
+
       const onImageLoad = () => {
         loadedCount++
         scrollToTop()
@@ -178,7 +180,7 @@ function ScrollRestoration() {
           scrollToTop()
         }
       }
-      
+
       images.forEach((img, index) => {
         if (index >= 10) return // Skip after 10 images
         if (img.complete) {
@@ -189,7 +191,7 @@ function ScrollRestoration() {
         }
       })
     }
-    
+
     // Final safety scroll after all content loads
     setTimeout(scrollToTop, 500)
     setTimeout(scrollToTop, 1000)
@@ -207,81 +209,83 @@ function App() {
             <TrialProvider>
               <ScrollRestoration />
               <WishlistSyncHandler />
-            <Routes>
-              {/* Admin Routes - Separate layout */}
-              <Route path="/admin" element={
-                <RoleBasedRoute requiredRole={[ROLES.ADMIN, 'delivery_partner']}>
-                  <AdminLayout />
-                </RoleBasedRoute>
-              }>
-                <Route index element={<AdminOrders />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="products" element={<AdminProducts />} />
-                <Route path="products/add" element={<AddProduct />} />
-                <Route path="orders" element={<AdminOrders />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="customers" element={<AdminCustomers />} />
-                <Route path="reports" element={<AdminReports />} />
-                <Route path="vouchers" element={<AdminVouchers />} />
-                <Route path="delivery-zones" element={<AdminDeliveryZones />} />
-                <Route path="categories" element={<AdminCategories />} />
-              </Route>
+              <Routes>
+                {/* Admin Routes - Separate layout */}
+                <Route path="/admin" element={
+                  <RoleBasedRoute requiredRole={[ROLES.ADMIN, 'delivery_partner']}>
+                    <AdminLayout />
+                  </RoleBasedRoute>
+                }>
+                  <Route index element={<AdminOrders />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="products" element={<AdminProducts />} />
+                  <Route path="products/add" element={<AddProduct />} />
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="customers" element={<AdminCustomers />} />
+                  <Route path="reports" element={<AdminReports />} />
+                  <Route path="vouchers" element={<AdminVouchers />} />
+                  <Route path="delivery-zones" element={<AdminDeliveryZones />} />
+                  <Route path="categories" element={<AdminCategories />} />
+                  <Route path="banners-web" element={<AdminWebBanners />} />
+                  <Route path="banners-app" element={<AdminAppBanners />} />
+                </Route>
 
-              {/* Main App Routes */}
-              <Route path="/*" element={
-                <div className="min-h-screen w-full flex flex-col overflow-x-hidden">
-                  <Navbar />
-                  <main className="flex-1 w-full px-0 py-0 overflow-x-hidden">
-                    <Routes>
-                      <Route path="/" element={<Home />} />
-                      <Route path="/cart" element={<Cart />} />
-                      <Route path="/products" element={<Products />} />
-                      <Route path="/new-arrivals" element={<NewArrivalsPage />} />
-                      <Route path="/best-sellers" element={<BestSellersPage />} />
-                      <Route path="/category" element={<CategoryPage />} />
-                      <Route path="/product/:id" element={<ProductDetail />} />
-                      <Route path="/trial-room" element={<TrialPage />} />
-                      <Route path="/login" element={<AuthenticatedRoute><Login /></AuthenticatedRoute>} />
-                      <Route path="/signup" element={<AuthenticatedRoute><Signup /></AuthenticatedRoute>} />
-                      <Route path="/verify-email" element={<AuthenticatedRoute><VerifyEmail /></AuthenticatedRoute>} />
-                      <Route path="/forgot-password" element={<AuthenticatedRoute><ForgotPassword /></AuthenticatedRoute>} />
-                      <Route path="/reset-password" element={<AuthenticatedRoute><ResetPassword /></AuthenticatedRoute>} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/checkout" element={<Checkout />} />
-                      <Route path="/orders" element={<Orders />} />
-                      <Route path="/orders/:id" element={<OrderConfirmation />} />
-                      <Route path="/order/:orderId/track" element={<OrderTracking />} />
-                      <Route path="/wishlist" element={<Wishlist />} />
-                      <Route path="/about" element={<About />} />
-                      <Route path="/features" element={<Features />} />
-                      <Route path="/works" element={<Works />} />
-                      <Route path="/career" element={<Career />} />
-                      <Route path="/support" element={<Support />} />
-                      <Route path="/privacy" element={<PrivacyPolicy />} />
-                      <Route path="/terms" element={<TermsAndConditions />} />
-                      <Route path="/delivery" element={<DeliveryDetails />} />
-                    </Routes>
-                  </main>
-                  {/* Global Newsletter Section - Appears on all pages */}
-                  <Newsletter />
-                  {/* Global Footer - Appears on all pages */}
-                  <Footer />
-                  
-                  {/* Global Cart Drawer - Available on all pages */}
-                  <CartDrawer />
-                  
-                  {/* Global Trial Modal - Available on all pages */}
-                  <TrialModal />
-                  <TrialFloatingButton />
-                </div>
-              } />
-            </Routes>
+                {/* Main App Routes */}
+                <Route path="/*" element={
+                  <div className="min-h-screen w-full flex flex-col overflow-x-hidden">
+                    <Navbar />
+                    <main className="flex-1 w-full px-0 py-0 overflow-x-hidden">
+                      <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/cart" element={<Cart />} />
+                        <Route path="/products" element={<Products />} />
+                        <Route path="/new-arrivals" element={<NewArrivalsPage />} />
+                        <Route path="/best-sellers" element={<BestSellersPage />} />
+                        <Route path="/category" element={<CategoryPage />} />
+                        <Route path="/product/:id" element={<ProductDetail />} />
+                        <Route path="/trial-room" element={<TrialPage />} />
+                        <Route path="/login" element={<AuthenticatedRoute><Login /></AuthenticatedRoute>} />
+                        <Route path="/signup" element={<AuthenticatedRoute><Signup /></AuthenticatedRoute>} />
+                        <Route path="/verify-email" element={<AuthenticatedRoute><VerifyEmail /></AuthenticatedRoute>} />
+                        <Route path="/forgot-password" element={<AuthenticatedRoute><ForgotPassword /></AuthenticatedRoute>} />
+                        <Route path="/reset-password" element={<AuthenticatedRoute><ResetPassword /></AuthenticatedRoute>} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/checkout" element={<Checkout />} />
+                        <Route path="/orders" element={<Orders />} />
+                        <Route path="/orders/:id" element={<OrderConfirmation />} />
+                        <Route path="/order/:orderId/track" element={<OrderTracking />} />
+                        <Route path="/wishlist" element={<Wishlist />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/features" element={<Features />} />
+                        <Route path="/works" element={<Works />} />
+                        <Route path="/career" element={<Career />} />
+                        <Route path="/support" element={<Support />} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/terms" element={<TermsAndConditions />} />
+                        <Route path="/delivery" element={<DeliveryDetails />} />
+                      </Routes>
+                    </main>
+                    {/* Global Newsletter Section - Appears on all pages */}
+                    <Newsletter />
+                    {/* Global Footer - Appears on all pages */}
+                    <Footer />
+
+                    {/* Global Cart Drawer - Available on all pages */}
+                    <CartDrawer />
+
+                    {/* Global Trial Modal - Available on all pages */}
+                    <TrialModal />
+                    <TrialFloatingButton />
+                  </div>
+                } />
+              </Routes>
             </TrialProvider>
           </WishlistProvider>
-          </CartProvider>
-        </AdminProvider>
-      </AuthProvider>
-    )
-  }
+        </CartProvider>
+      </AdminProvider>
+    </AuthProvider>
+  )
+}
 
 export default App
