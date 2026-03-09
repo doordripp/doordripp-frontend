@@ -1,5 +1,6 @@
-import { createContext, useContext, useReducer, useEffect, useState } from 'react'
-import { apiPost } from '../services/apiClient'
+import { createContext, useContext, useReducer, useEffect, useState, useRef } from 'react'
+import { apiGet, apiPost } from '../services/apiClient'
+import { useAuth } from './AuthContext'
 
 const CartContext = createContext()
 
@@ -41,8 +42,8 @@ const cartReducer = (state, action) => {
 
       const existingItemIndex = state.items.findIndex(
         item => item.id === product.id &&
-                item.selectedSize === size &&
-                item.selectedColor === color
+          item.selectedSize === size &&
+          item.selectedColor === color
       )
 
       let newItems
@@ -72,15 +73,15 @@ const cartReducer = (state, action) => {
       return {
         ...state,
         items: newItems,
-        isDrawerOpen: true
+        isDrawerOpen: action.payload.silent ? state.isDrawerOpen : true
       }
     }
 
     case CART_ACTIONS.REMOVE_ITEM: {
       const newItems = state.items.filter(
         item => !(item.id === action.payload.id &&
-                 item.selectedSize === action.payload.selectedSize &&
-                 item.selectedColor === action.payload.selectedColor)
+          item.selectedSize === action.payload.selectedSize &&
+          item.selectedColor === action.payload.selectedColor)
       )
 
       return {
@@ -101,8 +102,8 @@ const cartReducer = (state, action) => {
 
       const newItems = state.items.map(item =>
         item.id === id &&
-        item.selectedSize === selectedSize &&
-        item.selectedColor === selectedColor
+          item.selectedSize === selectedSize &&
+          item.selectedColor === selectedColor
           ? { ...item, quantity }
           : item
       )
@@ -187,26 +188,97 @@ export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, initialState)
   const [promoLoading, setPromoLoading] = useState(false)
   const [promoError, setPromoError] = useState('')
+  const { user, initializing: authInitializing } = useAuth()
+  const isSyncingRef = useRef(false)
+  const initialLoadRef = useRef(false)
 
+  // 1. Initial Load from LocalStorage
   useEffect(() => {
     const savedCart = localStorage.getItem('doordripp-cart')
-    if (!savedCart) return
-    try {
-      const parsedCart = JSON.parse(savedCart)
-      dispatch({
-        type: CART_ACTIONS.LOAD_CART,
-        payload: {
-          items: parsedCart.items || [],
-          promoCode: parsedCart.promoCode || null,
-          voucher: parsedCart.voucher || null
-        }
-      })
-    } catch (error) {
-      console.error('Failed to load cart from localStorage:', error)
+    if (savedCart) {
+      try {
+        const parsedCart = JSON.parse(savedCart)
+        dispatch({
+          type: CART_ACTIONS.LOAD_CART,
+          payload: parsedCart
+        })
+      } catch (error) {
+        console.error('Failed to load local cart:', error)
+      }
     }
+    initialLoadRef.current = true
   }, [])
 
+  const prevUserRef = useRef(user)
+
+  // 2. Fetch from Backend on Auth/Mount & Clear on Logout
   useEffect(() => {
+    if (authInitializing) return
+
+    // Logout: User was logged in, now is null
+    if (prevUserRef.current && !user) {
+      dispatch({ type: CART_ACTIONS.CLEAR_CART })
+      localStorage.removeItem('doordripp-cart')
+    }
+
+    prevUserRef.current = user
+
+    if (!user) return
+
+    const syncWithBackend = async () => {
+      try {
+        const backendCart = await apiGet('/cart')
+        if (backendCart && backendCart.items) {
+          const formattedItems = backendCart.items.map(it => ({
+            id: it.product._id,
+            name: it.product.name,
+            image: it.product.image || it.product.images?.[0],
+            price: it.product.price,
+            originalPrice: it.product.originalPrice,
+            discount: it.product.discount,
+            selectedSize: it.size || 'M',
+            selectedColor: it.color || 'default',
+            quantity: it.quantity,
+            category: it.product.category,
+            subcategory: it.product.subcategory
+          }))
+
+          // Merge Strategy: Local + Backend (Backend items win on identical keys)
+          const localItems = state.items
+          const mergedItems = [...formattedItems]
+
+          localItems.forEach(local => {
+            const existsInBackend = formattedItems.some(b =>
+              b.id === local.id &&
+              b.selectedSize === local.selectedSize &&
+              b.selectedColor === local.selectedColor
+            )
+            if (!existsInBackend) {
+              mergedItems.push(local)
+            }
+          })
+
+          dispatch({
+            type: CART_ACTIONS.LOAD_CART,
+            payload: { ...state, items: mergedItems }
+          })
+
+          // Sync back if merged items changed
+          if (mergedItems.length > formattedItems.length) {
+            await apiPost('/cart/sync', { items: mergedItems })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync backend cart:', err)
+      }
+    }
+
+    syncWithBackend()
+  }, [user, authInitializing])
+
+  // 3. Save to LocalStorage on Change
+  useEffect(() => {
+    if (!initialLoadRef.current) return
     localStorage.setItem('doordripp-cart', JSON.stringify({
       items: state.items,
       promoCode: state.promoCode,
@@ -216,7 +288,7 @@ export function CartProvider({ children }) {
 
   const currentSubtotal = calculateSubtotalFromItems(state.items)
 
-  // Keep voucher value synced with cart subtotal changes (security + correctness)
+  // 4. Promo Sync
   useEffect(() => {
     const shouldValidate = !!state.promoCode && currentSubtotal > 0
     if (!shouldValidate) return
@@ -225,80 +297,53 @@ export function CartProvider({ children }) {
     if (Math.abs(storedSubtotal - currentSubtotal) <= 0.009) return
 
     let cancelled = false
-    ;(async () => {
-      setPromoLoading(true)
-      try {
-        const response = await apiPost('/voucher/apply', {
-          code: state.promoCode,
-          cartTotal: currentSubtotal
-        })
-        if (cancelled) return
-        dispatch({
-          type: CART_ACTIONS.APPLY_PROMO,
-          payload: normalizeVoucherResponse(response, state.promoCode, currentSubtotal)
-        })
-        setPromoError('')
-      } catch (e) {
-        if (cancelled) return
-        dispatch({ type: CART_ACTIONS.REMOVE_PROMO })
-        setPromoError(e?.error || e?.message || 'Coupon removed because cart changed or became invalid')
-      } finally {
-        if (!cancelled) setPromoLoading(false)
-      }
-    })()
+      ; (async () => {
+        setPromoLoading(true)
+        try {
+          const response = await apiPost('/voucher/apply', {
+            code: state.promoCode,
+            cartTotal: currentSubtotal
+          })
+          if (cancelled) return
+          dispatch({
+            type: CART_ACTIONS.APPLY_PROMO,
+            payload: normalizeVoucherResponse(response, state.promoCode, currentSubtotal)
+          })
+          setPromoError('')
+        } catch (e) {
+          if (cancelled) return
+          dispatch({ type: CART_ACTIONS.REMOVE_PROMO })
+          setPromoError(e?.error || e?.message || 'Coupon removed because cart changed or became invalid')
+        } finally {
+          if (!cancelled) setPromoLoading(false)
+        }
+      })()
 
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [currentSubtotal, state.promoCode, state.voucher?.originalSubtotal])
 
   const cartTotals = {
-    get totalItems() {
-      return state.items.reduce((total, item) => total + item.quantity, 0)
-    },
-    get subtotal() {
-      return currentSubtotal
-    },
+    get totalItems() { return state.items.reduce((total, item) => total + item.quantity, 0) },
+    get subtotal() { return currentSubtotal },
     get discountAmount() {
       const discount = Number(state.voucher?.discountAmount || 0)
       if (!Number.isFinite(discount) || discount <= 0) return 0
       return Math.min(discount, this.subtotal)
     },
-    get subtotalAfterDiscount() {
-      return Math.max(this.subtotal - this.discountAmount, 0)
-    },
-    get deliveryFee() {
-      return this.subtotal > 0 ? 80 : 0
-    },
-    get cgstAmount() {
-      return 0
-    },
-    get sgstAmount() {
-      return 0
-    },
-    get totalGST() {
-      return 0
-    },
-    get trialFee() {
-      return state.trialFee || 0
-    },
-    get total() {
-      return this.subtotalAfterDiscount + this.deliveryFee + this.trialFee
-    }
+    get subtotalAfterDiscount() { return Math.max(this.subtotal - this.discountAmount, 0) },
+    get deliveryFee() { return this.subtotal > 0 ? 80 : 0 },
+    get trialFee() { return state.trialFee || 0 },
+    get total() { return this.subtotalAfterDiscount + this.deliveryFee + this.trialFee }
   }
 
-  const addToCart = (product, options = {}) => {
-    const legacyOptions = typeof options === 'object' && options !== null && !Array.isArray(options)
-      ? options
-      : { size: options, color: arguments[2], quantity: arguments[3] }
-
-    const { size = 'M', color = 'default', quantity = 1 } = legacyOptions
+  const addToCart = async (product, options = {}) => {
+    const { size = 'M', color = 'default', quantity = 1 } = options
     const stock = Number.isFinite(product?.stock) ? product.stock : null
 
     const existingItem = state.items.find(
-      item => item.id === product.id &&
-               item.selectedSize === size &&
-               item.selectedColor === color
+      item => item.id === (product.id || product._id) &&
+        item.selectedSize === size &&
+        item.selectedColor === color
     )
     const existingQty = existingItem ? existingItem.quantity : 0
     if (stock !== null && (stock <= 0 || existingQty + quantity > stock)) {
@@ -307,30 +352,62 @@ export function CartProvider({ children }) {
 
     dispatch({
       type: CART_ACTIONS.ADD_ITEM,
-      payload: { product, size, color, quantity }
+      payload: { product: { ...product, id: product.id || product._id }, size, color, quantity }
     })
+
+    if (user) {
+      try {
+        await apiPost('/cart/add', { productId: product.id || product._id, quantity, size, color })
+      } catch (err) {
+        console.error('Failed to sync add to backend:', err)
+      }
+    }
 
     return { success: true }
   }
 
-  const removeFromCart = (id, selectedSize, selectedColor) => {
+  const removeFromCart = async (id, selectedSize, selectedColor) => {
     dispatch({
       type: CART_ACTIONS.REMOVE_ITEM,
       payload: { id, selectedSize, selectedColor }
     })
+
+    if (user) {
+      try {
+        await apiPost('/cart/remove', { productId: id, size: selectedSize, color: selectedColor })
+      } catch (err) {
+        console.error('Failed to sync remove to backend:', err)
+      }
+    }
   }
 
-  const updateQuantity = (id, selectedSize, selectedColor, quantity) => {
+  const updateQuantity = async (id, selectedSize, selectedColor, quantity) => {
     dispatch({
       type: CART_ACTIONS.UPDATE_QUANTITY,
       payload: { id, selectedSize, selectedColor, quantity }
     })
+
+    if (user) {
+      try {
+        await apiPost('/cart/update-quantity', { productId: id, quantity, size: selectedSize, color: selectedColor })
+      } catch (err) {
+        console.error('Failed to sync update quantity to backend:', err)
+      }
+    }
   }
 
-  const clearCart = () => {
+  const clearCart = async () => {
     dispatch({ type: CART_ACTIONS.CLEAR_CART })
     dispatch({ type: CART_ACTIONS.SET_TRIAL_MODE, payload: { isTrial: false, trialFee: 0 } })
     localStorage.removeItem('doordripp_delivery_type')
+
+    if (user) {
+      try {
+        await apiPost('/cart/clear')
+      } catch (err) {
+        console.error('Failed to clear backend cart:', err)
+      }
+    }
   }
 
   const setTrialMode = (data) => {
@@ -343,30 +420,16 @@ export function CartProvider({ children }) {
 
   const applyPromoCode = async (code) => {
     const normalizedCode = String(code || '').trim().toUpperCase()
-    if (!normalizedCode) {
-      return { success: false, error: 'Enter a valid coupon code' }
-    }
-
-    if (currentSubtotal <= 0) {
-      return { success: false, error: 'Add items to cart before applying coupon' }
-    }
+    if (!normalizedCode) return { success: false, error: 'Enter a valid coupon code' }
+    if (currentSubtotal <= 0) return { success: false, error: 'Add items to cart before applying coupon' }
 
     setPromoLoading(true)
     setPromoError('')
     try {
-      const response = await apiPost('/voucher/apply', {
-        code: normalizedCode,
-        cartTotal: currentSubtotal
-      })
-
+      const response = await apiPost('/voucher/apply', { code: normalizedCode, cartTotal: currentSubtotal })
       const voucher = normalizeVoucherResponse(response, normalizedCode, currentSubtotal)
       dispatch({ type: CART_ACTIONS.APPLY_PROMO, payload: voucher })
-      return {
-        success: true,
-        code: voucher.code,
-        discount: voucher.discountAmount,
-        message: 'Coupon applied successfully'
-      }
+      return { success: true, code: voucher.code, discount: voucher.discountAmount, message: 'Coupon applied successfully' }
     } catch (e) {
       const message = e?.error || e?.message || 'Failed to apply coupon'
       setPromoError(message)
@@ -384,16 +447,16 @@ export function CartProvider({ children }) {
   const isInCart = (productId, size = 'M', color = 'default') => {
     return state.items.some(
       item => item.id === productId &&
-               item.selectedSize === size &&
-               item.selectedColor === color
+        item.selectedSize === size &&
+        item.selectedColor === color
     )
   }
 
   const getCartItemQuantity = (productId, size = 'M', color = 'default') => {
     const item = state.items.find(
       item => item.id === productId &&
-               item.selectedSize === size &&
-               item.selectedColor === color
+        item.selectedSize === size &&
+        item.selectedColor === color
     )
     return item ? item.quantity : 0
   }
@@ -431,9 +494,7 @@ export function CartProvider({ children }) {
 
 export function useCart() {
   const context = useContext(CartContext)
-  if (!context) {
-    throw new Error('useCart must be used within a CartProvider')
-  }
+  if (!context) throw new Error('useCart must be used within a CartProvider')
   return context
 }
 
