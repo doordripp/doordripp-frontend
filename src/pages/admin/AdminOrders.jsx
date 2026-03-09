@@ -2,9 +2,26 @@
 import { Package, Search, Filter, Eye, Truck, CheckCircle, X, MapPin, ExternalLink } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
-import { apiGet, apiPut, apiPost } from '../../services/apiClient'
+import { apiGet, apiPut, apiPost, apiPatch } from '../../services/apiClient'
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
+
+const DELIVERY_STATUS_FLOW = ['Order Placed', 'Accepted', 'Picked Up', 'Out For Delivery', 'Delivered']
+const LEGACY_TO_DELIVERY_STATUS = {
+  pending: 'Order Placed',
+  confirmed: 'Order Placed',
+  packed: 'Accepted',
+  processing: 'Picked Up',
+  shipped: 'Out For Delivery',
+  delivered: 'Delivered'
+}
+
+const getDeliveryStatus = (order) => {
+  if (order?.deliveryStatus && DELIVERY_STATUS_FLOW.includes(order.deliveryStatus)) {
+    return order.deliveryStatus
+  }
+  return LEGACY_TO_DELIVERY_STATUS[order?.status] || 'Order Placed'
+}
 
 export default function AdminOrders() {
   const { user } = useAuth()
@@ -22,22 +39,31 @@ export default function AdminOrders() {
     return parts.join(', ')
   }
 
-  const statusOptions = [
-    { value: 'all', label: 'All Orders' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'confirmed', label: 'Confirmed' },
-    { value: 'packed', label: 'Packed' },
-    { value: 'processing', label: 'Processing' },
-    { value: 'shipped', label: 'Shipped' },
-    { value: 'delivered', label: 'Delivered' },
-    ...(isDeliveryPartner ? [] : [{ value: 'cancelled', label: 'Cancelled' }])
-  ]
+  const statusOptions = isDeliveryPartner
+    ? [
+        { value: 'all', label: 'All Orders' },
+        { value: 'Order Placed', label: 'Order Placed' },
+        { value: 'Accepted', label: 'Accepted' },
+        { value: 'Picked Up', label: 'Picked Up' },
+        { value: 'Out For Delivery', label: 'Out For Delivery' },
+        { value: 'Delivered', label: 'Delivered' }
+      ]
+    : [
+        { value: 'all', label: 'All Orders' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'confirmed', label: 'Confirmed' },
+        { value: 'packed', label: 'Packed' },
+        { value: 'processing', label: 'Processing' },
+        { value: 'shipped', label: 'Shipped' },
+        { value: 'delivered', label: 'Delivered' },
+        { value: 'cancelled', label: 'Cancelled' }
+      ]
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
-        const query = statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : ''
+        const query = !isDeliveryPartner && statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : ''
         const res = await apiGet(`/admin/orders${query}`)
         const mapped = (res.orders || []).map(o => ({
           id: o.id || o._id,
@@ -48,6 +74,8 @@ export default function AdminOrders() {
           voucherDiscount: o.voucherDiscount || 0,
           voucher: o.voucher || null,
           status: o.status || 'pending',
+          deliveryStatus: o.deliveryStatus || LEGACY_TO_DELIVERY_STATUS[o.status] || 'Order Placed',
+          statusHistory: o.statusHistory || [],
           isTrial: o.isTrial || false,
           trialItems: o.trialItems || [],
           trialFee: o.trialFee || 0,
@@ -66,7 +94,7 @@ export default function AdminOrders() {
       }
     }
     load()
-  }, [statusFilter])
+  }, [statusFilter, isDeliveryPartner])
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -89,6 +117,23 @@ export default function AdminOrders() {
     }
   }
 
+  const getDeliveryStatusColor = (status) => {
+    switch (status) {
+      case 'Order Placed':
+        return 'bg-slate-100 text-slate-800'
+      case 'Accepted':
+        return 'bg-blue-100 text-blue-800'
+      case 'Picked Up':
+        return 'bg-violet-100 text-violet-800'
+      case 'Out For Delivery':
+        return 'bg-orange-100 text-orange-800'
+      case 'Delivered':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending':
@@ -105,6 +150,23 @@ export default function AdminOrders() {
         return <CheckCircle size={14} />
       case 'cancelled':
         return <X size={14} />
+      default:
+        return <Package size={14} />
+    }
+  }
+
+  const getDeliveryStatusIcon = (status) => {
+    switch (status) {
+      case 'Order Placed':
+        return <Package size={14} />
+      case 'Accepted':
+        return <CheckCircle size={14} />
+      case 'Picked Up':
+        return <Package size={14} />
+      case 'Out For Delivery':
+        return <Truck size={14} />
+      case 'Delivered':
+        return <CheckCircle size={14} />
       default:
         return <Package size={14} />
     }
@@ -150,12 +212,17 @@ export default function AdminOrders() {
     {
       header: 'Status',
       accessor: 'status',
-      render: (order) => (
-        <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-          {getStatusIcon(order.status)}
-          <span className="capitalize">{order.status}</span>
+      render: (order) => {
+        const currentStatus = isDeliveryPartner ? getDeliveryStatus(order) : order.status
+        const colorClass = isDeliveryPartner ? getDeliveryStatusColor(currentStatus) : getStatusColor(currentStatus)
+        const statusIcon = isDeliveryPartner ? getDeliveryStatusIcon(currentStatus) : getStatusIcon(currentStatus)
+        return (
+        <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
+          {statusIcon}
+          <span>{currentStatus}</span>
         </span>
       )
+      }
     },
     {
       header: 'Actions',
@@ -170,16 +237,17 @@ export default function AdminOrders() {
             <Eye size={16} />
           </button>
           <select
-            value={order.status}
+            value={isDeliveryPartner ? getDeliveryStatus(order) : order.status}
             onChange={(e) => handleStatusChange(order.id, e.target.value)}
             className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
           >
             {isDeliveryPartner ? (
               <>
-                <option value="packed">Packed</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
+                <option value="Order Placed">Order Placed</option>
+                <option value="Accepted">Accepted</option>
+                <option value="Picked Up">Picked Up</option>
+                <option value="Out For Delivery">Out For Delivery</option>
+                <option value="Delivered">Delivered</option>
               </>
             ) : (
               <>
@@ -202,7 +270,8 @@ export default function AdminOrders() {
       order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer.email.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
+    const currentStatus = isDeliveryPartner ? getDeliveryStatus(order) : order.status
+    const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter
 
     return matchesSearch && matchesStatus
   })
@@ -213,15 +282,36 @@ export default function AdminOrders() {
   }
 
   const handleStatusChange = async (orderId, newStatus) => {
-    // Admin backend allows: pending, processing, shipped, delivered, cancelled
     try {
-      await apiPut(`/admin/orders/${orderId}/status`, { status: newStatus })
+      if (isDeliveryPartner) {
+        await apiPatch(`/delivery-partner/orders/${orderId}/status`, { status: newStatus })
+      } else {
+        await apiPut(`/admin/orders/${orderId}/status`, { status: newStatus })
+      }
       setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
+        order.id === orderId
+          ? {
+              ...order,
+              ...(isDeliveryPartner
+                ? {
+                    deliveryStatus: newStatus,
+                    status: newStatus === 'Delivered' ? 'delivered' : order.status
+                  }
+                : { status: newStatus })
+            }
+          : order
       ))
       // Update selected order if it's open
       if (selectedOrder?.id === orderId) {
-        setSelectedOrder({ ...selectedOrder, status: newStatus })
+        setSelectedOrder(
+          isDeliveryPartner
+            ? {
+                ...selectedOrder,
+                deliveryStatus: newStatus,
+                status: newStatus === 'Delivered' ? 'delivered' : selectedOrder.status
+              }
+            : { ...selectedOrder, status: newStatus }
+        )
       }
     } catch (e) {
       console.error('Failed to update order status:', e)
@@ -234,7 +324,7 @@ export default function AdminOrders() {
       const response = await apiPost(`/admin/orders/${orderId}/accept`, {})
       
       // Refresh orders list
-      const query = statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : ''
+      const query = !isDeliveryPartner && statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : ''
       const res = await apiGet(`/admin/orders${query}`)
       const mapped = (res.orders || []).map(o => ({
         id: o.id || o._id,
@@ -245,6 +335,8 @@ export default function AdminOrders() {
         voucherDiscount: o.voucherDiscount || 0,
         voucher: o.voucher || null,
         status: o.status || 'pending',
+        deliveryStatus: o.deliveryStatus || LEGACY_TO_DELIVERY_STATUS[o.status] || 'Order Placed',
+        statusHistory: o.statusHistory || [],
         isTrial: o.isTrial || false,
         trialItems: o.trialItems || [],
         trialFee: o.trialFee || 0,
@@ -374,6 +466,23 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
     }
   }
 
+  const getDeliveryStatusColor = (status) => {
+    switch (status) {
+      case 'Order Placed':
+        return 'bg-slate-100 text-slate-800'
+      case 'Accepted':
+        return 'bg-blue-100 text-blue-800'
+      case 'Picked Up':
+        return 'bg-violet-100 text-violet-800'
+      case 'Out For Delivery':
+        return 'bg-orange-100 text-orange-800'
+      case 'Delivered':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending':
@@ -392,6 +501,25 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
         return <Package size={14} />
     }
   }
+
+  const getDeliveryStatusIcon = (status) => {
+    switch (status) {
+      case 'Order Placed':
+        return <Package size={14} />
+      case 'Accepted':
+        return <CheckCircle size={14} />
+      case 'Picked Up':
+        return <Package size={14} />
+      case 'Out For Delivery':
+        return <Truck size={14} />
+      case 'Delivered':
+        return <CheckCircle size={14} />
+      default:
+        return <Package size={14} />
+    }
+  }
+
+  const currentStatus = isDeliveryPartner ? getDeliveryStatus(order) : order.status
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -421,12 +549,12 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
             <h3 className="text-lg font-semibold">Order Status</h3>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                  {getStatusIcon(order.status)}
-                  <span className="capitalize">{order.status}</span>
+                <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${isDeliveryPartner ? getDeliveryStatusColor(currentStatus) : getStatusColor(currentStatus)}`}>
+                  {isDeliveryPartner ? getDeliveryStatusIcon(currentStatus) : getStatusIcon(currentStatus)}
+                  <span>{currentStatus}</span>
                 </span>
                 <select
-                  value={order.status}
+                  value={currentStatus}
                   onChange={(e) => {
                     onStatusChange(order.id, e.target.value)
                   }}
@@ -434,10 +562,11 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
                 >
                   {isDeliveryPartner ? (
                     <>
-                      <option value="packed">Packed</option>
-                      <option value="processing">Processing</option>
-                      <option value="shipped">Shipped</option>
-                      <option value="delivered">Delivered</option>
+                      <option value="Order Placed">Order Placed</option>
+                      <option value="Accepted">Accepted</option>
+                      <option value="Picked Up">Picked Up</option>
+                      <option value="Out For Delivery">Out For Delivery</option>
+                      <option value="Delivered">Delivered</option>
                     </>
                   ) : (
                     <>

@@ -27,7 +27,7 @@ import Profile from './pages/Profile'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
 import Orders from './pages/Orders'
-import LiveOrderTracking from './components/tracking/LiveOrderTracking'
+import OrderTracking from './components/tracking/OrderTracking'
 import NewArrivalsPage from './pages/NewArrivals'
 import BestSellersPage from './pages/BestSellers'
 import About from './pages/About'
@@ -250,7 +250,7 @@ function App() {
                       <Route path="/checkout" element={<Checkout />} />
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/orders/:id" element={<OrderConfirmation />} />
-                      <Route path="/order/:orderId/track" element={<LiveOrderTracking />} />
+                      <Route path="/order/:orderId/track" element={<OrderTracking />} />
                       <Route path="/wishlist" element={<Wishlist />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/features" element={<Features />} />

@@ -337,7 +337,7 @@ export default function OrderConfirmation() {
                   {/* Action Buttons */}
                   <button onClick={() => window.location.assign('/')} className="w-full px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">Continue shopping</button>
                   
-                  <Link to={`/order/${order._id || order.id}/track`} className="w-full text-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition font-semibold">
+                  <Link to={`/order/${order._id || order.id}/track`} className="w-full text-center px-4 py-2 bg-white text-gray-900 border rounded-md hover:bg-gray-50 transition font-semibold">
                     Track Order
                   </Link>
                   

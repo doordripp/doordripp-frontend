@@ -64,6 +64,21 @@ export const apiPut = async (path, body) => {
   return data;
 };
 
+export const apiPatch = async (path, body) => {
+  const res = await fetch(buildUrl(path), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    data.status = res.status;
+    throw data;
+  }
+  return data;
+};
+
 export const apiDelete = async (path) => {
   const res = await fetch(buildUrl(path), {
     method: 'DELETE',
@@ -88,7 +103,7 @@ export const apiBlob = async (path) => {
   return await res.blob();
 };
 
-export default { apiGet, apiPost, apiPut, apiDelete, apiBlob };
+export default { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiBlob };
 
 // Health ping helper; returns { ok: boolean, info }
 export const apiHealth = async () => {
