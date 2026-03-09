@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { Plus, RefreshCw, TicketPercent, Power, Search } from 'lucide-react';
 import adminAPI from '../../services/adminAPI';
 import { useAuth } from '../../context/AuthContext';
+import AdminInput from '../../components/ui/AdminInput';
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils';
 
 const initialForm = {
@@ -151,82 +152,93 @@ export default function AdminVouchers() {
           <h2 className="text-lg font-semibold">Add Coupon</h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <input
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <AdminInput
+            label="Voucher Code"
+            id="voucher-code"
             value={form.code}
             onChange={(e) => onInputChange('code', e.target.value.toUpperCase())}
-            placeholder="Code (e.g. SAVE100)"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase"
             required
+            className="uppercase"
           />
 
-          <select
-            value={form.discountType}
-            onChange={(e) => onInputChange('discountType', e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="percentage">Percentage</option>
-            <option value="fixed">Fixed</option>
-          </select>
+          <div className="relative">
+            <select
+              id="discount-type"
+              value={form.discountType}
+              onChange={(e) => onInputChange('discountType', e.target.value)}
+              className="peer block w-full rounded-lg border border-gray-300 bg-transparent px-3 pb-2.5 pt-4 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-0"
+            >
+              <option value="percentage">Percentage</option>
+              <option value="fixed">Fixed</option>
+            </select>
+            <label
+              htmlFor="discount-type"
+              className="absolute left-3 top-2 z-10 origin-[0] -translate-y-4 scale-75 transform cursor-text bg-white px-1 text-sm text-gray-500 duration-300"
+            >
+              Discount Type
+            </label>
+          </div>
 
-          <input
+          <AdminInput
+            label={form.discountType === 'percentage' ? 'Discount %' : 'Discount amount'}
+            id="discount-value"
             type="number"
             min="0"
             step="0.01"
             value={form.discountValue}
             onChange={(e) => onInputChange('discountValue', e.target.value)}
-            placeholder={form.discountType === 'percentage' ? 'Discount %' : 'Discount amount'}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
             required
           />
 
-          <input
+          <AdminInput
+            label="Min order value"
+            id="min-order-value"
             type="number"
             min="0"
             step="0.01"
             value={form.minOrderValue}
             onChange={(e) => onInputChange('minOrderValue', e.target.value)}
-            placeholder="Min order value"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
 
           {form.discountType === 'percentage' && (
-            <input
+            <AdminInput
+              label="Max discount (optional)"
+              id="max-discount"
               type="number"
               min="0"
               step="0.01"
               value={form.maxDiscount}
               onChange={(e) => onInputChange('maxDiscount', e.target.value)}
-              placeholder="Max discount (optional)"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           )}
 
-          <input
+          <AdminInput
+            label="Expiry Date"
+            id="expiry-date"
             type="datetime-local"
             value={form.expiryDate}
             onChange={(e) => onInputChange('expiryDate', e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
 
-          <input
+          <AdminInput
+            label="Usage limit (optional)"
+            id="usage-limit"
             type="number"
             min="1"
             step="1"
             value={form.usageLimit}
             onChange={(e) => onInputChange('usageLimit', e.target.value)}
-            placeholder="Usage limit (optional)"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
 
-          <input
+          <AdminInput
+            label="Per-user limit"
+            id="per-user-limit"
             type="number"
             min="1"
             step="1"
             value={form.perUserLimit}
             onChange={(e) => onInputChange('perUserLimit', e.target.value)}
-            placeholder="Per-user limit"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
         </div>
 
