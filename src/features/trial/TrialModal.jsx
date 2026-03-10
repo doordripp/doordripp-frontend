@@ -11,9 +11,9 @@ export function TrialModal() {
   if (!isModalOpen) return null;
 
   const handleClose = () => toggleTrialModal(false);
-  const goCheckout = () => { 
-    toggleTrialModal(false); 
-    navigate('/trial-room'); 
+  const goCheckout = () => {
+    toggleTrialModal(false);
+    navigate('/trial-room');
     window.scrollTo({ top: 0, behavior: 'instant' });
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
@@ -63,7 +63,11 @@ export function TrialModal() {
               <>
                 <div className="text-center space-y-1">
                   <p className="text-xs text-gray-500">Pick 1 to buy, pay for that + ₹119 service fee</p>
-                  <p className="text-[10px] text-gray-400 italic">Remaining 2 returns are free</p>
+                  <p className="text-[10px] text-gray-400 italic">
+                    {items.length === 3
+                      ? "Trial Room is full"
+                      : `You can add ${3 - items.length} more item${3 - items.length > 1 ? 's' : ''} to trial room`}
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   {items.length < 3 && (

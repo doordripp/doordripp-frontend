@@ -94,7 +94,7 @@ export default function TrialPage() {
 
       // 2) Put ONLY the purchased item into cart
       clearCart();
-      
+
       // 3) Set Trial Metadata in CartContext (Persistent during this session)
       setTrialMode({
         isTrial: true,
@@ -116,13 +116,13 @@ export default function TrialPage() {
       );
 
       // 4) Go to checkout with trial metadata
-      navigate('/checkout', { 
-        state: { 
+      navigate('/checkout', {
+        state: {
           isTrialCheckout: true,
           trialItems: items,
           purchasedItemId: selectedPurchaseItemId,
           trialFee: 119
-        } 
+        }
       });
     } catch (err) {
       setLocalError(err?.response?.data?.message || err?.message || 'Failed to place trial order');
@@ -158,11 +158,10 @@ export default function TrialPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                tab === t.key
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${tab === t.key
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               {t.icon} {t.label}
             </button>
@@ -208,7 +207,8 @@ export default function TrialPage() {
                 </div>
 
                 <p className="text-sm text-gray-500">
-                  Select the item you want to <strong>purchase</strong>. The rest will be returned for free.
+                  Select the item you want to <strong>purchase</strong>.
+                  {items.length < 3 && ` You can add ${3 - items.length} more item${3 - items.length > 1 ? 's' : ''}.`}
                 </p>
 
                 <div className="space-y-3">
@@ -260,7 +260,7 @@ export default function TrialPage() {
                     <div className="flex justify-between text-gray-600">
                       <div className="flex flex-col">
                         <span>Trial Service Fee</span>
-                        <span className="text-[10px] text-gray-400">Covers 3 items delivery & return</span>
+                        <span className="text-[10px] text-gray-400">Fixed convenience fee for Trial Room</span>
                       </div>
                       <span className="font-semibold text-gray-900">₹{totals.trialFee.toLocaleString('en-IN')}</span>
                     </div>
@@ -283,7 +283,7 @@ export default function TrialPage() {
                       <li className="flex gap-2"><span>2.</span> Select 1 item you want to buy</li>
                       <li className="flex gap-2"><span>3.</span> Pay only for the selected item</li>
                       <li className="flex gap-2"><span>4.</span> All items delivered — try them at home</li>
-                      <li className="flex gap-2"><span>5.</span> Keep your item, return the rest for free</li>
+                      <li className="flex gap-2"><span>5.</span> Keep the items you purchase, return the rest</li>
                     </ul>
                   </div>
 
@@ -341,12 +341,12 @@ export default function TrialPage() {
               <div className="space-y-4">
                 {history.map((order) => {
                   const statusColors = {
-                    pending:   'bg-yellow-100 text-yellow-800',
+                    pending: 'bg-yellow-100 text-yellow-800',
                     confirmed: 'bg-blue-100 text-blue-800',
-                    shipped:   'bg-indigo-100 text-indigo-800',
+                    shipped: 'bg-indigo-100 text-indigo-800',
                     delivered: 'bg-green-100 text-green-800',
                     cancelled: 'bg-red-100 text-red-800',
-                    returned:  'bg-gray-200 text-gray-700',
+                    returned: 'bg-gray-200 text-gray-700',
                   };
                   const statusClass = statusColors[order.status] || 'bg-gray-100 text-gray-600';
 
@@ -377,11 +377,10 @@ export default function TrialPage() {
                         {(order.trialItems || []).map((item, idx) => (
                           <div
                             key={idx}
-                            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                              item.productId === order.purchasedItemId
+                            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${item.productId === order.purchasedItemId
                                 ? 'border-black'
                                 : 'border-gray-100'
-                            }`}
+                              }`}
                           >
                             <img
                               src={item.image}

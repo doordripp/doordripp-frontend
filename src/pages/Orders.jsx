@@ -6,12 +6,12 @@ export default function Orders() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const ordersRef = useRef(null) // Cache orders
-  
+
   // Get filters from URL
   const status = searchParams.get('status') || 'all'
   const sortBy = searchParams.get('sort') || 'recent'
   const page = parseInt(searchParams.get('page') || '1', 10)
-  
+
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -20,14 +20,14 @@ export default function Orders() {
   // Fetch orders - with caching
   useEffect(() => {
     let mounted = true
-    
+
     // Use cached data if available
     if (ordersRef.current) {
       processOrders(ordersRef.current)
       setLoading(false)
       return
     }
-    
+
     const load = async () => {
       setLoading(true)
       try {
@@ -36,9 +36,9 @@ export default function Orders() {
         const list = Array.isArray(data) ? data : (data.orders || data.data || data)
         const normalized = Array.isArray(list) ? list : (list?.orders || list?.data || [])
         const ordersList = Array.isArray(normalized) ? normalized : (Array.isArray(list) ? list : [])
-        
+
         if (!mounted) return
-        
+
         // Cache the orders
         ordersRef.current = ordersList
         processOrders(ordersList)
@@ -61,12 +61,12 @@ export default function Orders() {
   // Process and filter orders based on URL params
   const processOrders = (allOrders) => {
     let filtered = allOrders
-    
+
     // Filter by status
     if (status && status !== 'all') {
       filtered = filtered.filter(o => (o.status || 'pending').toLowerCase() === status.toLowerCase())
     }
-    
+
     // Sort
     if (sortBy === 'recent') {
       filtered.sort((a, b) => new Date(b.createdAt || b.orderDate) - new Date(a.createdAt || a.orderDate))
@@ -77,7 +77,7 @@ export default function Orders() {
     } else if (sortBy === 'price-low') {
       filtered.sort((a, b) => (a.subtotal || a.total || 0) - (b.subtotal || b.total || 0))
     }
-    
+
     setOrders(filtered)
   }
 
@@ -201,14 +201,17 @@ export default function Orders() {
                           {order.isTrial && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-black text-white text-[10px] font-bold uppercase tracking-widest leading-none">TRIAL & BUY</span>
                           )}
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${order.status === 'confirmed' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{(order.status || 'pending').toUpperCase()}</span>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${order.status === 'confirmed' ? 'bg-green-50 text-green-700' :
+                              order.status === 'failed' ? 'bg-red-50 text-red-700' :
+                                'bg-gray-100 text-gray-700'
+                            }`}>{(order.status || 'pending').toUpperCase()}</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="mt-4 flex items-center gap-3 text-sm text-gray-700">
                       <div className="flex -space-x-2">
-                        {(order.isTrial && order.trialItems && order.trialItems.length > 0 ? order.trialItems : items).slice(0,3).map((it, i) => {
+                        {(order.isTrial && order.trialItems && order.trialItems.length > 0 ? order.trialItems : items).slice(0, 3).map((it, i) => {
                           const prod = it.product || {}
                           const thumb = it.image || it.imageUrl || prod.image || (prod.images && prod.images[0])
                           return (
@@ -220,13 +223,13 @@ export default function Orders() {
                       </div>
                       <div className="flex-1">
                         <div className="font-medium">
-                          {order.isTrial 
+                          {order.isTrial
                             ? `Trial Package: ${(order.trialItems || []).map(i => i.name).join(', ')}`
                             : items[0]?.name || (items[0] && items[0].product && items[0].product.name) || `${items.length} items`}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {order.isTrial ? (order.trialItems?.length || 0) : items.length} item(s) 
-                          {!order.isTrial && ` • ${items.slice(0,2).map(it => it.name || (it.product && it.product.name)).filter(Boolean).join(' • ')}`}
+                          {order.isTrial ? (order.trialItems?.length || 0) : items.length} item(s)
+                          {!order.isTrial && ` • ${items.slice(0, 2).map(it => it.name || (it.product && it.product.name)).filter(Boolean).join(' • ')}`}
                         </div>
                       </div>
                     </div>

@@ -16,10 +16,10 @@ const DELIVERY_OPTIONS = [
 ]
 
 export default function Checkout() {
-  const { 
-    items, 
-    cartTotals, 
-    clearCart, 
+  const {
+    items,
+    cartTotals,
+    clearCart,
     promoCode,
     promoLoading,
     promoError,
@@ -34,7 +34,7 @@ export default function Checkout() {
   const { clearTrial } = useTrial()
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   // Trial Mode State - Check location state first, then fallback to cart context
   const isTrialCheckout = location.state?.isTrialCheckout || cartIsTrial || false
   const trialItems = location.state?.trialItems || cartTrialItems || []
@@ -52,7 +52,7 @@ export default function Checkout() {
   const [deliveryType, setDeliveryType] = useState(() => {
     return localStorage.getItem('doordripp_delivery_type') || 'regular'
   })
-  
+
   const [showMapSelector, setShowMapSelector] = useState(false)
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
@@ -71,7 +71,7 @@ export default function Checkout() {
 
   // Get active delivery option data
   const selectedDeliveryOption = DELIVERY_OPTIONS.find(o => o.id === deliveryType) || DELIVERY_OPTIONS[2]
-  
+
   const subtotalAfterCoupon = Math.max(cartTotals.subtotal - (cartTotals.discountAmount || 0), 0)
   const payableTotal = subtotalAfterCoupon + selectedDeliveryOption.charge + trialFee
 
@@ -129,18 +129,18 @@ export default function Checkout() {
   const handleDeleteAddress = async (e, addressId) => {
     e.stopPropagation()
     e.preventDefault()
-    
+
     if (!window.confirm('Are you sure you want to delete this address?')) return
-    
+
     try {
       await apiDelete(`/addresses/${addressId}`)
       toast.success('Address deleted')
-      
+
       // If the deleted address was selected, clear selection
       if (selectedAddress?._id === addressId) {
         setSelectedAddress(null)
       }
-      
+
       // Reload addresses
       await loadSavedAddresses()
     } catch (err) {
@@ -217,22 +217,22 @@ export default function Checkout() {
       setError('Please select a delivery address')
       return
     }
-    
+
     if (!hasItems) {
       setError('No items in cart')
       return
     }
-    
+
     try {
       setPlacing(true)
-      
+
       // Validate all items have required fields
       const validItems = items.every(i => i.name && i.quantity > 0 && i.price >= 0)
       if (!validItems) {
         setError('Some items have invalid data')
         return
       }
-      
+
       const orderData = {
         items: items.map(i => ({
           product: i.id,  // Product ID required by backend
@@ -263,15 +263,15 @@ export default function Checkout() {
         },
         ...(promoCode ? { voucherCode: promoCode } : {})
       }
-      
+
       const response = await apiPost('/orders', orderData)
-      
+
       if (response && response.order && response.razorOrder) {
         const { order, razorOrder } = response
-        
+
         // Open Razorpay payment gateway
         if (razorOrder && window.Razorpay) {
-          
+
           const options = {
             key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_key',
             order_id: razorOrder.id,
@@ -294,7 +294,7 @@ export default function Checkout() {
                   razorpayPaymentId: response.razorpay_payment_id,
                   razorpaySignature: response.razorpay_signature
                 })
-                
+
                 if (verifyResponse?.success || verifyResponse?.message) {
                   // Payment verified - clear cart and reset delivery
                   if (isTrialCheckout) clearTrial()
@@ -302,32 +302,67 @@ export default function Checkout() {
                   setVoucherCodeInput('')
                   localStorage.removeItem('doordripp_delivery_type')
                   setDeliveryType('regular')
-                  
-                  navigate(`/orders/${order._id}`, { 
-                    state: { 
-                      order, 
+
+                  navigate(`/orders/${order._id}`, {
+                    state: {
+                      order: verifyResponse.order || order,
                       payment: response,
-                      paymentSuccess: true 
-                    } 
+                      paymentSuccess: true
+                    }
                   })
                 } else {
-                  setError('Payment verification failed. Please contact support.')
-                  setPlacing(false)
+                  // If verification fails, redirect to order page to show failure message
+                  navigate(`/orders/${order._id}`, {
+                    state: {
+                      order: { ...order, status: 'failed' },
+                      paymentSuccess: false
+                    }
+                  })
                 }
               } catch (verifyError) {
-                setError('Failed to verify payment. Please contact support.')
-                setPlacing(false)
+                // Same for catch block
+                navigate(`/orders/${order._id}`, {
+                  state: {
+                    order: { ...order, status: 'failed' },
+                    paymentSuccess: false
+                  }
+                })
               }
             },
             modal: {
               ondismiss: () => {
-                setError('Payment was cancelled. Please try again.')
+                setError('Payment was cancelled.')
                 setPlacing(false)
+
+                // Redirect even on dismissal to show the failure/pending state
+                navigate(`/orders/${order._id}`, {
+                  state: {
+                    order: { ...order, status: 'failed' },
+                    paymentSuccess: false
+                  }
+                })
               }
             }
           }
-          
+
           const rzp = new window.Razorpay(options)
+
+          rzp.on('payment.failed', async function (response) {
+            console.error('Payment failed event:', response.error)
+            try {
+              await apiPost(`/orders/${order._id}/payment-failed`, { orderId: order._id })
+            } catch (err) {
+              console.error('Failed to notify backend of payment failure', err)
+            }
+
+            navigate(`/orders/${order._id}`, {
+              state: {
+                order: { ...order, status: 'failed' },
+                paymentSuccess: false
+              }
+            })
+          })
+
           rzp.open()
         } else {
           // Fallback if Razorpay not loaded - just confirm order
@@ -374,25 +409,25 @@ export default function Checkout() {
                       {savedAddresses.map((addr) => (
                         <label key={addr._id} className={`group block border-2 rounded-xl p-4 shadow-sm cursor-pointer transition-all ${selectedAddress?._id === addr._id ? 'border-red-500 bg-red-50' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`}>
                           <div className="flex items-start gap-3">
-                            <input 
-                              type="radio" 
-                              name="addressChoice" 
-                              value={addr._id} 
-                              checked={selectedAddress?._id === addr._id} 
-                              onChange={() => setSelectedAddress({ 
-                                _id: addr._id, 
-                                name: addr.label, 
-                                line1: addr.addressLine1, 
-                                line2: addr.addressLine2, 
-                                city: addr.city, 
-                                state: addr.state, 
-                                zip: addr.zip, 
+                            <input
+                              type="radio"
+                              name="addressChoice"
+                              value={addr._id}
+                              checked={selectedAddress?._id === addr._id}
+                              onChange={() => setSelectedAddress({
+                                _id: addr._id,
+                                name: addr.label,
+                                line1: addr.addressLine1,
+                                line2: addr.addressLine2,
+                                city: addr.city,
+                                state: addr.state,
+                                zip: addr.zip,
                                 phone: addr.phone || user?.phone || '',
                                 latitude: addr.latitude,
                                 longitude: addr.longitude,
-                                isMapSelected: false 
-                              })} 
-                              className="mt-1 accent-red-600 w-4 h-4" 
+                                isMapSelected: false
+                              })}
+                              className="mt-1 accent-red-600 w-4 h-4"
                             />
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-1">
@@ -400,7 +435,7 @@ export default function Checkout() {
                                   <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${selectedAddress?._id === addr._id ? 'bg-red-200 text-red-800' : 'bg-gray-200 text-gray-700'}`}>{addr.label}</span>
                                   {addr.isDefault && <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold italic">DEFAULT</span>}
                                 </div>
-                                
+
                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
                                     onClick={(e) => handleEditAddress(e, addr)}
@@ -438,13 +473,13 @@ export default function Checkout() {
                     <div className="space-y-3">
                       <label className={`block border-2 rounded-xl p-4 shadow-sm cursor-pointer transition-all ${selectedAddress?.isMapSelected ? 'border-green-500 bg-green-50' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`}>
                         <div className="flex items-start gap-3">
-                          <input 
-                            type="radio" 
-                            name="addressChoice" 
-                            value="map" 
-                            checked={selectedAddress?.isMapSelected === true} 
-                            onChange={() => setSelectedAddress({ ...mapSelectedAddress, isMapSelected: true })} 
-                            className="mt-1 accent-green-600 w-4 h-4" 
+                          <input
+                            type="radio"
+                            name="addressChoice"
+                            value="map"
+                            checked={selectedAddress?.isMapSelected === true}
+                            onChange={() => setSelectedAddress({ ...mapSelectedAddress, isMapSelected: true })}
+                            className="mt-1 accent-green-600 w-4 h-4"
                           />
                           <div>
                             <div className="font-bold text-green-800 text-xs mb-1 uppercase tracking-tight flex items-center gap-1">
@@ -455,11 +490,11 @@ export default function Checkout() {
                           </div>
                         </div>
                       </label>
-                      <button 
-                        onClick={() => setShowMapSelector(true)} 
+                      <button
+                        onClick={() => setShowMapSelector(true)}
                         className="text-xs text-blue-600 hover:text-blue-800 font-bold uppercase tracking-widest flex items-center gap-1"
                       >
-                         Change Map Location
+                        Change Map Location
                       </button>
                     </div>
                   ) : (
@@ -477,14 +512,14 @@ export default function Checkout() {
                           />
                         </div>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => {
                             if (savedAddresses.length >= 3) {
                               toast.error('Maximum 3 addresses allowed. Please delete one to add a new one.')
                               return
                             }
                             setShowMapSelector(true)
-                          }} 
+                          }}
                           disabled={savedAddresses.length >= 3}
                           className={`w-full py-8 border-2 border-dashed rounded-2xl font-bold flex flex-col items-center justify-center gap-3 transition-all group ${savedAddresses.length >= 3 ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
                         >
@@ -602,18 +637,18 @@ export default function Checkout() {
                   <p className="mt-2 text-xs font-semibold text-red-600">{promoError}</p>
                 )}
               </div>
-              
+
               <div className="border-t border-gray-300 pt-4 space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span className="text-sm font-medium">Subtotal</span>
                   <span className="font-bold">₹{cartTotals.subtotal.toFixed(2)}</span>
                 </div>
-                
+
                 {isTrialCheckout && (
                   <div className="flex justify-between text-gray-600">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">Trial Service Fee</span>
-                      <span className="text-[10px] text-gray-500 leading-tight">Covers delivery & returns of 3 items</span>
+                      <span className="text-[10px] text-gray-500 leading-tight">Fixed convenience fee for Trial Room</span>
                     </div>
                     <span className="font-bold">₹{trialFee.toFixed(2)}</span>
                   </div>
@@ -639,84 +674,81 @@ export default function Checkout() {
 
               {/* Delivery Option Selector */}
               <div className="pt-2">
-                  <div className="space-y-2">
-                    {DELIVERY_OPTIONS.map((opt) => (
-                      <label 
-                        key={opt.id} 
-                        className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                          deliveryType === opt.id 
-                            ? 'border-black bg-white shadow-md scale-[1.02]' 
-                            : 'border-transparent bg-gray-50 opacity-70 hover:opacity-100'
+                <div className="space-y-2">
+                  {DELIVERY_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.id}
+                      className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${deliveryType === opt.id
+                        ? 'border-black bg-white shadow-md scale-[1.02]'
+                        : 'border-transparent bg-gray-50 opacity-70 hover:opacity-100'
                         }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input 
-                            type="radio" 
-                            name="deliveryType" 
-                            value={opt.id} 
-                            checked={deliveryType === opt.id}
-                            onChange={() => setDeliveryType(opt.id)}
-                            className="w-4 h-4 accent-black"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-gray-900">{opt.label}</span>
-                              <span className="text-xs">{opt.badge}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
-                                opt.id === 'priority' ? 'bg-orange-100 text-orange-600 animate-priority' : 
-                                opt.id === 'standard' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="deliveryType"
+                          value={opt.id}
+                          checked={deliveryType === opt.id}
+                          onChange={() => setDeliveryType(opt.id)}
+                          className="w-4 h-4 accent-black"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-gray-900">{opt.label}</span>
+                            <span className="text-xs">{opt.badge}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${opt.id === 'priority' ? 'bg-orange-100 text-orange-600 animate-priority' :
+                              opt.id === 'standard' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'
                               }`}>
-                                {opt.sublabel}
-                              </span>
-                              <span className="text-[10px] font-medium text-gray-500 italic">ETA: {opt.eta}</span>
-                            </div>
+                              {opt.sublabel}
+                            </span>
+                            <span className="text-[10px] font-medium text-gray-500 italic">ETA: {opt.eta}</span>
                           </div>
                         </div>
-                        <div className="text-sm font-bold text-black">₹{opt.charge}</div>
-                      </label>
-                    ))}
-                  </div>
+                      </div>
+                      <div className="text-sm font-bold text-black">₹{opt.charge}</div>
+                    </label>
+                  ))}
                 </div>
               </div>
-
-              {/* Dynamic ETA Info */}
-              <div className="mb-4 px-3 py-2 bg-yellow-50 border border-yellow-100 rounded-lg flex items-center gap-2 text-xs text-yellow-800">
-                <span className="animate-pulse">ETA</span>
-                <span>Estimated arrival: <strong>{selectedDeliveryOption.eta}</strong></span>
-              </div>
-
-              {error && (
-                <div className="p-3 mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
-                  {error}
-                </div>
-              )}
-
-              <button 
-                onClick={handlePlaceOrder}
-                disabled={!selectedAddress || !hasItems || placing}
-                className={`w-full py-4 rounded-xl font-black text-lg shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-                  isTrialCheckout 
-                    ? 'bg-black text-white hover:bg-gray-900' 
-                    : 'bg-red-600 text-white hover:bg-red-700'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {placing ? (
-                  <>
-                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Processing...
-                  </>
-                ) : isTrialCheckout ? (
-                  `Pay ₹${payableTotal.toFixed(2)} & Start Trial`
-                ) : (
-                  `Place Order | ₹${payableTotal.toFixed(2)}`
-                )}
-              </button>
             </div>
+
+            {/* Dynamic ETA Info */}
+            <div className="mb-4 px-3 py-2 bg-yellow-50 border border-yellow-100 rounded-lg flex items-center gap-2 text-xs text-yellow-800">
+              <span className="animate-pulse">ETA</span>
+              <span>Estimated arrival: <strong>{selectedDeliveryOption.eta}</strong></span>
+            </div>
+
+            {error && (
+              <div className="p-3 mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            <button
+              onClick={handlePlaceOrder}
+              disabled={!selectedAddress || !hasItems || placing}
+              className={`w-full py-4 rounded-xl font-black text-lg shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${isTrialCheckout
+                ? 'bg-black text-white hover:bg-gray-900'
+                : 'bg-red-600 text-white hover:bg-red-700'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {placing ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : isTrialCheckout ? (
+                `Pay ₹${payableTotal.toFixed(2)} & Start Trial`
+              ) : (
+                `Place Order | ₹${payableTotal.toFixed(2)}`
+              )}
+            </button>
           </div>
         </div>
       </div>
+    </div>
   )
 }
 

@@ -139,7 +139,7 @@ export default function OrderConfirmation() {
       setInvoiceLoading(false)
     }
   }
-  
+
 
   // Share tracking and return/replace handlers
   const handleShare = async () => {
@@ -174,24 +174,38 @@ export default function OrderConfirmation() {
     }
   }
 
+  const isFailed = order.status === 'failed' || (order.payment && order.payment.status === 'failed')
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="mx-auto max-w-6xl px-6">
         <div className="bg-white rounded-2xl shadow p-8 border border-gray-100">
           <div className="flex items-start gap-6">
-            <div className="flex-shrink-0 w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.364 7.364a1 1 0 01-1.414 0L3.293 8.364a1 1 0 011.414-1.414l3.293 3.293 6.657-6.657a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
+            <div className={`flex-shrink-0 w-16 h-16 ${isFailed ? 'bg-red-50' : 'bg-green-50'} rounded-full flex items-center justify-center`}>
+              {isFailed ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.364 7.364a1 1 0 01-1.414 0L3.293 8.364a1 1 0 011.414-1.414l3.293 3.293 6.657-6.657a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Thank you - your order is confirmed</h1>
-              <p className="text-sm text-gray-600 mt-1">We've received your order and will send updates to your email.</p>
+              <h1 className="text-2xl font-bold">
+                {isFailed ? 'Sorry, payment failed' : 'Thank you - your order is confirmed'}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {isFailed
+                  ? "There was an issue processing your payment. Your order has been marked as failed."
+                  : "We've received your order and will send updates to your email."}
+              </p>
               <div className="mt-3 text-sm text-gray-700">
                 <div>Order ID: <span className="font-mono text-sm">{order._id || order.id}</span></div>
                 {placedAt && <div>Placed on: <span className="text-gray-600">{placedAt.toLocaleString()}</span></div>}
               </div>
-              {voucherDiscount > 0 && (
+              {!isFailed && voucherDiscount > 0 && (
                 <div className="mt-2 text-sm text-green-700">
                   Coupon {voucherCode ? <span className="font-semibold">{voucherCode}</span> : 'applied'} - you saved {formatCurrency(voucherDiscount)} on subtotal.
                 </div>
@@ -217,7 +231,7 @@ export default function OrderConfirmation() {
                       Trial & Buy Mode
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {order.trialItems.map((ti, idx) => {
                       const isPurchased = order.items.some(it => {
@@ -245,7 +259,7 @@ export default function OrderConfirmation() {
                     })}
                   </div>
                   <p className="mt-4 text-[10px] text-gray-500 italic text-center border-t border-gray-200 pt-3">
-                    Try all items at home. Keep the purchased one, returns for others are free!
+                    Try all items at home. Keep the items you purchase, return the rest.
                   </p>
                 </div>
               )}
@@ -258,13 +272,13 @@ export default function OrderConfirmation() {
                     const thumb = (prod.images && prod.images[0]) || it.image || prod.image || ''
                     return (
                       <div key={it._id || it.product || idx} className="flex items-center gap-4 py-4">
-                            <div className="w-20 h-20 bg-white rounded overflow-hidden flex-shrink-0 border">
-                              {thumb || (it.product && typeof it.product === 'string' && fetchedImages[it.product]) || (it.product && it.product._id && fetchedImages[it.product._id]) ? (
-                                <img src={thumb || fetchedImages[it.product] || fetchedImages[it.product?._id]} alt={it.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full bg-gray-100 flex items-center justify-center text-sm text-gray-400">No image</div>
-                              )}
-                            </div>
+                        <div className="w-20 h-20 bg-white rounded overflow-hidden flex-shrink-0 border">
+                          {thumb || (it.product && typeof it.product === 'string' && fetchedImages[it.product]) || (it.product && it.product._id && fetchedImages[it.product._id]) ? (
+                            <img src={thumb || fetchedImages[it.product] || fetchedImages[it.product?._id]} alt={it.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-sm text-gray-400">No image</div>
+                          )}
+                        </div>
                         <div className="flex-1">
                           <div className="font-medium">{it.name || prod.name}</div>
                           {prod.seller && <div className="text-xs text-gray-500">Sold by {prod.seller}</div>}
@@ -294,7 +308,7 @@ export default function OrderConfirmation() {
                     <span>Subtotal</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  
+
                   {order.trialFee > 0 && (
                     <div className="flex justify-between">
                       <div className="flex flex-col">
@@ -327,27 +341,40 @@ export default function OrderConfirmation() {
                   {/* Live Tracking Widget */}
                   {order.deliveryPartner?.riderId && (
                     <div>
-                      <CompactOrderTracking 
-                        orderId={order._id || order.id} 
+                      <CompactOrderTracking
+                        orderId={order._id || order.id}
                         token={localStorage.getItem('token')}
                       />
                     </div>
                   )}
-                  
+
                   {/* Action Buttons */}
                   <button onClick={() => window.location.assign('/')} className="w-full px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">Continue shopping</button>
-                  
-                  <Link to={`/order/${order._id || order.id}/track`} className="w-full text-center px-4 py-2 bg-white text-gray-900 border rounded-md hover:bg-gray-50 transition font-semibold">
-                    Track Order
-                  </Link>
-                  
-                  <button onClick={downloadInvoice} className="w-full px-4 py-2 bg-white border rounded-md hover:bg-gray-50 transition">
-                    {invoiceLoading ? 'Preparing invoice...' : 'Download invoice'}
-                  </button>
-                  
-                  <button onClick={handleShare} className="w-full px-4 py-2 bg-white border rounded-md hover:bg-gray-50 transition">Share order {shareStatus && <span className="ml-2 text-sm text-gray-500">{shareStatus}</span>}</button>
-                  
-                  <button onClick={() => setShowReturnModal(true)} className="w-full px-4 py-2 bg-red-50 text-red-700 border rounded-md hover:bg-red-100 transition">Request return / replace</button>
+
+                  {!isFailed && (
+                    <>
+                      <Link to={`/order/${order._id || order.id}/track`} className="w-full text-center px-4 py-2 bg-white text-gray-900 border rounded-md hover:bg-gray-50 transition font-semibold">
+                        Track Order
+                      </Link>
+
+                      <button onClick={downloadInvoice} className="w-full px-4 py-2 bg-white border rounded-md hover:bg-gray-50 transition">
+                        {invoiceLoading ? 'Preparing invoice...' : 'Download invoice'}
+                      </button>
+
+                      <button onClick={handleShare} className="w-full px-4 py-2 bg-white border rounded-md hover:bg-gray-50 transition">Share order {shareStatus && <span className="ml-2 text-sm text-gray-500">{shareStatus}</span>}</button>
+
+                      <button onClick={() => setShowReturnModal(true)} className="w-full px-4 py-2 bg-red-50 text-red-700 border rounded-md hover:bg-red-100 transition">Request return / replace</button>
+                    </>
+                  )}
+
+                  {isFailed && (
+                    <button
+                      onClick={() => navigate('/checkout')}
+                      className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition font-bold"
+                    >
+                      Try Payment Again
+                    </button>
+                  )}
                 </div>
               </div>
             </aside>

@@ -25,6 +25,8 @@ export function AuthProvider({ children }) {
         address: data.address || null,
         gender: data.gender || null,
         dob: data.dob || null,
+        googleId: data.googleId || null,
+        isPasswordSet: data.isPasswordSet || false,
       }
       setUser(minimal)
       authStorage.setUser(minimal)

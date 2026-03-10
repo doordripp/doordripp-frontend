@@ -109,7 +109,7 @@ export default function Navbar() {
 
 	return (
 		<header className="w-full border-b border-neutral-200/60 bg-white z-50 sticky top-0">
-			{showBanner && (
+			{showBanner && !user && (
 				<div className="w-full bg-black text-white text-xs">
 					<div className="flex items-center justify-center gap-2 px-3 py-2 relative w-full">
 						<span>Sign up and get 20% off your first order.</span>
@@ -130,7 +130,7 @@ export default function Navbar() {
 
 				{/* Middle: Nav links */}
 				<nav className="hidden md:flex items-center gap-6 text-sm">
-					<ShopMenu 
+					<ShopMenu
 						ref={shopRef}
 						isOpen={showShopDropdown}
 						onOpenChange={setShowShopDropdown}
@@ -142,9 +142,9 @@ export default function Navbar() {
 						onMouseLeave={handleShopMouseLeave}
 					/>
 					{/* Categories Dropdown */}
-					<div 
-						ref={categoriesRef} 
-						className="relative" 
+					<div
+						ref={categoriesRef}
+						className="relative"
 						onMouseEnter={handleCategoriesMouseEnter}
 						onMouseLeave={handleCategoriesMouseLeave}
 					>
@@ -153,7 +153,7 @@ export default function Navbar() {
 							<ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showCategoriesDropdown ? 'rotate-180' : ''}`} />
 						</button>
 
-						<div 
+						<div
 							className={`absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-gray-200 bg-white shadow-lg transition-all duration-200 ${showCategoriesDropdown ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-2 invisible pointer-events-none'}`}
 							onMouseEnter={handleCategoriesMouseEnter}
 							onMouseLeave={handleCategoriesMouseLeave}
@@ -182,7 +182,7 @@ export default function Navbar() {
 					<button onClick={() => scrollToSection('new-arrivals')} className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>New Arrivals</button>
 					<button onClick={() => scrollToSection('top-selling')} className="hover:text-black/70 transition-colors duration-200" onMouseEnter={closeAllDropdowns}>Best Sellers</button>
 					<Link to="/trial-room" className="hover:text-black/70 transition-colors duration-200 font-medium" onMouseEnter={closeAllDropdowns}>Trial Room</Link>
-			</nav>
+				</nav>
 
 				{/* Search */}
 				<div className="flex-1" onMouseEnter={closeAllDropdowns} />
