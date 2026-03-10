@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 // Lazy load the AddressSelector to handle potential Google Maps loading issues
@@ -41,15 +41,15 @@ function LoadingFallback() {
 }
 
 export default function AddressSelectorWrapper(props) {
+  const [resetKey, setResetKey] = useState(0);
+
   return (
     <ErrorBoundary
+      key={resetKey}
       FallbackComponent={ErrorFallback}
-      onError={(error, errorInfo) => {
-        console.error('AddressSelector Error:', error, errorInfo);
-      }}
       onReset={() => {
-        // Force a re-render to retry loading
-        window.location.reload();
+        // Increment key to remount the component tree without a full page reload
+        setResetKey(prev => prev + 1);
       }}
     >
       <Suspense fallback={<LoadingFallback />}>

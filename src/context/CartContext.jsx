@@ -203,7 +203,6 @@ export function CartProvider({ children }) {
           payload: parsedCart
         })
       } catch (error) {
-        console.error('Failed to load local cart:', error)
       }
     }
     initialLoadRef.current = true
@@ -269,7 +268,7 @@ export function CartProvider({ children }) {
           }
         }
       } catch (err) {
-        console.error('Failed to sync backend cart:', err)
+        // Sync failure is non-critical; local cart remains intact
       }
     }
 
@@ -359,7 +358,7 @@ export function CartProvider({ children }) {
       try {
         await apiPost('/cart/add', { productId: product.id || product._id, quantity, size, color })
       } catch (err) {
-        console.error('Failed to sync add to backend:', err)
+        // Sync failure is non-critical; local state already updated
       }
     }
 
@@ -376,7 +375,7 @@ export function CartProvider({ children }) {
       try {
         await apiPost('/cart/remove', { productId: id, size: selectedSize, color: selectedColor })
       } catch (err) {
-        console.error('Failed to sync remove to backend:', err)
+        // Sync failure is non-critical; local state already updated
       }
     }
   }
@@ -391,7 +390,7 @@ export function CartProvider({ children }) {
       try {
         await apiPost('/cart/update-quantity', { productId: id, quantity, size: selectedSize, color: selectedColor })
       } catch (err) {
-        console.error('Failed to sync update quantity to backend:', err)
+        // Sync failure is non-critical; local state already updated
       }
     }
   }
@@ -405,7 +404,7 @@ export function CartProvider({ children }) {
       try {
         await apiPost('/cart/clear')
       } catch (err) {
-        console.error('Failed to clear backend cart:', err)
+        // Sync failure is non-critical; local cart already cleared
       }
     }
   }

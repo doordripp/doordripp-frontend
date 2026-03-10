@@ -4,7 +4,7 @@
  * Shows: Map, rider marker, customer location, polyline route, distance, ETA, status timeline
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import {
@@ -17,13 +17,10 @@ import {
 } from 'react-leaflet'
 import L from 'leaflet'
 import {
-  haversineDistance,
   formatDistance,
   formatETA,
-  calculateETA,
   getOSRMRoute,
-  getStatusStyle,
-  decodePolyline
+  getStatusStyle
 } from '../../utils/tracking'
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
@@ -105,7 +102,6 @@ export default function LiveOrderTracking() {
 
         setLoading(false)
       } catch (err) {
-        console.error('Failed to fetch order:', err)
         setError('Could not load order details')
         setLoading(false)
       }
@@ -148,7 +144,6 @@ export default function LiveOrderTracking() {
     socketRef.current = socket
 
     socket.on('connect', () => {
-      console.log('🔗 Connected to tracking')
       socket.emit('customerJoinTracking', {
         orderId,
         token: tokenRef.current
@@ -187,7 +182,6 @@ export default function LiveOrderTracking() {
     })
 
     socket.on('error', (err) => {
-      console.error('Socket error:', err)
       setError('Tracking connection error')
     })
 
@@ -344,7 +338,6 @@ export default function LiveOrderTracking() {
               {['PLACED', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'].map((s) => {
                 const isCompleted = status === s || ['CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(status)
                 const isActive = status === s
-                const stl = getStatusStyle(s)
                 return (
                   <div key={s} className="flex items-center gap-2">
                     <div
