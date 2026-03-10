@@ -1,10 +1,12 @@
 // src/services/api.js
 import axios from "axios";
 
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+
 const rawBaseUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:4000/api";
+  (runtimeOrigin ? `${runtimeOrigin}/api` : '/api');
 
 const normalizedBaseUrl = /\/api\/?$/.test(rawBaseUrl)
   ? rawBaseUrl

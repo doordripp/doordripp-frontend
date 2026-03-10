@@ -275,6 +275,25 @@ export function CartProvider({ children }) {
     syncWithBackend()
   }, [user, authInitializing])
 
+  // Debounced backend sync to avoid frequent requests on rapid cart edits
+  useEffect(() => {
+    if (authInitializing || !user || !initialLoadRef.current) return
+
+    const timeoutId = setTimeout(async () => {
+      if (isSyncingRef.current) return
+      isSyncingRef.current = true
+      try {
+        await apiPost('/cart/sync', { items: state.items })
+      } catch (err) {
+        // Sync failure is non-critical; local cart remains source of truth temporarily
+      } finally {
+        isSyncingRef.current = false
+      }
+    }, 700)
+
+    return () => clearTimeout(timeoutId)
+  }, [state.items, user, authInitializing])
+
   // 3. Save to LocalStorage on Change
   useEffect(() => {
     if (!initialLoadRef.current) return

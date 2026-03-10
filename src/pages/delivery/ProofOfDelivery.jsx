@@ -8,7 +8,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './ProofOfDelivery.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const API_URL = import.meta.env.VITE_API_URL || runtimeOrigin;
 
 const ProofOfDelivery = () => {
   const { orderId } = useParams();

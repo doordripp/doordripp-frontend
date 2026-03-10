@@ -131,9 +131,10 @@ export default function Signup() {
   }
 
   const handleGoogleSignup = () => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
+    const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+    const apiBase = import.meta.env.VITE_API_BASE_URL || runtimeOrigin
     // Redirect browser to backend Google OAuth endpoint
-    window.location.href = `${apiBase}/auth/google`
+    window.location.href = `${apiBase}/api/auth/google`
   }
 
   return (

@@ -132,7 +132,8 @@ export default function Login() {
 
   const handleGoogleLogin = () => {
     // Redirect to backend Google OAuth endpoint
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+    const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+    const apiBase = import.meta.env.VITE_API_BASE_URL || runtimeOrigin
     window.location.href = `${apiBase}/api/auth/google`
   }
 

@@ -9,8 +9,9 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import './DeliveryOrders.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const API_URL = import.meta.env.VITE_API_URL || (runtimeOrigin ? `${runtimeOrigin}/api` : '/api');
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || runtimeOrigin;
 
 const DeliveryOrders = () => {
   const [orders, setOrders] = useState([]);

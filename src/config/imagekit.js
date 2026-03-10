@@ -1,8 +1,11 @@
 // ImageKit configuration from environment variables
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const apiBaseUrl = import.meta.env.VITE_API_URL || (runtimeOrigin ? `${runtimeOrigin}/api` : '/api');
+
 export const imagekitConfig = {
   publicKey: import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || 'your_public_key_here',
   urlEndpoint: import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/your_imagekit_id',
-  authenticationEndpoint: import.meta.env.VITE_IMAGEKIT_AUTH_ENDPOINT || `${import.meta.env.VITE_API_URL}/imagekit-auth`,
+  authenticationEndpoint: import.meta.env.VITE_IMAGEKIT_AUTH_ENDPOINT || `${apiBaseUrl}/imagekit-auth`,
 };
 
 // Check if ImageKit is properly configured

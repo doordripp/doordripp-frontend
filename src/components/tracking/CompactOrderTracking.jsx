@@ -15,7 +15,8 @@ import {
 import L from 'leaflet'
 import { haversineDistance, formatDistance, formatETA, calculateETA } from '../../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+const SOCKET_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || runtimeOrigin
 
 // Bike icon for rider
 const bikeIcon = L.icon({

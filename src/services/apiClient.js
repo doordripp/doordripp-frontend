@@ -1,6 +1,7 @@
 // Simple API client using fetch with credentials included.
 // Use absolute URL from env var or default to localhost backend
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || runtimeOrigin;
 
 const buildUrl = (path) => {
   if (!path) return `${API_BASE}/api`;

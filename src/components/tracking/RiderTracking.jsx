@@ -9,7 +9,8 @@ import { useParams } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { getDistanceInMeters } from '../../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+const SOCKET_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || runtimeOrigin
 const MIN_DISTANCE_THRESHOLD = 20 // meters
 const UPDATE_INTERVAL = 5000 // 5 seconds
 

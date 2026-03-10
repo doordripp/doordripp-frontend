@@ -9,8 +9,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import './OrderTracking.css';
 
-const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || runtimeOrigin;
+const API_URL = import.meta.env.VITE_API_URL || (runtimeOrigin ? `${runtimeOrigin}/api` : '/api');
 
 const STATUS_FLOW = [
   'Order Placed',

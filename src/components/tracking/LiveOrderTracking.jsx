@@ -23,8 +23,9 @@ import {
   getStatusStyle
 } from '../../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || runtimeOrigin
+const API_URL = import.meta.env.VITE_API_URL || (runtimeOrigin ? `${runtimeOrigin}/api` : '/api')
 
 // Custom bike icon for rider
 const bikeIcon = L.icon({
@@ -68,6 +69,7 @@ export default function LiveOrderTracking() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [riderOnline, setRiderOnline] = useState(false)
+  const [retryKey, setRetryKey] = useState(0)
 
   const socketRef = useRef(null)
   const tokenRef = useRef(localStorage.getItem('token'))
@@ -77,6 +79,7 @@ export default function LiveOrderTracking() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
+        setError('')
         const response = await fetch(`${API_URL}/orders/${orderId}`, {
           headers: { Authorization: `Bearer ${tokenRef.current}` }
         })
@@ -108,7 +111,7 @@ export default function LiveOrderTracking() {
     }
 
     fetchOrder()
-  }, [orderId])
+  }, [orderId, retryKey])
 
   // Fetch route when both locations are available
   useEffect(() => {
@@ -209,7 +212,10 @@ export default function LiveOrderTracking() {
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <p className="text-red-600 font-semibold mb-4">❌ {error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setLoading(true)
+              setRetryKey((prev) => prev + 1)
+            }}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Retry

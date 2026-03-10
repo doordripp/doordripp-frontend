@@ -10,7 +10,8 @@ import axios from 'axios';
 import socketService from '../../services/socketService';
 import './LiveTracking.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const API_URL = import.meta.env.VITE_API_URL || runtimeOrigin;
 
 const LiveTracking = () => {
   const { orderId } = useParams();

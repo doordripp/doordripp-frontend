@@ -5,7 +5,9 @@
 
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || runtimeOrigin;
+const isDev = import.meta.env.DEV;
 
 class SocketService {
   constructor() {
@@ -18,7 +20,7 @@ class SocketService {
    */
   connect(token) {
     if (this.socket?.connected) {
-      console.log('[Socket] Already connected');
+      if (isDev) console.log('[Socket] Already connected');
       return this.socket;
     }
 
@@ -35,12 +37,12 @@ class SocketService {
 
     // Connection event handlers
     this.socket.on('connect', () => {
-      console.log('[Socket] Connected:', this.socket.id);
+      if (isDev) console.log('[Socket] Connected:', this.socket.id);
       this.connected = true;
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('[Socket] Disconnected:', reason);
+      if (isDev) console.log('[Socket] Disconnected:', reason);
       this.connected = false;
     });
 
@@ -54,7 +56,7 @@ class SocketService {
 
     // Pong handler for keep-alive
     this.socket.on('pong', () => {
-      console.log('[Socket] Pong received');
+      if (isDev) console.log('[Socket] Pong received');
     });
 
     return this.socket;
@@ -68,7 +70,7 @@ class SocketService {
       this.socket.disconnect();
       this.socket = null;
       this.connected = false;
-      console.log('[Socket] Disconnected');
+      if (isDev) console.log('[Socket] Disconnected');
     }
   }
 
@@ -82,7 +84,7 @@ class SocketService {
     }
 
     this.socket.emit('customerJoinTracking', { orderId, token });
-    console.log('[Socket] Joined order tracking:', orderId);
+    if (isDev) console.log('[Socket] Joined order tracking:', orderId);
   }
 
   /**
@@ -95,7 +97,7 @@ class SocketService {
     }
 
     this.socket.emit('riderJoinTracking', { orderId, token });
-    console.log('[Socket] Joined as rider:', orderId);
+    if (isDev) console.log('[Socket] Joined as rider:', orderId);
   }
 
   /**

@@ -7,7 +7,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './DeliveryAnalytics.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const API_URL = import.meta.env.VITE_API_URL || runtimeOrigin;
 
 const DeliveryAnalytics = () => {
   const [analytics, setAnalytics] = useState(null);

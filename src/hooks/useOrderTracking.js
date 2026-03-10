@@ -7,7 +7,9 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { io } from 'socket.io-client'
 import { getOSRMRoute } from '../utils/tracking'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+const SOCKET_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || runtimeOrigin
+const isDev = import.meta.env.DEV
 
 export function useOrderTracking(orderId, token, role = 'customer') {
   const [riderLocation, setRiderLocation] = useState(null)
@@ -35,7 +37,7 @@ export function useOrderTracking(orderId, token, role = 'customer') {
 
     // Connection events
     socket.on('connect', () => {
-      console.log('✓ Connected to tracking server')
+      if (isDev) console.log('Connected to tracking server')
       setConnectionStatus('connected')
 
       // Join appropriate room
@@ -47,7 +49,7 @@ export function useOrderTracking(orderId, token, role = 'customer') {
     })
 
     socket.on('disconnect', () => {
-      console.log('✗ Disconnected from tracking server')
+      if (isDev) console.log('Disconnected from tracking server')
       setConnectionStatus('disconnected')
     })
 
