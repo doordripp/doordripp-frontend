@@ -8,10 +8,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import socketService from '../../services/socketService';
+import { getOrderDisplayId } from '../../utils/orderUtils';
 import './LiveTracking.css';
 
 const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-const API_URL = import.meta.env.VITE_API_URL || runtimeOrigin;
+const rawApiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || runtimeOrigin;
+const API_URL = /\/api\/?$/.test(rawApiBase) ? rawApiBase.replace(/\/+$/, '') : `${rawApiBase.replace(/\/+$/, '')}/api`;
+const getStoredToken = () => localStorage.getItem('auth_token') || localStorage.getItem('accessToken');
 
 const LiveTracking = () => {
   const { orderId } = useParams();
@@ -38,7 +41,7 @@ const LiveTracking = () => {
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = getStoredToken();
       const response = await axios.get(
         `${API_URL}/delivery/my-orders?orderId=${orderId}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -63,7 +66,7 @@ const LiveTracking = () => {
   };
 
   const connectToTracking = () => {
-    const token = localStorage.getItem('accessToken');
+    const token = getStoredToken();
     if (token) {
       socketService.connect(token);
       socketService.joinAsRider(orderId, token);
@@ -143,7 +146,7 @@ const LiveTracking = () => {
 
   const updateLocationToServer = async (locationData) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = getStoredToken();
       await axios.post(`${API_URL}/delivery/location`, locationData, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -187,7 +190,7 @@ const LiveTracking = () => {
           ← Back
         </button>
         <h1>Live Tracking</h1>
-        <span className="order-id">Order #{order._id.slice(-6)}</span>
+        <span className="order-id">Order {getOrderDisplayId(order)}</span>
       </div>
 
       {/* Map Container */}

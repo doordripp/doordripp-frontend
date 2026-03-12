@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiGet } from '../services/apiClient'
+import { getOrderDisplayId } from '../utils/orderUtils'
 
 export default function Orders() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -191,7 +192,7 @@ export default function Orders() {
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="text-sm text-gray-500">Order ID</div>
-                        <div className="font-mono font-medium mb-1">{order._id || order.id}</div>
+                        <div className="font-mono font-medium mb-1">{getOrderDisplayId(order)}</div>
                         <div className="text-sm text-gray-600">Placed on {created.toLocaleString()}</div>
                       </div>
 

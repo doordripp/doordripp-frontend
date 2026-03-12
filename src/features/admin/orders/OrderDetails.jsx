@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import adminAPI from "../../../services/adminAPI";
+import { getOrderDisplayId } from "../../../utils/orderUtils";
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -61,7 +62,7 @@ export default function OrderDetails() {
     <div>
       <button onClick={() => navigate(-1)} className="mb-4 text-sm text-blue-600">← Back</button>
 
-      <h3 className="text-xl font-semibold mb-3">Order #{String(order._id).slice(-8)}</h3>
+      <h3 className="text-xl font-semibold mb-3">Order {getOrderDisplayId(order)}</h3>
       <div className="bg-white p-4 rounded shadow mb-4">
         <p className="mb-2"><strong>Customer:</strong> {order.customer || order.user?.name || 'Unknown'}</p>
         <p className="mb-2"><strong>Email:</strong> {order.customerEmail || order.user?.email || '—'}</p>

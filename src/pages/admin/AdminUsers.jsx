@@ -1,212 +1,233 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, Navigate } from 'react-router-dom'
-import { UserPlus, Search, Filter, Edit, Trash2, Shield, User, X } from 'lucide-react'
-import { AdminButton, AdminTable } from '../../components/ui'
+import { Search, Filter, Edit, Trash2, Shield, User, X, Mail, CircleOff } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { AdminTable } from '../../components/ui'
 import adminAPI from '../../services/adminAPI'
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
+import { usePanelBase } from '../../hooks/usePanelBase'
+import RoleChangeModal from './RoleChangeModal'
+import { MANAGED_ROLE_OPTIONS, getDisplayRoles, getRoleMeta, normalizeManagedRoles } from './userRolesConfig'
+
+const roleOptions = [
+  { value: 'all', label: 'All Access' },
+  { value: 'customer', label: 'Customer Only' },
+  { value: 'admin', label: 'Admins' },
+  { value: 'manager', label: 'Managers' },
+  { value: 'delivery_partner', label: 'Delivery Partners' }
+]
+
+const mapUser = (user) => {
+  const managedRoles = normalizeManagedRoles(user.roles || [])
+  return {
+    ...user,
+    id: user._id || user.id,
+    roles: managedRoles,
+    displayRoles: getDisplayRoles(managedRoles),
+    status: user.isBanned || user.blocked ? 'inactive' : 'active',
+    blocked: Boolean(user.isBanned || user.blocked),
+    lastActivity: user.lastLogin || user.updatedAt || user.createdAt
+  }
+}
 
 export default function AdminUsers() {
   const { user } = useAuth()
+  const base = usePanelBase()
+  const location = useLocation()
   const isDeliveryPartner = hasDeliveryPartnerAccess(user)
-  
-  if (isDeliveryPartner) {
-    return <Navigate to="/admin/orders" replace />
-  }
-
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
-  const [showAddUserModal, setShowAddUserModal] = useState(false)
+  const [showRoleModal, setShowRoleModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const location = useLocation()
 
-  const roleOptions = [
-    { value: 'all', label: 'All Roles' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'manager', label: 'Manager' },
-    { value: 'delivery_partner', label: 'Delivery Partner' },
-    { value: 'customer', label: 'Customer' }
-  ]
+  if (isDeliveryPartner) {
+    return <Navigate to={`${base}/orders`} replace />
+  }
 
-  // Mock user data
-  const mockUsers = [
-    {
-      id: 1,
-      name: 'John Admin',
-      email: 'admin@doordripp.local',
-      role: 'admin',
-      status: 'active',
-      lastLogin: '2024-01-15T10:30:00Z',
-      createdAt: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: 2,
-      name: 'Jane Doe',
-      email: 'jane.doe@email.com',
-      role: 'customer',
-      status: 'active',
-      lastLogin: '2024-01-14T15:45:00Z',
-      createdAt: '2024-01-10T09:15:00Z'
-    },
-    {
-      id: 3,
-      name: 'Mike Manager',
-      email: 'mike.manager@doordripp.local',
-      role: 'manager',
-      status: 'active',
-      lastLogin: '2024-01-13T08:20:00Z',
-      createdAt: '2024-01-05T12:00:00Z'
-    },
-    {
-      id: 4,
-      name: 'Sarah Smith',
-      email: 'sarah.smith@email.com',
-      role: 'customer',
-      status: 'inactive',
-      lastLogin: '2024-01-10T14:30:00Z',
-      createdAt: '2024-01-08T16:45:00Z'
+  const loadUsers = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams(location.search || '')
+      const query = params.get('q') || ''
+      if (query) setSearchTerm(query)
+
+      const response = await adminAPI.getAllUsers(query ? { search: query } : {})
+      const list = response?.users || response || []
+      setUsers(list.map(mapUser))
+    } catch (error) {
+      console.error('Failed to load users:', error)
+      toast.error(error?.response?.data?.error || 'Failed to load users')
+      setUsers([])
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
   useEffect(() => {
-    let mounted = true
-    setLoading(true)
-    
-    // Read optional query param 'q' from location and use as search
-    const params = new URLSearchParams(location.search || '')
-    const q = params.get('q') || ''
-    if (q) setSearchTerm(q)
-
-    // Try fetching real users from API; pass search if available
-    adminAPI.getCustomers(q ? { search: q } : {})
-      .then((res) => {
-        if (!mounted) return
-        // API returns { users: [...]} or array; normalize and transform
-        const data = (res && (res.users || res)) || []
-        
-        if (data && data.length > 0) {
-          const transformedUsers = data.map(user => ({
-            ...user,
-            role: user.roles && user.roles.length > 0 ? user.roles[0] : 'customer',
-            status: user.blocked ? 'inactive' : 'active',
-            lastLogin: user.lastLogin || user.createdAt || new Date().toISOString()
-          }))
-          setUsers(transformedUsers)
-        } else {
-          // No data from API, use mock data
-          console.warn('No users returned from API, using mock data')
-          if (q) {
-            const filtered = mockUsers.filter(u =>
-              u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase())
-            )
-            setUsers(filtered)
-          } else {
-            setUsers(mockUsers)
-          }
-        }
-      })
-      .catch((err) => {
-        console.warn('Failed to load users from API, falling back to mock', err)
-        if (!mounted) return
-        if (q) {
-          const filtered = mockUsers.filter(u =>
-            u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase())
-          )
-          setUsers(filtered)
-        } else {
-          setUsers(mockUsers)
-        }
-      })
-      .finally(() => {
-        if (mounted) setLoading(false)
-      })
-
-    return () => { mounted = false }
+    loadUsers()
   }, [location.search])
 
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800'
-      case 'manager':
-        return 'bg-purple-100 text-purple-800'
-      case 'delivery_partner':
-        return 'bg-green-100 text-green-800'
-      case 'customer':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+  const filteredUsers = useMemo(() => (
+    users.filter((candidate) => {
+      const query = searchTerm.toLowerCase()
+      const matchesSearch =
+        (candidate.name || '').toLowerCase().includes(query) ||
+        (candidate.email || '').toLowerCase().includes(query)
+
+      const matchesRole =
+        roleFilter === 'all' ||
+        (roleFilter === 'customer'
+          ? candidate.roles.length === 0
+          : candidate.roles.includes(roleFilter))
+
+      return matchesSearch && matchesRole
+    })
+  ), [users, searchTerm, roleFilter])
+
+  const summaryCards = [
+    { label: 'Total Accounts', value: users.length, icon: User, tone: 'bg-white text-gray-900 border-gray-200' },
+    { label: 'Customer Only', value: users.filter((candidate) => candidate.roles.length === 0).length, icon: Mail, tone: 'bg-gray-50 text-gray-900 border-gray-200' },
+    { label: 'Managers', value: users.filter((candidate) => candidate.roles.includes('manager')).length, icon: Shield, tone: 'bg-gray-800 text-white border-gray-800' },
+    { label: 'Delivery Partners', value: users.filter((candidate) => candidate.roles.includes('delivery_partner')).length, icon: CircleOff, tone: 'bg-gray-600 text-white border-gray-600' },
+    { label: 'Admins', value: users.filter((candidate) => candidate.roles.includes('admin')).length, icon: Shield, tone: 'bg-black text-white border-black' }
+  ]
+
+  const handleOpenRoleModal = (targetUser) => {
+    setEditingUser(targetUser)
+    setShowRoleModal(true)
+  }
+
+  const handleOpenEditModal = (targetUser) => {
+    setEditingUser(targetUser)
+    setShowEditModal(true)
+  }
+
+  const handleDeleteUser = async (userId) => {
+    const targetUser = users.find((candidate) => candidate.id === userId)
+    if (!targetUser) return
+
+    if (targetUser.roles.includes('admin') && targetUser.email === 'admin@doordripp.local') {
+      toast.error('The primary admin account cannot be deleted')
+      return
+    }
+
+    if (!window.confirm(`Delete ${targetUser.name}? This cannot be undone.`)) return
+
+    try {
+      await adminAPI.deleteUser(userId)
+      setUsers((current) => current.filter((candidate) => candidate.id !== userId))
+      toast.success('User removed')
+    } catch (error) {
+      console.error('Failed to delete user:', error)
+      toast.error(error?.response?.data?.error || 'Failed to delete user')
     }
   }
 
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case 'admin':
-        return <Shield size={14} />
-      case 'manager':
-        return <Shield size={14} />
-      case 'delivery_partner':
-        return <Shield size={14} />
-      case 'customer':
-        return <User size={14} />
-      default:
-        return <User size={14} />
+  const handleRoleChange = async (userId, roles) => {
+    try {
+      const response = await adminAPI.changeUserRole(userId, roles)
+      const updatedUser = mapUser(response.user)
+      setUsers((current) => current.map((candidate) => (
+        candidate.id === userId ? { ...candidate, ...updatedUser } : candidate
+      )))
+      setShowRoleModal(false)
+      setEditingUser(updatedUser)
+      toast.success('Access updated')
+    } catch (error) {
+      console.error('Failed to update roles:', error)
+      toast.error(error?.response?.data?.error || 'Failed to update roles')
+      throw error
     }
   }
 
-  const getStatusColor = (status) => {
-    return status === 'active' 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-gray-100 text-gray-800'
+  const handleSaveUser = async (formData) => {
+    if (!editingUser) return
+
+    try {
+      const response = await adminAPI.updateUser(editingUser.id, {
+        name: formData.name,
+        email: formData.email,
+        roles: formData.roles,
+        blocked: formData.status === 'inactive'
+      })
+
+      const updatedUser = mapUser(response)
+      setUsers((current) => current.map((candidate) => (
+        candidate.id === editingUser.id ? { ...candidate, ...updatedUser } : candidate
+      )))
+      setShowEditModal(false)
+      setEditingUser(null)
+      toast.success('User updated')
+    } catch (error) {
+      console.error('Failed to update user:', error)
+      toast.error(error?.response?.data?.error || 'Failed to update user')
+    }
   }
 
   const columns = [
     {
-      header: 'User',
+      header: 'Account',
       accessor: 'name',
-      render: (user) => (
+      render: (candidate) => (
         <div>
-          <div className="font-medium text-gray-900">{user.name}</div>
-          <div className="text-sm text-gray-500">{user.email}</div>
+          <div className="font-semibold text-gray-900">{candidate.name}</div>
+          <div className="mt-1 text-sm text-gray-500">{candidate.email}</div>
         </div>
       )
     },
     {
-      header: 'Role',
-      accessor: 'role',
-      render: (user) => (
-        <select
-          value={user.role || 'customer'}
-          onChange={(e) => handleRoleChange(user._id || user.id, e.target.value)}
-          className={`px-2 py-1 rounded-full text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${getRoleColor(user.role)}`}
-        >
-          <option value="customer">Customer</option>
-          <option value="manager">Manager</option>
-          <option value="delivery_partner">Delivery Partner</option>
-          <option value="admin">Admin</option>
-        </select>
+      header: 'Access',
+      accessor: 'displayRoles',
+      render: (candidate) => (
+        <div className="flex flex-wrap items-center gap-2">
+          {candidate.displayRoles.map((roleId) => {
+            const role = getRoleMeta(roleId)
+            return (
+              <span
+                key={`${candidate.id}-${roleId}`}
+                className={`rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${role.badgeClass}`}
+              >
+                {role.name}
+              </span>
+            )
+          })}
+          <button
+            onClick={() => handleOpenRoleModal(candidate)}
+            className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-[11px] font-semibold text-gray-600 transition hover:border-gray-300 hover:bg-gray-50"
+            title="Manage elevated roles"
+          >
+            <Shield size={12} />
+            Edit Access
+          </button>
+        </div>
       )
     },
     {
       header: 'Status',
       accessor: 'status',
-      render: (user) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
-          {user.status === 'active' ? 'Active' : 'Inactive'}
+      render: (candidate) => (
+        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${candidate.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+          {candidate.status === 'active' ? 'Active' : 'Inactive'}
         </span>
       )
     },
     {
-      header: 'Last Login',
-      accessor: 'lastLogin',
-      render: (user) => {
-        const date = new Date(user.lastLogin)
+      header: 'Last Activity',
+      accessor: 'lastActivity',
+      render: (candidate) => {
+        const timestamp = candidate.lastActivity ? new Date(candidate.lastActivity) : null
+        if (!timestamp || Number.isNaN(timestamp.getTime())) {
+          return <span className="text-sm text-gray-400">No recent activity</span>
+        }
+
         return (
           <div>
-            <div className="text-sm">{date.toLocaleDateString()}</div>
-            <div className="text-xs text-gray-500">{date.toLocaleTimeString()}</div>
+            <div className="text-sm text-gray-900">{timestamp.toLocaleDateString()}</div>
+            <div className="text-xs text-gray-500">{timestamp.toLocaleTimeString()}</div>
           </div>
         )
       }
@@ -214,20 +235,20 @@ export default function AdminUsers() {
     {
       header: 'Actions',
       accessor: 'actions',
-      render: (user) => (
-        <div className="flex space-x-2">
-          <button 
-            onClick={() => handleEditUser(user)}
-            className="text-blue-600 hover:text-blue-900"
-            title="Edit User"
+      render: (candidate) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleOpenEditModal(candidate)}
+            className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-700"
+            title="Edit user"
           >
             <Edit size={16} />
           </button>
-          <button 
-            onClick={() => handleDeleteUser(user.id)}
-            className="text-red-600 hover:text-red-900"
-            title="Delete User"
-            disabled={user.role === 'admin' && user.email === 'admin@doordripp.local'}
+          <button
+            onClick={() => handleDeleteUser(candidate.id)}
+            className="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-700"
+            title="Delete user"
+            disabled={candidate.roles.includes('admin') && candidate.email === 'admin@doordripp.local'}
           >
             <Trash2 size={16} />
           </button>
@@ -236,309 +257,249 @@ export default function AdminUsers() {
     }
   ]
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter
-
-    return matchesSearch && matchesRole
-  })
-
-  const handleAddUser = () => {
-    setEditingUser(null)
-    setShowAddUserModal(true)
-  }
-
-  const handleEditUser = (user) => {
-    setEditingUser(user)
-    setShowAddUserModal(true)
-  }
-
-  const handleDeleteUser = async (userId) => {
-    const user = users.find(u => u.id === userId)
-    if (user.role === 'admin' && user.email === 'admin@doordripp.local') {
-      alert('Cannot delete the main admin user')
-      return
-    }
-    
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await adminAPI.deleteUser(userId)
-        setUsers(users.filter(u => u.id !== userId))
-      } catch (err) {
-        console.error('Failed to delete user:', err)
-        alert('Failed to delete user. Please try again.')
-      }
-    }
-  }
-
-  const handleRoleChange = async (userId, newRole) => {
-    try {
-      const updated = await adminAPI.changeUserRole(userId, [newRole])
-      
-      setUsers(users.map(u => 
-        u._id === userId || u.id === userId ? {
-          ...u,
-          role: updated.user.roles && updated.user.roles.length > 0 ? updated.user.roles[0] : 'customer'
-        } : u
-      ))
-    } catch (err) {
-      console.error('Failed to update user role:', err)
-      alert('Failed to update user role. Please try again.')
-    }
-  }
-
-  const handleSaveUser = async (userData) => {
-    try {
-      if (editingUser) {
-        // Update existing user
-        const updated = await adminAPI.updateUser(editingUser.id, {
-          name: userData.name,
-          email: userData.email,
-          roles: [userData.role],
-          blocked: userData.status === 'inactive'
-        })
-        
-        setUsers(users.map(u => 
-          u.id === editingUser.id ? {
-            ...u,
-            name: updated.name,
-            email: updated.email,
-            role: updated.roles && updated.roles.length > 0 ? updated.roles[0] : 'customer',
-            status: updated.blocked ? 'inactive' : 'active'
-          } : u
-        ))
-      } else {
-        // Note: For adding new users, you'd need a separate endpoint or use auth signup
-        // For now, this is a placeholder
-        const newUser = {
-          id: Date.now(),
-          ...userData,
-          status: 'active',
-          lastLogin: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        }
-        setUsers([newUser, ...users])
-      }
-      setShowAddUserModal(false)
-    } catch (err) {
-      console.error('Failed to save user:', err)
-      alert('Failed to save user. Please try again.')
-    }
-  }
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900" />
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="text-gray-600">Manage user accounts and permissions</p>
-        </div>
-        <AdminButton onClick={handleAddUser} className="flex items-center space-x-2">
-          <UserPlus size={16} />
-          <span>Add User</span>
-        </AdminButton>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            />
+      <div className="rounded-[28px] border border-gray-100 bg-white px-6 py-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">Admin Controls</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">Users and Roles</h1>
+            <p className="mt-2 max-w-2xl text-sm text-gray-500">
+              Customer access is implicit for every account. Assign only the extra roles that unlock staff and delivery capabilities.
+            </p>
           </div>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          >
-            {roleOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="text-sm text-gray-500">
-          {filteredUsers.length} users
+          <div className="flex flex-col gap-3 md:flex-row">
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-300 focus:bg-white"
+              />
+            </div>
+            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-3">
+              <Filter size={16} className="text-gray-400" />
+              <select
+                value={roleFilter}
+                onChange={(event) => setRoleFilter(event.target.value)}
+                className="bg-transparent py-2.5 pr-2 text-sm text-gray-700 outline-none"
+              >
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Users Table */}
-      <AdminTable 
-        data={filteredUsers}
-        columns={columns}
-      />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {summaryCards.map((card) => (
+          <div key={card.label} className={`rounded-[24px] border px-5 py-5 shadow-sm ${card.tone}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium opacity-80">{card.label}</p>
+                <p className="mt-3 text-3xl font-bold">{card.value}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-3">
+                <card.icon size={20} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {/* Add/Edit User Modal */}
-      {showAddUserModal && (
-        <UserModal
+      <div className="rounded-[28px] border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="mb-4 flex items-center justify-between px-2">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Account Directory</h2>
+            <p className="text-sm text-gray-500">{filteredUsers.length} visible accounts</p>
+          </div>
+        </div>
+        <AdminTable data={filteredUsers} columns={columns} />
+      </div>
+
+      {showRoleModal && editingUser && (
+        <RoleChangeModal
+          user={editingUser}
+          onSubmit={handleRoleChange}
+          onClose={() => {
+            setShowRoleModal(false)
+            setEditingUser(null)
+          }}
+        />
+      )}
+
+      {showEditModal && editingUser && (
+        <UserEditorModal
           user={editingUser}
           onSave={handleSaveUser}
-          onClose={() => setShowAddUserModal(false)}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingUser(null)
+          }}
         />
       )}
     </div>
   )
 }
 
-// User Modal Component
-function UserModal({ user, onSave, onClose }) {
+function UserEditorModal({ user, onSave, onClose }) {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    role: user?.role || 'customer',
-    status: user?.status || 'active'
+    status: user?.status || 'active',
+    roles: normalizeManagedRoles(user?.roles || [])
   })
-
   const [errors, setErrors] = useState({})
+  const displayRoles = getDisplayRoles(formData.roles)
 
-  const roles = ['customer', 'manager', 'delivery_partner', 'admin']
+  const handleFieldChange = (field, value) => {
+    setFormData((current) => ({ ...current, [field]: value }))
+    setErrors((current) => ({ ...current, [field]: '' }))
+  }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    
-    // Basic validation
-    const newErrors = {}
-    if (!formData.name.trim()) newErrors.name = 'Name is required'
-    if (!formData.email.trim()) newErrors.email = 'Email is required'
-    if (!formData.email.includes('@')) newErrors.email = 'Valid email is required'
-    
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
+  const handleRoleToggle = (roleId) => {
+    setFormData((current) => ({
+      ...current,
+      roles: current.roles.includes(roleId)
+        ? current.roles.filter((role) => role !== roleId)
+        : [...current.roles, roleId]
+    }))
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+
+    const nextErrors = {}
+    if (!formData.name.trim()) nextErrors.name = 'Name is required'
+    if (!formData.email.trim()) nextErrors.email = 'Email is required'
+    if (formData.email && !formData.email.includes('@')) nextErrors.email = 'Enter a valid email address'
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors)
       return
     }
 
-    setErrors({})
     onSave(formData)
   }
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }))
-    }
-  }
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md my-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">
-            {user ? 'Edit User' : 'Add New User'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X size={20} />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+        <div className="border-b border-gray-100 px-8 py-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Edit User</h2>
+              <p className="mt-1 text-sm text-gray-500">Update profile details, account state, and elevated access roles.</p>
+            </div>
+            <button onClick={onClose} className="rounded-2xl p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">
+              <X size={20} />
+            </button>
+          </div>
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                errors.name ? 'border-red-300' : 'border-gray-300'
-              }`}
-              required
-            />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+
+        <form onSubmit={handleSubmit} className="space-y-6 px-8 py-7">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Full Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(event) => handleFieldChange('name', event.target.value)}
+                className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-gray-300 focus:bg-white'}`}
+              />
+              {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Email Address</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(event) => handleFieldChange('email', event.target.value)}
+                className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${errors.email ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 focus:border-gray-300 focus:bg-white'}`}
+              />
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                errors.email ? 'border-red-300' : 'border-gray-300'
-              }`}
-              required
-            />
-            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role
-            </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Account Status</label>
             <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-              {roles.map(role => (
-                <option key={role} value={role}>
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              name="status"
               value={formData.status}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              onChange={(event) => handleFieldChange('status', event.target.value)}
+              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-gray-300 focus:bg-white"
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
-            <AdminButton 
-              type="button" 
-              variant="outline" 
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Elevated Roles</h3>
+                <p className="text-sm text-gray-500">Leave empty to keep the account as customer-only.</p>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {MANAGED_ROLE_OPTIONS.map((role) => {
+                const selected = formData.roles.includes(role.id)
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => handleRoleToggle(role.id)}
+                    className={`rounded-3xl border px-5 py-5 text-left transition ${selected ? role.cardClass : 'border-gray-200 bg-white text-gray-900 hover:border-gray-300 hover:bg-gray-50'}`}
+                  >
+                    <p className="text-lg font-bold">{role.name}</p>
+                    <p className={`mt-2 text-sm ${selected ? 'text-gray-100' : 'text-gray-500'}`}>{role.description}</p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-gray-100 bg-gray-50 px-5 py-4">
+            <p className="text-sm font-semibold text-gray-900">Effective access</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {displayRoles.map((roleId) => {
+                const role = getRoleMeta(roleId)
+                return (
+                  <span key={roleId} className={`rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${role.badgeClass}`}>
+                    {role.name}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-gray-100 pt-5">
+            <button
+              type="button"
               onClick={onClose}
+              className="rounded-2xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
               Cancel
-            </AdminButton>
-            <AdminButton type="submit">
-              {user ? 'Update User' : 'Add User'}
-            </AdminButton>
+            </button>
+            <button
+              type="submit"
+              className="rounded-2xl bg-black px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-900"
+            >
+              Save Changes
+            </button>
           </div>
         </form>
       </div>

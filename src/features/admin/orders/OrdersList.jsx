@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import adminAPI from "../../../services/adminAPI";
+import { getOrderDisplayId } from "../../../utils/orderUtils";
 
 export default function OrdersList(){
   const [orders, setOrders] = useState([]);
@@ -12,7 +13,7 @@ export default function OrdersList(){
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await adminAPI.getOrders();
+      const response = await adminAPI.getOrders({ limit: 'all' });
       // Backend returns { orders: [...], total, page, totalPages }
       const ordersList = response?.orders || response || [];
       console.log('📦 Orders synced from database:', ordersList.length);
@@ -108,7 +109,7 @@ export default function OrdersList(){
               ) : (
                 orders.map(o => (
                   <tr key={o._id} className="border-t hover:bg-gray-50 transition">
-                    <td className="p-3 text-sm font-mono">{String(o._id).slice(-8)}</td>
+                    <td className="p-3 text-sm font-mono">{getOrderDisplayId(o)}</td>
                     <td className="p-3">{o.customer || o.user?.name || 'Unknown'}</td>
                     <td className="p-3 font-semibold">₹{o.total?.toFixed(2) || '0.00'}</td>
                     <td className="p-3">

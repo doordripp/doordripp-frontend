@@ -9,7 +9,9 @@ import axios from 'axios';
 import './ProofOfDelivery.css';
 
 const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-const API_URL = import.meta.env.VITE_API_URL || runtimeOrigin;
+const rawApiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || runtimeOrigin;
+const API_URL = /\/api\/?$/.test(rawApiBase) ? rawApiBase.replace(/\/+$/, '') : `${rawApiBase.replace(/\/+$/, '')}/api`;
+const getStoredToken = () => localStorage.getItem('auth_token') || localStorage.getItem('accessToken');
 
 const ProofOfDelivery = () => {
   const { orderId } = useParams();
@@ -72,7 +74,7 @@ const ProofOfDelivery = () => {
       formData.append('signature', signature);
       formData.append('notes', notes);
 
-      const token = localStorage.getItem('accessToken');
+      const token = getStoredToken();
       const response = await axios.post(
         `${API_URL}/delivery/orders/${orderId}/proof`,
         formData,

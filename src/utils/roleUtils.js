@@ -10,13 +10,17 @@ export const ROLES = {
 
 // Normalize role to lowercase for comparison
 const normalizeRole = (role) => (role || '').toLowerCase().trim();
+export const getEffectiveRoles = (roles = []) => {
+  const roleArray = Array.isArray(roles) ? roles : [roles]
+  return Array.from(new Set([ROLES.CUSTOMER, ...roleArray.map(normalizeRole).filter(Boolean)]))
+}
 
 export const checkRole = (userRoles, requiredRole) => {
   if (!userRoles) return false;
   if (!requiredRole) return false;
   
   // Handle both array and string formats
-  const roles = Array.isArray(userRoles) ? userRoles : [userRoles];
+  const roles = getEffectiveRoles(userRoles);
   const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
   
   // Normalize all roles to lowercase
@@ -55,8 +59,7 @@ export const hasAdminAccess = (user) => {
   const roles = user.roles || user.role;
   if (!roles) return false;
   
-  const roleArray = Array.isArray(roles) ? roles : [roles];
-  const normalizedRoles = roleArray.map(normalizeRole);
+  const normalizedRoles = getEffectiveRoles(roles);
   return normalizedRoles.includes(ROLES.ADMIN) || normalizedRoles.includes(ROLES.SUPER_ADMIN);
 };
 
@@ -66,7 +69,6 @@ export const hasDeliveryPartnerAccess = (user) => {
   const roles = user.roles || user.role;
   if (!roles) return false;
 
-  const roleArray = Array.isArray(roles) ? roles : [roles];
-  const normalizedRoles = roleArray.map(normalizeRole);
+  const normalizedRoles = getEffectiveRoles(roles);
   return normalizedRoles.includes(ROLES.DELIVERY_PARTNER);
 };

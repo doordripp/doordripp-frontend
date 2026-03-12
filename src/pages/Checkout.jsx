@@ -8,6 +8,7 @@ import AddressSelector from '../components/AddressSelector'
 import addressIllustration from '../assets/map.png'
 import { Trash2, Edit } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { getOrderDisplayId } from '../utils/orderUtils'
 
 const DELIVERY_OPTIONS = [
   { id: 'priority', label: 'Priority Delivery', sublabel: 'Fastest', eta: '25 minutes', charge: 120, badge: 'FAST' },
@@ -278,7 +279,7 @@ export default function Checkout() {
             amount: razorOrder.amount,
             currency: razorOrder.currency || 'INR',
             name: 'DOORDRIPP',
-            description: `Order #${order._id}`,
+            description: `Order ${getOrderDisplayId(order)}`,
             customer_notification: 1,
             prefill: {
               name: user?.name || '',

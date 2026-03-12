@@ -22,6 +22,7 @@ import {
   getOSRMRoute,
   getStatusStyle
 } from '../../utils/tracking'
+import { getOrderDisplayId } from '../../utils/orderUtils'
 
 const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : ''
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || runtimeOrigin
@@ -235,7 +236,7 @@ export default function LiveOrderTracking() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">🚴 Live Tracking</h1>
-            <p className="text-sm text-gray-600">Order #{orderId?.slice(-8)}</p>
+            <p className="text-sm text-gray-600">Order {getOrderDisplayId(orderId)}</p>
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold text-blue-600">

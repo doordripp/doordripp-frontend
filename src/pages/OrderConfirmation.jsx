@@ -4,6 +4,7 @@ import { apiGet, apiPost } from '../services/apiClient'
 import InvoiceViewer from '../components/invoices/InvoiceViewer'
 import { transformOrderToInvoice, transformInvoiceApiToTemplate } from '../components/invoices/invoice-utils'
 import CompactOrderTracking from '../components/tracking/CompactOrderTracking'
+import { getOrderDisplayId } from '../utils/orderUtils'
 
 export default function OrderConfirmation() {
   const { id } = useParams()
@@ -146,7 +147,7 @@ export default function OrderConfirmation() {
     try {
       const url = window.location.href
       if (navigator.share) {
-        await navigator.share({ title: 'My Order', text: `Order ${order._id || order.id}`, url })
+        await navigator.share({ title: 'My Order', text: `Order ${getOrderDisplayId(order)}`, url })
       } else {
         await navigator.clipboard.writeText(url)
       }
@@ -202,7 +203,7 @@ export default function OrderConfirmation() {
                   : "We've received your order and will send updates to your email."}
               </p>
               <div className="mt-3 text-sm text-gray-700">
-                <div>Order ID: <span className="font-mono text-sm">{order._id || order.id}</span></div>
+                <div>Order ID: <span className="font-mono text-sm">{getOrderDisplayId(order)}</span></div>
                 {placedAt && <div>Placed on: <span className="text-gray-600">{placedAt.toLocaleString()}</span></div>}
               </div>
               {!isFailed && voucherDiscount > 0 && (

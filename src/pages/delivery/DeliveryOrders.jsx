@@ -1,350 +1,268 @@
-/**
- * Delivery Partner Dashboard - My Orders
- * Shows orders assigned to the logged-in delivery partner
- * Allows updating delivery status: Accepted → Picked Up → Out For Delivery → Delivered
- */
+import React, { useEffect, useState } from 'react'
+import { Package, Search, Truck, CheckCircle, Navigation, Camera } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
+import { useAuth } from '../../context/AuthContext'
+import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
+import deliveryAPI from '../../services/deliveryAPI'
+import { getOrderDisplayId, getOrderEntityId, matchesOrderIdQuery } from '../../utils/orderUtils'
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { io } from 'socket.io-client';
-import './DeliveryOrders.css';
+const DELIVERY_STATUS_FLOW = ['Order Placed', 'Accepted', 'Picked Up', 'Out For Delivery', 'Delivered']
 
-const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-const API_URL = import.meta.env.VITE_API_URL || (runtimeOrigin ? `${runtimeOrigin}/api` : '/api');
-const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || runtimeOrigin;
+const mapBackendOrder = (order) => ({
+  id: getOrderEntityId(order),
+  orderId: getOrderDisplayId(order),
+  customer: {
+    name: order.customer?.name || order.shippingAddress?.name || 'Customer',
+    phone: order.customer?.phone || order.shippingAddress?.phone || ''
+  },
+  shippingAddress: order.shippingAddress,
+  items: order.items || [],
+  total: Number(order.total || 0),
+  deliveryStatus: order.deliveryStatus || 'Order Placed',
+  status: order.status || 'pending',
+  createdAt: order.createdAt || order.date
+})
 
-const DeliveryOrders = () => {
-  const [orders, setOrders] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [updatingOrder, setUpdatingOrder] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+const deriveOrderStatus = (deliveryStatus, currentStatus) => {
+  switch (deliveryStatus) {
+    case 'Accepted':
+      return 'packed'
+    case 'Picked Up':
+      return 'processing'
+    case 'Out For Delivery':
+      return 'shipped'
+    case 'Delivered':
+      return 'delivered'
+    default:
+      return currentStatus
+  }
+}
+
+const getStatusOptions = (currentStatus) => {
+  const currentIndex = DELIVERY_STATUS_FLOW.indexOf(currentStatus)
+  return currentIndex === -1 ? DELIVERY_STATUS_FLOW : DELIVERY_STATUS_FLOW.slice(currentIndex)
+}
+
+export default function DeliveryOrders() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   useEffect(() => {
-    fetchMyOrders();
-    fetchStats();
-
-    // Connect to socket.io for real-time updates
-    const token = localStorage.getItem('token');
-    if (token) {
-      const socket = io(SOCKET_URL, {
-        auth: { token },
-        reconnection: true
-      });
-
-      socket.on('connect', () => {
-        console.log('[DeliveryPartner] Socket connected');
-      });
-
-      socket.on('orderStatusUpdated', (data) => {
-        console.log('[DeliveryPartner] Order status updated:', data);
-        // Refresh orders when any order status changes
-        fetchMyOrders();
-        fetchStats();
-      });
-
-      return () => {
-        socket.disconnect();
-      };
-    }
-  }, []);
-
-  const fetchMyOrders = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/delivery-partner/orders`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.success) {
-        setOrders(response.data.orders);
+    const load = async () => {
+      setLoading(true)
+      try {
+        const data = await deliveryAPI.getMyOrders()
+        const list = data?.orders || data || []
+        setOrders(list.map(mapBackendOrder))
+      } catch (err) {
+        console.error('Failed to load my delivery orders:', err)
+        setOrders([])
+      } finally {
+        setLoading(false)
       }
-      setError('');
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-      setError(err.response?.data?.error || 'Failed to load orders');
-    } finally {
-      setLoading(false);
     }
-  };
 
-  const fetchStats = async () => {
+    load()
+  }, [])
+
+  const filtered = orders.filter((order) => {
+    const query = searchTerm.toLowerCase()
+    const matchesSearch =
+      matchesOrderIdQuery(order, query) ||
+      order.customer.name.toLowerCase().includes(query) ||
+      (order.customer.phone || '').toLowerCase().includes(query)
+
+    const status = order.deliveryStatus || 'Order Placed'
+    const matchesStatus = statusFilter === 'all' || status === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  const handleStatusChange = async (orderId, nextStatus) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/delivery-partner/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.success) {
-        setStats(response.data.stats);
-      }
+      await deliveryAPI.updateOrderStatus(orderId, nextStatus)
+      setOrders((current) =>
+        current.map((order) =>
+          order.id === orderId
+            ? {
+                ...order,
+                deliveryStatus: nextStatus,
+                status: deriveOrderStatus(nextStatus, order.status)
+              }
+            : order
+        )
+      )
+      toast.success(`Order marked ${nextStatus}`)
     } catch (err) {
-      console.error('Error fetching stats:', err);
+      toast.error(err?.response?.data?.error || 'Failed to update delivery status')
     }
-  };
-
-  const updateOrderStatus = async (orderId, newStatus) => {
-    if (!window.confirm(`Update order status to "${newStatus}"?`)) {
-      return;
-    }
-
-    try {
-      setUpdatingOrder(orderId);
-      const token = localStorage.getItem('token');
-      const response = await axios.patch(
-        `${API_URL}/delivery-partner/orders/${orderId}/status`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        alert(`Order status updated to ${newStatus}`);
-        fetchMyOrders();
-        fetchStats();
-      }
-    } catch (err) {
-      console.error('Error updating status:', err);
-      alert(err.response?.data?.error || 'Failed to update status');
-    } finally {
-      setUpdatingOrder(null);
-    }
-  };
+  }
 
   const getStatusColor = (status) => {
-    const colors = {
-      'Order Placed': '#94a3b8',
-      'Accepted': '#60a5fa',
-      'Picked Up': '#a78bfa',
-      'Out For Delivery': '#f97316',
-      'Delivered': '#10b981',
-      'Cancelled': '#ef4444'
-    };
-    return colors[status] || '#6b7280';
-  };
+    switch (status) {
+      case 'Order Placed':
+        return 'bg-slate-100 text-slate-800'
+      case 'Accepted':
+        return 'bg-blue-100 text-blue-800'
+      case 'Picked Up':
+        return 'bg-violet-100 text-violet-800'
+      case 'Out For Delivery':
+        return 'bg-orange-100 text-orange-800'
+      case 'Delivered':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
 
   const getStatusIcon = (status) => {
-    const icons = {
-      'Order Placed': '📋',
-      'Accepted': '✅',
-      'Picked Up': '📦',
-      'Out For Delivery': '🚚',
-      'Delivered': '✔️',
-      'Cancelled': '❌'
-    };
-    return icons[status] || '📋';
-  };
+    switch (status) {
+      case 'Order Placed':
+        return <Package size={14} />
+      case 'Accepted':
+        return <CheckCircle size={14} />
+      case 'Picked Up':
+        return <Package size={14} />
+      case 'Out For Delivery':
+        return <Truck size={14} />
+      case 'Delivered':
+        return <CheckCircle size={14} />
+      default:
+        return <Package size={14} />
+    }
+  }
 
-  const getNextStatus = (currentStatus) => {
-    const flow = {
-      'Order Placed': 'Accepted',
-      'Accepted': 'Picked Up',
-      'Picked Up': 'Out For Delivery',
-      'Out For Delivery': 'Delivered'
-    };
-    return flow[currentStatus];
-  };
+  if (!isDeliveryPartner) {
+    return <div className="p-6 text-center text-gray-500">This panel is only for delivery partners.</div>
+  }
 
-  const canUpdateStatus = (status) => {
-    return status !== 'Delivered' && status !== 'Cancelled';
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (loading && orders.length === 0) {
+  if (loading) {
     return (
-      <div className="delivery-orders">
-        <div className="loading">Loading your orders...</div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
       </div>
-    );
+    )
   }
 
   return (
-    <div className="delivery-orders">
-      <div className="header">
-        <h1>My Deliveries</h1>
-        <button onClick={fetchMyOrders} className="btn-refresh" disabled={loading}>
-          {loading ? '⏳' : '🔄'} Refresh
-        </button>
-      </div>
-
-      {/* Statistics */}
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-value">{stats.activeOrders}</div>
-            <div className="stat-label">Active Orders</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.completedOrders}</div>
-            <div className="stat-label">Completed</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.todayOrders}</div>
-            <div className="stat-label">Today</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.totalOrders}</div>
-            <div className="stat-label">Total</div>
-          </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Deliveries</h1>
+          <p className="text-gray-600">Orders assigned to you. Update statuses as you progress.</p>
         </div>
-      )}
-
-      {error && <div className="error-message">{error}</div>}
-
-      {/* Orders List */}
-      <div className="orders-grid">
-        {orders.length === 0 ? (
-          <div className="no-orders">
-            <p>No orders assigned to you yet</p>
-          </div>
-        ) : (
-          orders.map((order) => (
-            <div key={order.id} className="order-card">
-              <div className="order-header">
-                <h3>Order #{order.orderId}</h3>
-                <span
-                  className="status-badge"
-                  style={{ backgroundColor: getStatusColor(order.deliveryStatus) }}
-                >
-                  {getStatusIcon(order.deliveryStatus)} {order.deliveryStatus}
-                </span>
-              </div>
-
-              <div className="order-details">
-                <div className="detail-row">
-                  <span className="label">Customer:</span>
-                  <span className="value">{order.customer?.name || 'N/A'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Phone:</span>
-                  <span className="value">{order.customer?.phone || 'N/A'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Total:</span>
-                  <span className="value">₹{order.total.toFixed(2)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Items:</span>
-                  <span className="value">{order.items?.length || 0} items</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Address:</span>
-                  <span className="value">
-                    {order.shippingAddress?.line1}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Ordered:</span>
-                  <span className="value">{formatDate(order.createdAt)}</span>
-                </div>
-              </div>
-
-              <div className="order-actions">
-                {canUpdateStatus(order.deliveryStatus) && (
-                  <button
-                    className="btn-action btn-primary"
-                    onClick={() => updateOrderStatus(order.id, getNextStatus(order.deliveryStatus))}
-                    disabled={updatingOrder === order.id}
-                  >
-                    {updatingOrder === order.id
-                      ? 'Updating...'
-                      : `Mark as ${getNextStatus(order.deliveryStatus)}`}
-                  </button>
-                )}
-                
-                <button
-                  className="btn-action btn-secondary"
-                  onClick={() => setSelectedOrder(order)}
-                >
-                  View Details
-                </button>
-              </div>
-            </div>
-          ))
-        )}
+        <div className="text-sm text-gray-500">{filtered.length} deliveries</div>
       </div>
 
-      {/* Order Details Modal */}
-      {selectedOrder && (
-        <div className="modal-overlay" onClick={() => setSelectedOrder(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Order #{selectedOrder.orderId}</h2>
-              <button className="btn-close" onClick={() => setSelectedOrder(null)}>
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="section">
-                <h3>Customer Information</h3>
-                <p><strong>Name:</strong> {selectedOrder.customer?.name}</p>
-                <p><strong>Phone:</strong> {selectedOrder.customer?.phone}</p>
-              </div>
-
-              <div className="section">
-                <h3>Delivery Address</h3>
-                <p>{selectedOrder.shippingAddress?.line1}</p>
-                {selectedOrder.shippingAddress?.line2 && <p>{selectedOrder.shippingAddress.line2}</p>}
-                <p>{selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} - {selectedOrder.shippingAddress?.pincode}</p>
-              </div>
-
-              <div className="section">
-                <h3>Order Items</h3>
-                {selectedOrder.items?.map((item, index) => (
-                  <div key={index} className="item-row">
-                    <img src={item.image} alt={item.name} className="item-image" />
-                    <div className="item-info">
-                      <p className="item-name">{item.name}</p>
-                      <p className="item-details">Qty: {item.quantity} × ₹{item.price}</p>
-                    </div>
-                    <div className="item-total">₹{(item.quantity * item.price).toFixed(2)}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="section">
-                <h3>Order Summary</h3>
-                <div className="summary-row">
-                  <span>Subtotal:</span>
-                  <span>₹{selectedOrder.total.toFixed(2)}</span>
-                </div>
-                <div className="summary-row total">
-                  <strong>Total:</strong>
-                  <strong>₹{selectedOrder.total.toFixed(2)}</strong>
-                </div>
-              </div>
-
-              {canUpdateStatus(selectedOrder.deliveryStatus) && (
-                <button
-                  className="btn-action btn-primary btn-full"
-                  onClick={() => {
-                    updateOrderStatus(selectedOrder.id, getNextStatus(selectedOrder.deliveryStatus));
-                    setSelectedOrder(null);
-                  }}
-                  disabled={updatingOrder === selectedOrder.id}
-                >
-                  {updatingOrder === selectedOrder.id
-                    ? 'Updating...'
-                    : `Mark as ${getNextStatus(selectedOrder.deliveryStatus)}`}
-                </button>
-              )}
-            </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search by order, customer..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All statuses</option>
+            {DELIVERY_STATUS_FLOW.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-400">
+          No deliveries found.
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Order</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Customer</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Total</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((order) => {
+                const status = order.deliveryStatus || 'Order Placed'
+                return (
+                  <tr key={order.id} className="border-b border-gray-100">
+                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{order.orderId}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{order.customer.name}</div>
+                      <div className="text-xs text-gray-500">{order.customer.phone}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
+                          {getStatusIcon(status)}
+                          <span>{status}</span>
+                        </span>
+                        {status !== 'Delivered' && (
+                          <select
+                            value={status}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            className="border border-gray-300 rounded-md px-2 py-1 text-xs"
+                          >
+                            {getStatusOptions(status).map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-gray-900">
+                      Rs {order.total.toFixed ? order.total.toFixed(2) : order.total}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/delivery/track/${order.id}`)}
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          <Navigation size={14} />
+                          Track
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/delivery/proof/${order.id}`)}
+                          className="inline-flex items-center gap-1 rounded-md bg-black px-2 py-1 text-xs font-medium text-white hover:bg-gray-800"
+                        >
+                          <Camera size={14} />
+                          Proof
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
-  );
-};
-
-export default DeliveryOrders;
-
+  )
+}

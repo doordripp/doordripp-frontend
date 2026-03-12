@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function AdminTable({ data = [], columns = [], children, className = '' }) {
+export default function AdminTable({ data = [], columns = [], children, className = '', onRowClick }) {
   if (!columns.length) {
     // Fallback to children-based usage
     return (
@@ -30,7 +30,23 @@ export default function AdminTable({ data = [], columns = [], children, classNam
         </thead>
         <tbody className="divide-y divide-gray-200 bg-white">
           {data.map((row, rowIndex) => (
-            <tr key={rowIndex} className="hover:bg-gray-50">
+            <tr
+              key={rowIndex}
+              className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''}`}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              role={onRowClick ? 'button' : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onRowClick(row)
+                      }
+                    }
+                  : undefined
+              }
+            >
               {columns.map((column, colIndex) => (
                 <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {column.render ? column.render(row) : row[column.accessor]}

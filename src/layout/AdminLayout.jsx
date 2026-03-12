@@ -2,17 +2,15 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "../components/Admin/AdminSidebar";
-import AdminHeader from "../components/Admin/AdminHeader";
-import { useAdmin } from "../context/AdminContext";
+import PanelHeader from "../components/Panel/PanelHeader";
 
 export default function AdminLayout() {
-  const { sidebarOpen } = useAdmin();
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {sidebarOpen && <AdminSidebar />}
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
       <div className="flex-1 flex flex-col">
-        <AdminHeader />
-        <main className="p-6">
+        <PanelHeader title="Admin Panel" subtitle="Full system management" />
+        <main className="p-6 flex-1">
           <Outlet />
         </main>
       </div>

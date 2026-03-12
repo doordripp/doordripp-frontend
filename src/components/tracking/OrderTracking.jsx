@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { getOrderDisplayId } from '../../utils/orderUtils';
 import './OrderTracking.css';
 
 const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -199,7 +200,7 @@ export default function OrderTracking() {
         <div className="order-summary-card">
           <div className="order-id">
             <span className="label">Order ID:</span>
-            <span className="value">#{order._id?.toString().slice(-8).toUpperCase()}</span>
+            <span className="value">{getOrderDisplayId(order)}</span>
           </div>
           <div className="order-info">
             <div className="info-item">

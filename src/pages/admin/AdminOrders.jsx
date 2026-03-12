@@ -1,10 +1,13 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Package, Search, Filter, Eye, Truck, CheckCircle, X, MapPin, ExternalLink } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
 import { apiGet, apiPut, apiPost, apiPatch } from '../../services/apiClient'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
+import { getOrderDisplayId, getOrderEntityId, matchesOrderIdQuery } from '../../utils/orderUtils'
+import { toast } from 'react-hot-toast'
 
 const DELIVERY_STATUS_FLOW = ['Order Placed', 'Accepted', 'Picked Up', 'Out For Delivery', 'Delivered']
 const LEGACY_TO_DELIVERY_STATUS = {
@@ -25,14 +28,51 @@ const getDeliveryStatus = (order) => {
 
 export default function AdminOrders() {
   const { user } = useAuth()
+  const { id: routeOrderId } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
   const currentUserId = String(user?._id || user?.id || '')
-  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  const isManagerPanel = location.pathname.startsWith('/manager')
+  const isDeliveryPartner = !isManagerPanel && hasDeliveryPartnerAccess(user)
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
+
+  const buildOrdersQuery = () => {
+    const params = new URLSearchParams({ limit: 'all' })
+    if (!isDeliveryPartner && statusFilter && statusFilter !== 'all') {
+      params.set('status', statusFilter)
+    }
+    return params.toString() ? `?${params.toString()}` : ''
+  }
+
+  const mapOrder = (order) => ({
+    id: getOrderEntityId(order),
+    customer: {
+      name: order.customer?.name || order.customer || order.shippingAddress?.name || 'Unknown',
+      email: order.customer?.email || order.customerEmail || ''
+    },
+    date: order.date || order.createdAt,
+    total: order.total || 0,
+    totalBeforeDiscount: order.totalBeforeDiscount || order.total || 0,
+    voucherDiscount: order.voucherDiscount || 0,
+    voucher: order.voucher || null,
+    status: order.status || 'pending',
+    assignedDeliveryPartner: order.assignedDeliveryPartner,
+    deliveryStatus: order.deliveryStatus || LEGACY_TO_DELIVERY_STATUS[order.status] || 'Order Placed',
+    statusHistory: order.statusHistory || [],
+    isTrial: order.isTrial || false,
+    trialItems: order.trialItems || [],
+    trialFee: order.trialFee || 0,
+    deliveryFee: order.deliveryFee || 0,
+    items: order.items || [],
+    deliveryPartner: order.deliveryPartner,
+    shippingAddress: order.shippingAddress,
+    shipping: { address: toAddressLine(order.shippingAddress), method: 'Standard Delivery' }
+  })
 
   const toAddressLine = (addr) => {
     if (!addr) return ''
@@ -64,29 +104,9 @@ export default function AdminOrders() {
     const load = async () => {
       setLoading(true)
       try {
-        const query = !isDeliveryPartner && statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : ''
+        const query = buildOrdersQuery()
         const res = await apiGet(`/admin/orders${query}`)
-        const mapped = (res.orders || []).map(o => ({
-          id: o.id || o._id,
-          customer: { name: o.customer || 'Unknown', email: o.customerEmail || '' },
-          date: o.date || o.createdAt,
-          total: o.total || 0,
-          totalBeforeDiscount: o.totalBeforeDiscount || o.total || 0,
-          voucherDiscount: o.voucherDiscount || 0,
-          voucher: o.voucher || null,
-          status: o.status || 'pending',
-          assignedDeliveryPartner: o.assignedDeliveryPartner,
-          deliveryStatus: o.deliveryStatus || LEGACY_TO_DELIVERY_STATUS[o.status] || 'Order Placed',
-          statusHistory: o.statusHistory || [],
-          isTrial: o.isTrial || false,
-          trialItems: o.trialItems || [],
-          trialFee: o.trialFee || 0,
-          deliveryFee: o.deliveryFee || 0,
-          items: o.items || [],
-          deliveryPartner: o.deliveryPartner,
-          shippingAddress: o.shippingAddress,
-          shipping: { address: toAddressLine(o.shippingAddress), method: 'Standard Delivery' }
-        }))
+        const mapped = (res.orders || []).map(mapOrder)
         setOrders(mapped)
       } catch (e) {
         console.error('Failed to load admin orders:', e)
@@ -97,6 +117,35 @@ export default function AdminOrders() {
     }
     load()
   }, [statusFilter, isDeliveryPartner])
+
+  // Sync selected order with route parameter (for deep linking /admin/orders/:id and /manager/orders/:id)
+  useEffect(() => {
+    if (!routeOrderId) {
+      setShowOrderDetails(false)
+      setSelectedOrder(null)
+      return
+    }
+
+    const found = orders.find(o => String(o.id) === String(routeOrderId))
+    if (found) {
+      setSelectedOrder(found)
+      setShowOrderDetails(true)
+    } else if (!loading) {
+      // If orders already loaded and not found, try fetching a single order directly
+      ;(async () => {
+        try {
+          const res = await apiGet(`/admin/orders/${routeOrderId}`)
+          if (res) {
+            const mapped = mapOrder(res)
+            setSelectedOrder(mapped)
+            setShowOrderDetails(true)
+          }
+        } catch (err) {
+          console.error('Failed to load order by id from route:', err)
+        }
+      })()
+    }
+  }, [routeOrderId, orders, loading])
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -179,7 +228,7 @@ export default function AdminOrders() {
       header: 'Order ID',
       accessor: 'id',
       render: (order) => (
-        <div className="font-medium text-gray-900">{order.id}</div>
+        <div className="font-medium text-gray-900">{getOrderDisplayId(order)}</div>
       )
     },
     {
@@ -230,9 +279,12 @@ export default function AdminOrders() {
       header: 'Actions',
       accessor: 'actions',
       render: (order) => (
-        <div className="flex space-x-2">
+        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
           <button 
-            onClick={() => handleViewOrder(order)}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleViewOrder(order)
+            }}
             className="text-blue-600 hover:text-blue-900"
             title="View Details"
           >
@@ -241,6 +293,7 @@ export default function AdminOrders() {
           <select
             value={isDeliveryPartner ? getDeliveryStatus(order) : order.status}
             onChange={(e) => handleStatusChange(order.id, e.target.value)}
+            onClick={(e) => e.stopPropagation()}
             disabled={isDeliveryPartner && String(order.assignedDeliveryPartner || order.deliveryPartner?.id || order.deliveryPartner?.riderId || '') !== currentUserId}
             className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
           >
@@ -268,8 +321,8 @@ export default function AdminOrders() {
   ]
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      matchesOrderIdQuery(order, searchTerm) ||
       order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer.email.toLowerCase().includes(searchTerm.toLowerCase())
     
@@ -282,6 +335,8 @@ export default function AdminOrders() {
   const handleViewOrder = (order) => {
     setSelectedOrder(order)
     setShowOrderDetails(true)
+    const basePath = location.pathname.startsWith('/manager') ? '/manager/orders' : '/admin/orders'
+    navigate(`${basePath}/${order.id}`, { replace: false })
   }
 
   const handleStatusChange = async (orderId, newStatus) => {
@@ -334,29 +389,9 @@ export default function AdminOrders() {
       const response = await apiPost(`/admin/orders/${orderId}/accept`, {})
       
       // Refresh orders list
-      const query = !isDeliveryPartner && statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : ''
+      const query = buildOrdersQuery()
       const res = await apiGet(`/admin/orders${query}`)
-      const mapped = (res.orders || []).map(o => ({
-        id: o.id || o._id,
-        customer: { name: o.customer || 'Unknown', email: o.customerEmail || '' },
-        date: o.date || o.createdAt,
-        total: o.total || 0,
-        totalBeforeDiscount: o.totalBeforeDiscount || o.total || 0,
-        voucherDiscount: o.voucherDiscount || 0,
-        voucher: o.voucher || null,
-        status: o.status || 'pending',
-        assignedDeliveryPartner: o.assignedDeliveryPartner,
-        deliveryStatus: o.deliveryStatus || LEGACY_TO_DELIVERY_STATUS[o.status] || 'Order Placed',
-        statusHistory: o.statusHistory || [],
-        isTrial: o.isTrial || false,
-        trialItems: o.trialItems || [],
-        trialFee: o.trialFee || 0,
-        deliveryFee: o.deliveryFee || 0,
-        items: o.items || [],
-        deliveryPartner: o.deliveryPartner,
-        shippingAddress: o.shippingAddress,
-        shipping: { address: toAddressLine(o.shippingAddress), method: 'Standard Delivery' }
-      }))
+      const mapped = (res.orders || []).map(mapOrder)
       setOrders(mapped)
       
       // Update selected order
@@ -428,13 +463,20 @@ export default function AdminOrders() {
       <AdminTable 
         data={filteredOrders}
         columns={columns}
+        onRowClick={handleViewOrder}
       />
 
       {/* Order Details Modal */}
       {showOrderDetails && selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
-          onClose={() => setShowOrderDetails(false)}
+          isDeliveryPartnerPanel={isDeliveryPartner}
+          onClose={() => {
+            setShowOrderDetails(false)
+            setSelectedOrder(null)
+            const basePath = location.pathname.startsWith('/manager') ? '/manager/orders' : '/admin/orders'
+            navigate(basePath, { replace: false })
+          }}
           onStatusChange={handleStatusChange}
           onAcceptDelivery={handleAcceptDelivery}
         />
@@ -444,10 +486,21 @@ export default function AdminOrders() {
 }
 
 // Order Details Modal Component
-function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery }) {
+function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery, isDeliveryPartnerPanel }) {
   const { user } = useAuth()
-  const isDeliveryPartner = hasDeliveryPartnerAccess(user)
+  const isDeliveryPartner = isDeliveryPartnerPanel
+  const isAdminOrManager = (user?.roles || []).some(r => ['admin', 'manager'].includes(r))
   const [accepting, setAccepting] = useState(false)
+  const [partners, setPartners] = useState([])
+  const [assigning, setAssigning] = useState(false)
+
+  useEffect(() => {
+    if (isAdminOrManager) {
+      import('../../services/managerAPI').then(m => {
+        m.default.getDeliveryPartners().then(data => setPartners(data.users || []))
+      })
+    }
+  }, [isAdminOrManager])
 
   const handleAccept = async () => {
     setAccepting(true)
@@ -455,6 +508,36 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
       await onAcceptDelivery(order.id)
     } finally {
       setAccepting(false)
+    }
+  }
+
+  const handleAssign = async (partnerId) => {
+    setAssigning(true)
+    try {
+      const adminAPI = (await import('../../services/adminAPI')).default
+      await adminAPI.assignDeliveryPartner(order.id, partnerId)
+      toast?.success?.('Partner assigned')
+      onClose() // Simplest way to refresh is to close and let parent refresh if they have a refresh mechanism, or we can just reload window
+      window.location.reload()
+    } catch (err) {
+      alert('Failed to assign partner')
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  const handleUnassign = async () => {
+    if (!window.confirm('Remove assignment?')) return
+    setAssigning(true)
+    try {
+      const adminAPI = (await import('../../services/adminAPI')).default
+      await adminAPI.unassignDeliveryPartner(order.id)
+      toast?.success?.('Assignment removed')
+      window.location.reload()
+    } catch (err) {
+      alert('Failed to unassign partner')
+    } finally {
+      setAssigning(false)
     }
   }
 
@@ -536,7 +619,7 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-lg p-6 w-full max-w-3xl my-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Order Details - {order.id}</h2>
+          <h2 className="text-xl font-bold">Order Details - {getOrderDisplayId(order)}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -601,6 +684,52 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
               )}
             </div>
           </div>
+
+          {/* Assignment Section for Admin/Manager */}
+          {isAdminOrManager && (
+            <div className="md:col-span-2 space-y-4">
+              <h3 className="text-lg font-semibold">Partner Assignment</h3>
+              <div className="bg-gray-900 text-white p-5 rounded-xl border border-gray-800 shadow-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gray-800 p-2 rounded-lg">
+                      <Truck size={20} className="text-blue-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold tracking-tight">Assignment Status</h4>
+                      {order.deliveryPartner?.riderId || order.assignedDeliveryPartner ? (
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-blue-400 text-xs font-bold uppercase">{order.deliveryPartner?.name || 'Assigned'}</span>
+                          <button 
+                            onClick={handleUnassign}
+                            disabled={assigning}
+                            className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-2 py-0.5 rounded text-[10px] uppercase font-black transition-all"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 text-xs italic">No rider assigned yet</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select 
+                      disabled={assigning}
+                      onChange={(e) => handleAssign(e.target.value)}
+                      className="bg-gray-800 border-none rounded-lg text-xs font-bold py-2 pl-3 pr-8 focus:ring-0 cursor-pointer hover:bg-gray-700 transition-colors"
+                      value=""
+                    >
+                      <option value="" disabled>Change Assignment</option>
+                      {partners.map(p => (
+                        <option key={p._id} value={p._id}>{p.name} ({p.deliveryPartner?.currentLoad || 0}/{Math.max(Number(p.deliveryPartner?.maxOrdersPerSlot) || 0, 10)})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Accept Delivery Button (for delivery partners) */}
           {isDeliveryPartner && !(order.deliveryPartner?.id || order.deliveryPartner?.riderId) && ['pending', 'confirmed', 'packed'].includes(order.status) && (
@@ -667,24 +796,8 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery })
                       Live Tracking
                       <ExternalLink size={14} />
                     </a>
-                    {isDeliveryPartner && (
-                      <button
-                        onClick={() => {
-                          const trackingUrl = `${window.location.origin}/order/${order.id}/track`;
-                          navigator.clipboard.writeText(trackingUrl);
-                          alert('Tracking link copied to clipboard! Share it with the customer.');
-                        }}
-                        className="px-4 py-2 bg-white border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 flex items-center justify-center gap-2 text-sm"
-                      >
-                        📋 Copy Tracking Link
-                      </button>
-                    )}
                   </div>
                 </div>
-                <p className="text-xs text-gray-600">
-                  The customer can track this order in real-time at: 
-                  <span className="font-mono ml-1">/order/{order.id}/track</span>
-                </p>
               </div>
             </div>
           )}

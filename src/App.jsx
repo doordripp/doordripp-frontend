@@ -42,6 +42,8 @@ import TrialPage from './features/trial/TrialPage'
 import RoleBasedRoute from './features/auth/RoleBasedRoute'
 import AuthenticatedRoute from './features/auth/AuthenticatedRoute'
 import AdminLayout from './layout/AdminLayout'
+import ManagerLayout from './layout/ManagerLayout'
+import DeliveryLayout from './layout/DeliveryLayout'
 import {
   AdminDashboard,
   AdminProducts,
@@ -53,8 +55,24 @@ import {
   AdminDeliveryZones,
   AdminCategories,
   AdminWebBanners,
-  AdminAppBanners
+  AdminAppBanners,
+  AdminDeliveryPartners
 } from './pages/admin'
+import {
+  ManagerDashboard,
+  ManagerProducts,
+  ManagerOrders,
+  ManagerCustomers,
+  ManagerDeliveryPartners,
+  ManagerDeliveryZones
+} from './pages/manager'
+import {
+  DeliveryDashboard,
+  DeliveryOrders,
+  DeliverySchedule
+} from './pages/delivery'
+import LiveTracking from './pages/delivery/LiveTracking'
+import ProofOfDelivery from './pages/delivery/ProofOfDelivery'
 import AddProduct from './features/admin/products/AddProduct'
 import { ROLES } from './utils/roleUtils'
 
@@ -210,25 +228,56 @@ function App() {
               <ScrollRestoration />
               <WishlistSyncHandler />
               <Routes>
-                {/* Admin Routes - Separate layout */}
+                {/* Admin Routes — admin only */}
                 <Route path="/admin" element={
-                  <RoleBasedRoute requiredRole={[ROLES.ADMIN, 'delivery_partner']}>
+                  <RoleBasedRoute requiredRole={[ROLES.ADMIN]}>
                     <AdminLayout />
                   </RoleBasedRoute>
                 }>
-                  <Route index element={<AdminOrders />} />
+                  <Route index element={<AdminDashboard />} />
                   <Route path="dashboard" element={<AdminDashboard />} />
                   <Route path="products" element={<AdminProducts />} />
                   <Route path="products/add" element={<AddProduct />} />
                   <Route path="orders" element={<AdminOrders />} />
+                  <Route path="orders/:id" element={<AdminOrders />} />
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="customers" element={<AdminCustomers />} />
                   <Route path="reports" element={<AdminReports />} />
                   <Route path="vouchers" element={<AdminVouchers />} />
                   <Route path="delivery-zones" element={<AdminDeliveryZones />} />
+                  <Route path="delivery-partners" element={<AdminDeliveryPartners />} />
                   <Route path="categories" element={<AdminCategories />} />
                   <Route path="banners-web" element={<AdminWebBanners />} />
                   <Route path="banners-app" element={<AdminAppBanners />} />
+                </Route>
+
+                {/* Manager Routes — manager + admin */}
+                <Route path="/manager" element={
+                  <RoleBasedRoute requiredRole={[ROLES.MANAGER, ROLES.ADMIN]}>
+                    <ManagerLayout />
+                  </RoleBasedRoute>
+                }>
+                  <Route index element={<ManagerDashboard />} />
+                  <Route path="products" element={<ManagerProducts />} />
+                  <Route path="products/add" element={<AddProduct />} />
+                  <Route path="orders" element={<ManagerOrders />} />
+                  <Route path="orders/:id" element={<ManagerOrders />} />
+                  <Route path="customers" element={<ManagerCustomers />} />
+                  <Route path="delivery-partners" element={<ManagerDeliveryPartners />} />
+                  <Route path="delivery-zones" element={<ManagerDeliveryZones />} />
+                </Route>
+
+                {/* Delivery Partner Routes — delivery_partner + admin */}
+                <Route path="/delivery" element={
+                  <RoleBasedRoute requiredRole={[ROLES.DELIVERY_PARTNER, ROLES.ADMIN]}>
+                    <DeliveryLayout />
+                  </RoleBasedRoute>
+                }>
+                  <Route index element={<DeliveryDashboard />} />
+                  <Route path="orders" element={<DeliveryOrders />} />
+                  <Route path="track/:orderId" element={<LiveTracking />} />
+                  <Route path="proof/:orderId" element={<ProofOfDelivery />} />
+                  <Route path="schedule" element={<DeliverySchedule />} />
                 </Route>
 
                 {/* Main App Routes */}
@@ -263,7 +312,7 @@ function App() {
                         <Route path="/support" element={<Support />} />
                         <Route path="/privacy" element={<PrivacyPolicy />} />
                         <Route path="/terms" element={<TermsAndConditions />} />
-                        <Route path="/delivery" element={<DeliveryDetails />} />
+                        <Route path="/delivery-info" element={<DeliveryDetails />} />
                       </Routes>
                     </main>
                     {/* Global Newsletter Section - Appears on all pages */}

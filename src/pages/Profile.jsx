@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { apiPost, apiPut, apiGet } from '../services/apiClient'
 import { useWishlist } from '../context/WishlistContext'
@@ -21,17 +21,11 @@ export default function Profile() {
   const [passwordModal, setPasswordModal] = useState({ open: false, type: 'success', message: '' })
   const addressText = '—'
 
-  // Check if user is admin
-  const isAdmin = user?.roles && Array.isArray(user.roles)
-    ? user.roles.some(r => r.toUpperCase() === 'ADMIN')
-    : false
-
-  // Redirect admin to admin panel
-  useEffect(() => {
-    if (isAdmin) {
-      navigate('/admin')
-    }
-  }, [isAdmin, navigate])
+  // Check if user has non-customer roles
+  const roles = user?.roles || []
+  const isAdmin = roles.some(r => r.toUpperCase() === 'ADMIN')
+  const isManager = roles.some(r => r.toUpperCase() === 'MANAGER')
+  const isDeliveryPartner = roles.some(r => r.toUpperCase() === 'DELIVERY_PARTNER')
 
   // sync editable inputs when user changes
   useEffect(() => {
@@ -175,9 +169,41 @@ export default function Profile() {
     <>
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="mb-8 auth-entry">
-            <h1 className="brand-title text-4xl">My Account</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage your profile and preferences</p>
+          <div className="mb-8 auth-entry flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="brand-title text-4xl">My Account</h1>
+              <p className="text-sm text-gray-600 mt-1">Manage your profile and preferences</p>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              {isAdmin && (
+                <Link 
+                  to="/admin" 
+                  className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm active:scale-95"
+                >
+                  <Shield size={16} />
+                  Go to Admin Panel
+                </Link>
+              )}
+              {isManager && (
+                <Link 
+                  to="/manager" 
+                  className="inline-flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-black transition-all shadow-sm active:scale-95"
+                >
+                  <Shield size={16} />
+                  Go to Manager Panel
+                </Link>
+              )}
+              {isDeliveryPartner && (
+                <Link 
+                  to="/delivery" 
+                  className="inline-flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm active:scale-95"
+                >
+                  <Shield size={16} />
+                  Go to Delivery Panel
+                </Link>
+              )}
+            </div>
           </div>
           <div className="profile-card p-6 hover-lift max-w-4xl mx-auto bg-white rounded-2xl shadow-md">
             <div className="flex flex-col sm:flex-row gap-6">

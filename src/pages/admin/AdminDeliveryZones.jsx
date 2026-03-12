@@ -5,6 +5,7 @@ import DeliveryZoneMapDrawer from "../../components/admin/DeliveryZoneMapDrawer"
 import { loadGoogleMaps } from "../../utils/googleMapsLoader";
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
+import { usePanelBase } from '../../hooks/usePanelBase'
 
 const emptyForm = {
   id: null,
@@ -23,10 +24,11 @@ const emptyForm = {
 
 export default function AdminDeliveryZones() {
   const { user } = useAuth()
+  const base = usePanelBase()
   const isDeliveryPartner = hasDeliveryPartnerAccess(user)
   
   if (isDeliveryPartner) {
-    return <Navigate to="/admin/orders" replace />
+    return <Navigate to={`${base}/orders`} replace />
   }
 
   const [zones, setZones] = useState([]);

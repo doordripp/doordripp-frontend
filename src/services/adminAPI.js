@@ -18,14 +18,14 @@ const adminAPI = {
   getOrders: async (q = {}) => (await api.get("/admin/orders", { params: q })).data,
   getOrder: async (id) => (await api.get(`/admin/orders/${id}`)).data,
   updateOrderStatus: async (id, status) => (await api.put(`/admin/orders/${id}/status`, { status })).data,
+  assignDeliveryPartner: async (orderId, partnerId) => (await api.post(`/admin/orders/${orderId}/assign`, { deliveryPartnerId: partnerId })).data,
+  unassignDeliveryPartner: async (orderId) => (await api.post(`/admin/orders/${orderId}/unassign`, {})).data,
 
-  // Customers / Users
-  getCustomers: async (q = {}) => (await api.get("/admin/users", { params: q })).data,
-  getCustomer: async (id) => (await api.get(`/admin/users/${id}`)).data,
+  // Users
   updateUser: async (id, data) => (await api.put(`/admin/users/${id}`, data)).data,
   deleteUser: async (id) => (await api.delete(`/admin/users/${id}`)).data,
 
-  // User Management - New Functions
+  // User Management
   getAllUsers: async (q = {}) => (await api.get("/admin/users", { params: q })).data,
   getUserDetails: async (userId) => (await api.get(`/admin/users/${userId}`)).data,
   changeUserRole: async (userId, roles) => (await api.put(`/admin/users/${userId}/role`, { roles })).data,

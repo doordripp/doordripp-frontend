@@ -5,6 +5,7 @@ import adminAPI from '../../services/adminAPI';
 import { useAuth } from '../../context/AuthContext';
 import AdminInput from '../../components/ui/AdminInput';
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils';
+import { usePanelBase } from '../../hooks/usePanelBase';
 
 const initialForm = {
   code: '',
@@ -123,9 +124,10 @@ export default function AdminVouchers() {
       setError(err?.response?.data?.error || err?.message || 'Failed to update voucher status');
     }
   };
+  const base = usePanelBase();
 
   if (isDeliveryPartner) {
-    return <Navigate to="/admin/orders" replace />;
+    return <Navigate to={`${base}/orders`} replace />;
   }
 
   return (

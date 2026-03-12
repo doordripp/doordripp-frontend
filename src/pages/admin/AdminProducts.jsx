@@ -6,14 +6,16 @@ import { ImageKitUploader } from '../../components/Admin'
 import { formatCurrency } from '../../utils/adminHelpers'
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
+import { usePanelBase } from '../../hooks/usePanelBase'
 import adminAPI from '../../services/adminAPI'
 
 export default function AdminProducts() {
   const { user } = useAuth()
+  const base = usePanelBase()
   const isDeliveryPartner = hasDeliveryPartnerAccess(user)
   
   if (isDeliveryPartner) {
-    return <Navigate to="/admin/orders" replace />
+    return <Navigate to={`${base}/orders`} replace />
   }
 
   const [products, setProducts] = useState([])

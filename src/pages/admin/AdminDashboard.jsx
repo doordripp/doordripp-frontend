@@ -6,13 +6,15 @@ import adminAPI from "../../services/adminAPI";
 import { formatCurrency, formatDate } from '../../utils/adminHelpers'
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
+import { usePanelBase } from '../../hooks/usePanelBase'
 
 export default function AdminDashboard() {
   const { user } = useAuth()
+  const base = usePanelBase()
   const isDeliveryPartner = hasDeliveryPartnerAccess(user)
   
   if (isDeliveryPartner) {
-    return <Navigate to="/admin/orders" replace />
+    return <Navigate to={`${base}/orders`} replace />
   }
 
   const navigate = useNavigate();
@@ -29,23 +31,23 @@ export default function AdminDashboard() {
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <button onClick={() => navigate('/admin/products')} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition-colors">
+          <button onClick={() => navigate(`${base}/products`)} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition-colors">
             <Package className="w-8 h-8 text-blue-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-blue-900">Add Product</p>
           </button>
-          <button onClick={() => navigate('/admin/orders')} className="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-center transition-colors">
+          <button onClick={() => navigate(`${base}/orders`)} className="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-center transition-colors">
             <ShoppingCart className="w-8 h-8 text-green-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-green-900">View Orders</p>
           </button>
-          <button onClick={() => navigate('/admin/users')} className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-center transition-colors">
+          <button onClick={() => navigate(`${base}/users`)} className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-center transition-colors">
             <Users className="w-8 h-8 text-purple-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-purple-900">Manage Users</p>
           </button>
-          <button onClick={() => navigate('/admin/reports')} className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-center transition-colors">
+          <button onClick={() => navigate(`${base}/reports`)} className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-center transition-colors">
             <IndianRupee className="w-8 h-8 text-orange-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-orange-900">View Reports</p>
           </button>
-          <button onClick={() => navigate('/admin/vouchers')} className="p-4 bg-rose-50 hover:bg-rose-100 rounded-lg text-center transition-colors">
+          <button onClick={() => navigate(`${base}/vouchers`)} className="p-4 bg-rose-50 hover:bg-rose-100 rounded-lg text-center transition-colors">
             <TicketPercent className="w-8 h-8 text-rose-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-rose-900">Add Coupon</p>
           </button>
@@ -262,7 +264,7 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-medium text-gray-900">{order.id}</p>
                       <p className="text-sm text-gray-600">
-                        <button onClick={() => navigate(`/admin/users?q=${encodeURIComponent(order.customer)}`)} className="text-blue-600 hover:underline">
+                        <button onClick={() => navigate(`${base}/users?q=${encodeURIComponent(order.customer)}`)} className="text-blue-600 hover:underline">
                           {order.customer}
                         </button>
                       </p>
@@ -288,7 +290,7 @@ export default function AdminDashboard() {
           </div>
           <div className="mt-4 text-center">
             <button
-              onClick={() => navigate('/admin/orders')}
+              onClick={() => navigate(`${base}/orders`)}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               View all orders →
@@ -337,7 +339,7 @@ export default function AdminDashboard() {
           </div>
           <div className="mt-4 text-center">
             <button
-              onClick={() => navigate('/admin/products')}
+              onClick={() => navigate(`${base}/products`)}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               View all products →

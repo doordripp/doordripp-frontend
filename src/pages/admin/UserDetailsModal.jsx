@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { X, Mail, Phone, MapPin, Calendar, ShoppingBag, Star, Lock, AlertCircle } from 'lucide-react'
 import { apiGet } from '../../services/apiClient'
 import { toast } from 'react-hot-toast'
+import { getDisplayRoles } from './userRolesConfig'
+import { getOrderDisplayId } from '../../utils/orderUtils'
 
 export default function UserDetailsModal({ user, onClose }) {
   const [details, setDetails] = useState(null)
@@ -142,7 +144,7 @@ export default function UserDetailsModal({ user, onClose }) {
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Roles</h4>
             <div className="flex flex-wrap gap-2">
-              {user.roles?.map((role) => (
+              {getDisplayRoles(user.roles || []).map((role) => (
                 <span
                   key={role}
                   className={`inline-flex items-center px-4 py-2 rounded-lg font-medium text-sm ${
@@ -255,7 +257,7 @@ export default function UserDetailsModal({ user, onClose }) {
                   <div key={order._id} className="p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">Order #{order.orderNumber}</p>
+                        <p className="font-medium text-gray-900">Order {getOrderDisplayId(order)}</p>
                         <p className="text-sm text-gray-600">
                           {new Date(order.createdAt).toLocaleDateString()}
                         </p>

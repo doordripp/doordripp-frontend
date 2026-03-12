@@ -10,3 +10,4 @@ export { default as AdminDeliveryZones } from './AdminDeliveryZones';
 export { default as AdminWebBanners } from './AdminWebBanners';
 export { default as AdminAppBanners } from './AdminAppBanners';
 export { default as AdminCategories } from './AdminCategories';
+export { default as AdminDeliveryPartners } from './AdminDeliveryPartners';

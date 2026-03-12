@@ -1,0 +1,6 @@
+export { default as ManagerDashboard } from './ManagerDashboard'
+export { default as ManagerProducts } from './ManagerProducts'
+export { default as ManagerOrders } from './ManagerOrders'
+export { default as ManagerCustomers } from './ManagerCustomers'
+export { default as ManagerDeliveryPartners } from './ManagerDeliveryPartners'
+export { default as ManagerDeliveryZones } from './ManagerDeliveryZones'
