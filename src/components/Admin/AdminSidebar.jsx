@@ -22,7 +22,7 @@ export default function AdminSidebar() {
   return (
     <aside className="w-64 bg-white min-h-screen border-r border-gray-200 p-4 flex flex-col">
       <div className="mb-6 px-2">
-        <div className="text-xl font-bold text-gray-900">DoorDrip</div>
+        <div className="text-xl font-bold text-gray-900">Doordripp</div>
         <div className="text-xs text-gray-500 mt-0.5 font-medium">Admin Panel</div>
       </div>
 

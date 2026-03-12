@@ -26,6 +26,20 @@ const getDeliveryStatus = (order) => {
   return LEGACY_TO_DELIVERY_STATUS[order?.status] || 'Order Placed'
 }
 
+const getOrderTypeLabel = (order) => (order?.isTrial ? 'Trial Order' : 'Normal Order')
+
+const getOrderTypeDescription = (order) => {
+  if (order?.isTrial) {
+    const trialCount = order?.trialItems?.length || 0
+    return trialCount > 0
+      ? `Trial & Buy flow with ${trialCount} trial item${trialCount > 1 ? 's' : ''}`
+      : 'Trial & Buy flow order'
+  }
+
+  const itemCount = order?.items?.length || 0
+  return `${itemCount} item${itemCount !== 1 ? 's' : ''} in regular checkout`
+}
+
 export default function AdminOrders() {
   const { user } = useAuth()
   const { id: routeOrderId } = useParams()
@@ -242,6 +256,18 @@ export default function AdminOrders() {
       )
     },
     {
+      header: 'Type',
+      accessor: 'isTrial',
+      render: (order) => (
+        <div>
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${order.isTrial ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+            {getOrderTypeLabel(order)}
+          </span>
+          <div className="text-xs text-gray-500 mt-1">{getOrderTypeDescription(order)}</div>
+        </div>
+      )
+    },
+    {
       header: 'Date',
       accessor: 'date',
       render: (order) => formatDate(order.date)
@@ -321,10 +347,14 @@ export default function AdminOrders() {
   ]
 
   const filteredOrders = orders.filter(order => {
+    const orderTypeLabel = getOrderTypeLabel(order).toLowerCase()
+    const orderTypeDescription = getOrderTypeDescription(order).toLowerCase()
     const matchesSearch =
       matchesOrderIdQuery(order, searchTerm) ||
       order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+      order.customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      orderTypeLabel.includes(searchTerm.toLowerCase()) ||
+      orderTypeDescription.includes(searchTerm.toLowerCase())
     
     const currentStatus = isDeliveryPartner ? getDeliveryStatus(order) : order.status
     const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter
@@ -677,6 +707,10 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery, i
               <p className="text-sm text-gray-600 mt-2">
                 Order Date: {new Date(order.date).toLocaleDateString()}
               </p>
+              <p className="text-sm text-gray-700 mt-1">
+                Order Type: <span className="font-semibold">{getOrderTypeLabel(order)}</span>
+              </p>
+              <p className="text-xs text-gray-500 mt-1">{getOrderTypeDescription(order)}</p>
               {order.voucherDiscount > 0 && (
                 <p className="text-sm text-green-700 mt-2">
                   Coupon: {order.voucher?.code || 'Applied'} (Saved {formatCurrency(order.voucherDiscount)})
