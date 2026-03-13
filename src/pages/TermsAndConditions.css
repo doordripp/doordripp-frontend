@@ -1,0 +1,252 @@
+.terms-page {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+}
+
+/* Hero Section */
+.terms-hero {
+  background: linear-gradient(135deg, #000000 0%, #1f2937 100%);
+  color: white;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.terms-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.terms-hero-icon {
+  margin: 0 auto 1.5rem;
+  opacity: 0.9;
+}
+
+.terms-hero h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.terms-hero p {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin: 0.5rem 0;
+}
+
+.terms-subtitle {
+  font-size: 1.1rem !important;
+  margin-top: 1rem !important;
+  opacity: 0.95 !important;
+}
+
+/* Content Wrapper */
+.terms-content-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.terms-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+/* Sections */
+.terms-section {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.terms-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-icon {
+  color: #000000;
+  flex-shrink: 0;
+}
+
+.terms-section h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.terms-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.terms-section p {
+  color: #4b5563;
+  line-height: 1.75;
+  margin-bottom: 1rem;
+}
+
+.terms-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.terms-section ul li {
+  color: #4b5563;
+  line-height: 1.75;
+  padding-left: 1.5rem;
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.terms-section ul li::before {
+  content: "•";
+  color: #000000;
+  font-weight: bold;
+  position: absolute;
+  left: 0.5rem;
+}
+
+/* Highlight Boxes */
+.highlight-box {
+  background: #f8fafc;
+  border-left: 4px solid #000000;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 6px;
+}
+
+.highlight-box p {
+  margin: 0;
+  color: #374151;
+}
+
+.warning-box {
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 6px;
+}
+
+.warning-box p {
+  margin: 0;
+  color: #7f1d1d;
+}
+
+/* Contact Section */
+.contact-section {
+  background: #f9fafb;
+  padding: 2rem;
+  border-radius: 8px;
+  border: none !important;
+}
+
+.contact-card {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.contact-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.contact-item svg {
+  color: #000000;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.contact-item strong {
+  display: block;
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.contact-item p {
+  margin: 0;
+  color: #4b5563;
+}
+
+.contact-item a {
+  color: #000000;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.contact-item a:hover {
+  color: #374151;
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .terms-hero {
+    padding: 3rem 1.5rem;
+  }
+
+  .terms-hero h1 {
+    font-size: 2rem;
+  }
+
+  .terms-content-wrapper {
+    padding: 2rem 1rem;
+  }
+
+  .terms-content {
+    padding: 1.5rem;
+  }
+
+  .terms-section h2 {
+    font-size: 1.5rem;
+  }
+
+  .terms-section h3 {
+    font-size: 1.1rem;
+  }
+
+  .contact-section {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .terms-hero {
+    padding: 2rem 1rem;
+  }
+
+  .terms-hero h1 {
+    font-size: 1.75rem;
+  }
+
+  .terms-content {
+    padding: 1.25rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

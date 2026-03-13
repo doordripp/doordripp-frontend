@@ -1,0 +1,195 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+.support-page {
+  background: radial-gradient(circle at top left, #f6efe4 0%, #f3f6f7 45%, #f7fbff 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.support-page::before,
+.support-page::after {
+  content: '';
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 999px;
+  filter: blur(12px);
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.support-page::before {
+  background: radial-gradient(circle, #f4c095 0%, transparent 70%);
+  top: -120px;
+  right: 10%;
+}
+
+.support-page::after {
+  background: radial-gradient(circle, #7bdff2 0%, transparent 70%);
+  bottom: -140px;
+  left: 6%;
+}
+
+.support-font {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+}
+
+.chat-shell {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.1), 0 4px 12px -3px rgba(0, 0, 0, 0.05);
+}
+
+.support-column {
+  min-width: 0;
+}
+
+.support-panel {
+  backdrop-filter: blur(10px);
+}
+
+.support-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #000000;
+  color: #ffffff;
+  padding: 0.72rem 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.support-btn:hover:not(:disabled) {
+  background: #111111;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.support-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.floating-field {
+  position: relative;
+  display: block;
+}
+
+.floating-input {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  padding: 0.95rem 1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #0f172a;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.floating-input:focus {
+  outline: none;
+  border-color: #111827;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.12);
+}
+
+.floating-field-textarea .floating-input {
+  border-radius: 16px;
+  min-height: 120px;
+  resize: vertical;
+  text-align: left;
+  padding: 1.2rem 1rem 0.85rem;
+}
+
+.floating-textarea {
+  min-height: 84px;
+}
+
+.floating-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-size: 0.9rem;
+  pointer-events: none;
+  background: #ffffff;
+  padding: 0 0.45rem;
+  transition: top 180ms ease, left 180ms ease, transform 180ms ease, font-size 180ms ease, color 180ms ease;
+  max-width: calc(100% - 1.5rem);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.peer:focus~.floating-label,
+.peer:not(:placeholder-shown)~.floating-label {
+  top: 0;
+  left: 0.95rem;
+  transform: translateY(-50%);
+  font-size: 0.74rem;
+  color: #111827;
+}
+
+.chat-shell .peer:focus~.floating-label,
+.chat-shell .peer:not(:placeholder-shown)~.floating-label {
+  top: -2px !important;
+  left: 1rem !important;
+  font-size: 0.7rem !important;
+  color: #6b7280 !important;
+  background: #ffffff !important;
+  padding: 0 4px !important;
+}
+
+.scrollbar-dark::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 999px;
+}
+
+.quick-chip-dark {
+  background: #f3f4f6;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: #4b5563;
+  transition: all 0.2s ease;
+}
+
+.quick-chip-dark:hover {
+  background: #e5e7eb;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1f2937;
+}
+
+.support-btn-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 600;
+  transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.support-btn-dark:hover:not(:disabled) {
+  background: #e4e4e7;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
+}
+
+.support-btn-dark:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Linear/Bubble Chat classes removed for Tailwind layout */
