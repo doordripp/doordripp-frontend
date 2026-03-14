@@ -91,9 +91,9 @@ export default function AdminUsers() {
   const summaryCards = [
     { label: 'Total Accounts', value: users.length, icon: User, tone: 'bg-white text-gray-900 border-gray-200' },
     { label: 'Customer Only', value: users.filter((candidate) => candidate.roles.length === 0).length, icon: Mail, tone: 'bg-gray-50 text-gray-900 border-gray-200' },
-    { label: 'Managers', value: users.filter((candidate) => candidate.roles.includes('manager')).length, icon: Shield, tone: 'bg-gray-800 text-white border-gray-800' },
-    { label: 'Delivery Partners', value: users.filter((candidate) => candidate.roles.includes('delivery_partner')).length, icon: CircleOff, tone: 'bg-gray-600 text-white border-gray-600' },
-    { label: 'Admins', value: users.filter((candidate) => candidate.roles.includes('admin')).length, icon: Shield, tone: 'bg-black text-white border-black' }
+    { label: 'Managers', value: users.filter((candidate) => candidate.roles.includes('manager')).length, icon: Shield, tone: 'bg-white text-gray-900 border-gray-200' },
+    { label: 'Delivery Partners', value: users.filter((candidate) => candidate.roles.includes('delivery_partner')).length, icon: CircleOff, tone: 'bg-gray-50 text-gray-900 border-gray-200' },
+    { label: 'Admins', value: users.filter((candidate) => candidate.roles.includes('admin')).length, icon: Shield, tone: 'bg-white text-gray-900 border-gray-200' }
   ]
 
   const handleOpenRoleModal = (targetUser) => {

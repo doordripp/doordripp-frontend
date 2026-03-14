@@ -136,10 +136,12 @@ export default function Orders() {
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
               <option value="all">All Orders</option>
-              <option value="pending">Pending</option>
               <option value="confirmed">Confirmed</option>
-              <option value="shipped">Shipped</option>
+              <option value="accepted">Accepted</option>
+              <option value="picked_up">Picked Up</option>
+              <option value="out_for_delivery">Out For Delivery</option>
               <option value="delivered">Delivered</option>
+              <option value="failed">Payment Failed</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
@@ -202,10 +204,18 @@ export default function Orders() {
                           {order.isTrial && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-black text-white text-[10px] font-bold uppercase tracking-widest leading-none">TRIAL & BUY</span>
                           )}
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${order.status === 'confirmed' ? 'bg-green-50 text-green-700' :
-                              order.status === 'failed' ? 'bg-red-50 text-red-700' :
-                                'bg-gray-100 text-gray-700'
-                            }`}>{(order.status || 'pending').toUpperCase()}</span>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            ${order.status === 'confirmed' ? 'bg-yellow-100 text-yellow-800' :
+                              order.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                              order.status === 'picked_up' ? 'bg-violet-100 text-violet-800' :
+                              order.status === 'out_for_delivery' ? 'bg-orange-100 text-orange-800' :
+                              order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                              order.status === 'failed' ? 'bg-red-100 text-red-800' :
+                              order.status === 'cancelled' ? 'bg-gray-300 text-gray-800' :
+                              'bg-gray-100 text-gray-700'}
+                          `}>
+                            {order.status ? order.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Pending'}
+                          </span>
                         </div>
                       </div>
                     </div>

@@ -7,7 +7,7 @@ import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 import deliveryAPI from '../../services/deliveryAPI'
 import { getOrderDisplayId, getOrderEntityId, matchesOrderIdQuery } from '../../utils/orderUtils'
 
-const DELIVERY_STATUS_FLOW = ['Order Placed', 'Accepted', 'Picked Up', 'Out For Delivery', 'Delivered']
+const DELIVERY_STATUS_FLOW = ['Confirmed', 'Accepted', 'Picked Up', 'Out For Delivery', 'Delivered']
 
 const mapBackendOrder = (order) => ({
   id: getOrderEntityId(order),
@@ -19,21 +19,25 @@ const mapBackendOrder = (order) => ({
   shippingAddress: order.shippingAddress,
   items: order.items || [],
   total: Number(order.total || 0),
-  deliveryStatus: order.deliveryStatus || 'Order Placed',
+  deliveryStatus: order.deliveryStatus || (order.status === 'confirmed' ? 'Confirmed' : (order.status === 'failed' ? 'Payment Failed' : 'Confirmed')),
   status: order.status || 'pending',
   createdAt: order.createdAt || order.date
 })
 
 const deriveOrderStatus = (deliveryStatus, currentStatus) => {
   switch (deliveryStatus) {
+    case 'Confirmed':
+      return 'confirmed'
     case 'Accepted':
-      return 'packed'
+      return 'accepted'
     case 'Picked Up':
-      return 'processing'
+      return 'picked_up'
     case 'Out For Delivery':
-      return 'shipped'
+      return 'out_for_delivery'
     case 'Delivered':
       return 'delivered'
+    case 'Payment Failed':
+      return 'failed'
     default:
       return currentStatus
   }
@@ -105,8 +109,8 @@ export default function DeliveryOrders() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Order Placed':
-        return 'bg-slate-100 text-slate-800'
+      case 'Confirmed':
+        return 'bg-yellow-100 text-yellow-800'
       case 'Accepted':
         return 'bg-blue-100 text-blue-800'
       case 'Picked Up':
@@ -115,6 +119,8 @@ export default function DeliveryOrders() {
         return 'bg-orange-100 text-orange-800'
       case 'Delivered':
         return 'bg-green-100 text-green-800'
+      case 'Payment Failed':
+        return 'bg-red-100 text-red-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -122,8 +128,8 @@ export default function DeliveryOrders() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Order Placed':
-        return <Package size={14} />
+      case 'Confirmed':
+        return <CheckCircle size={14} />
       case 'Accepted':
         return <CheckCircle size={14} />
       case 'Picked Up':
@@ -132,6 +138,8 @@ export default function DeliveryOrders() {
         return <Truck size={14} />
       case 'Delivered':
         return <CheckCircle size={14} />
+      case 'Payment Failed':
+        return <Package size={14} />
       default:
         return <Package size={14} />
     }

@@ -1,3 +1,13 @@
+// Map unified status to legacy backend status
+const UNIFIED_TO_LEGACY_STATUS = {
+  confirmed: 'confirmed',
+  accepted: 'packed',
+  picked_up: 'processing',
+  out_for_delivery: 'shipped',
+  delivered: 'delivered',
+  failed: 'failed',
+  cancelled: 'cancelled'
+}
 import React, { useState, useEffect } from 'react'
 import { Package, Search, Filter, Eye, Truck, CheckCircle, X, MapPin, ExternalLink } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
@@ -94,25 +104,16 @@ export default function AdminOrders() {
     return parts.join(', ')
   }
 
-  const statusOptions = isDeliveryPartner
-    ? [
-        { value: 'all', label: 'All Orders' },
-        { value: 'Order Placed', label: 'Order Placed' },
-        { value: 'Accepted', label: 'Accepted' },
-        { value: 'Picked Up', label: 'Picked Up' },
-        { value: 'Out For Delivery', label: 'Out For Delivery' },
-        { value: 'Delivered', label: 'Delivered' }
-      ]
-    : [
-        { value: 'all', label: 'All Orders' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'confirmed', label: 'Confirmed' },
-        { value: 'packed', label: 'Packed' },
-        { value: 'processing', label: 'Processing' },
-        { value: 'shipped', label: 'Shipped' },
-        { value: 'delivered', label: 'Delivered' },
-        { value: 'cancelled', label: 'Cancelled' }
-      ]
+  const statusOptions = [
+    { value: 'all', label: 'All Orders' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'accepted', label: 'Accepted' },
+    { value: 'picked_up', label: 'Picked Up' },
+    { value: 'out_for_delivery', label: 'Out For Delivery' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'failed', label: 'Payment Failed' },
+    { value: 'cancelled', label: 'Cancelled' }
+  ]
 
   useEffect(() => {
     const load = async () => {
@@ -390,7 +391,7 @@ export default function AdminOrders() {
               ...(isDeliveryPartner
                 ? {
                     deliveryStatus: newStatus,
-                    status: newStatus === 'Delivered' ? 'delivered' : order.status
+                    status: newStatus === 'delivered' ? 'delivered' : order.status
                   }
                 : { status: newStatus })
             }
@@ -403,7 +404,7 @@ export default function AdminOrders() {
             ? {
                 ...selectedOrder,
                 deliveryStatus: newStatus,
-                status: newStatus === 'Delivered' ? 'delivered' : selectedOrder.status
+                status: newStatus === 'delivered' ? 'delivered' : selectedOrder.status
               }
             : { ...selectedOrder, status: newStatus }
         )
@@ -694,10 +695,13 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery, i
                     </>
                   ) : (
                     <>
-                      <option value="pending">Pending</option>
-                      <option value="packed">Packed</option>
-                      <option value="processing">Processing</option>
-                      <option value="shipped">Shipped</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="accepted">Accepted</option>
+                      <option value="picked_up">Picked Up</option>
+                      <option value="out_for_delivery">Out For Delivery</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="failed">Payment Failed</option>
+                      <option value="cancelled">Cancelled</option>
                       <option value="delivered">Delivered</option>
                       <option value="cancelled">Cancelled</option>
                     </>

@@ -14,13 +14,24 @@ const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : '
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || runtimeOrigin;
 const API_URL = import.meta.env.VITE_API_URL || (runtimeOrigin ? `${runtimeOrigin}/api` : '/api');
 
+
+// Use backend status keys for progress logic
 const STATUS_FLOW = [
-  'Order Placed',
-  'Accepted',
-  'Picked Up',
-  'Out For Delivery',
-  'Delivered'
+  'confirmed',
+  'accepted',
+  'picked_up',
+  'out_for_delivery',
+  'delivered'
 ];
+
+// Map backend keys to display names and icons
+const STATUS_DISPLAY = {
+  confirmed: { label: 'Order Placed', icon: '📋' },
+  accepted: { label: 'Accepted', icon: '✅' },
+  picked_up: { label: 'Picked Up', icon: '📦' },
+  out_for_delivery: { label: 'Out For Delivery', icon: '🚚' },
+  delivered: { label: 'Delivered', icon: '✔️' }
+};
 
 export default function OrderTracking() {
   const { orderId } = useParams();
@@ -107,9 +118,8 @@ export default function OrderTracking() {
     };
   }, [orderId]);
 
-  const getStatusIndex = (status) => {
-    return STATUS_FLOW.indexOf(status);
-  };
+
+  const getStatusIndex = (status) => STATUS_FLOW.indexOf(status);
 
   const isStatusComplete = (status) => {
     if (!order?.deliveryStatus) return false;
@@ -118,16 +128,8 @@ export default function OrderTracking() {
     return checkIndex <= currentIndex;
   };
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      'Order Placed': '📋',
-      'Accepted': '✅',
-      'Picked Up': '📦',
-      'Out For Delivery': '🚚',
-      'Delivered': '✔️'
-    };
-    return icons[status] || '📋';
-  };
+
+  const getStatusIcon = (status) => STATUS_DISPLAY[status]?.icon || '📋';
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -139,6 +141,7 @@ export default function OrderTracking() {
       minute: '2-digit'
     });
   };
+
 
   const getStatusTime = (status) => {
     if (!order?.statusHistory) return null;
@@ -223,11 +226,11 @@ export default function OrderTracking() {
           <div className="status-icon">{getStatusIcon(order.deliveryStatus)}</div>
           <div className="status-info">
             <h2>Current Status</h2>
-            <p className="status-text">{order.deliveryStatus || 'Order Placed'}</p>
-            {order.deliveryStatus === 'Delivered' && (
+            <p className="status-text">{STATUS_DISPLAY[order.deliveryStatus]?.label || 'Order Placed'}</p>
+            {order.deliveryStatus === 'delivered' && (
               <p className="status-subtext">Your order has been delivered!</p>
             )}
-            {order.deliveryStatus === 'Out For Delivery' && (
+            {order.deliveryStatus === 'out_for_delivery' && (
               <p className="status-subtext">Your order is on its way!</p>
             )}
           </div>
@@ -237,36 +240,42 @@ export default function OrderTracking() {
         <div className="status-timeline">
           <h3>Order Progress</h3>
           <div className="timeline">
-            {STATUS_FLOW.map((status, index) => {
-              const isComplete = isStatusComplete(status);
-              const isCurrent = order.deliveryStatus === status;
-              const statusTime = getStatusTime(status);
-
-              return (
-                <div
-                  key={status}
-                  className={`timeline-item ${isComplete ? 'complete' : ''} ${isCurrent ? 'current' : ''}`}
-                >
-                  <div className="timeline-marker">
-                    <div className="marker-circle">
-                      {isComplete ? '✓' : index + 1}
+            {(() => {
+              const currentIndex = STATUS_FLOW.indexOf(order.deliveryStatus);
+              return STATUS_FLOW.map((status, index) => {
+                const isComplete = index < currentIndex;
+                const isCurrent = index === currentIndex;
+                const statusTime = getStatusTime(status);
+                return (
+                  <div
+                    key={status}
+                    className={`timeline-item${isComplete ? ' complete' : ''}${isCurrent ? ' current' : ''}`}
+                  >
+                    <div className="timeline-marker">
+                      <div className={`marker-circle${isComplete ? ' complete' : ''}${isCurrent ? ' current' : ''}`}> 
+                        {isComplete ? (
+                          <span className="marker-tick">✓</span>
+                        ) : (
+                          index + 1
+                        )}
+                      </div>
+                      {index < STATUS_FLOW.length - 1 && (
+                        <div className={`marker-line${isComplete ? ' complete' : ''}`} />
+                      )}
                     </div>
-                    {index < STATUS_FLOW.length - 1 && (
-                      <div className={`marker-line ${isComplete ? 'complete' : ''}`} />
-                    )}
-                  </div>
-                  <div className="timeline-content">
-                    <div className="timeline-status">
-                      <span className="status-icon-small">{getStatusIcon(status)}</span>
-                      <span className="status-name">{status}</span>
+                    <div className="timeline-content">
+                      <div className="timeline-status">
+                        <span className="status-icon-small">{getStatusIcon(status)}</span>
+                        <span className="status-name">{STATUS_DISPLAY[status]?.label || status}</span>
+                      </div>
+                      {statusTime && (
+                        <div className="timeline-time">{statusTime}</div>
+                      )}
                     </div>
-                    {statusTime && (
-                      <div className="timeline-time">{statusTime}</div>
-                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
 
