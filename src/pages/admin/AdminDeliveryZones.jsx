@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from 'react-router-dom'
 import adminAPI from "../../services/adminAPI";
-import DeliveryZoneMapDrawer from "../../components/admin/DeliveryZoneMapDrawer";
+import DeliveryZoneMapDrawer from "../../components/Admin/DeliveryZoneMapDrawer";
 import { loadGoogleMaps } from "../../utils/googleMapsLoader";
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
