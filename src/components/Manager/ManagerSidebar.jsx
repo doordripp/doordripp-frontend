@@ -13,7 +13,7 @@ import {
 
 export default function ManagerSidebar() {
   return (
-    <aside className="w-64 bg-white min-h-screen border-r border-gray-200 p-4 flex flex-col">
+    <aside className="w-64 bg-white h-full min-h-screen border-r border-gray-200 p-4 flex flex-col overflow-y-auto">
       <div className="mb-6 px-2">
         <div className="text-xl font-bold text-gray-900">DoorDripp</div>
         <div className="text-xs text-gray-500 mt-0.5 font-medium">Manager Panel</div>
