@@ -56,7 +56,8 @@ export function AuthProvider({ children }) {
     } catch (err) {
       // Try refresh once if unauthorized
       const status = err?.status || err?.statusCode || err?.code
-      if ((status === 401 || err?.message?.toLowerCase()?.includes('token')) && attemptRefresh) {
+      const hasLocalToken = !!authStorage.getToken()
+      if ((status === 401 || err?.message?.toLowerCase()?.includes('token')) && attemptRefresh && hasLocalToken) {
         const refreshed = await refreshToken()
         if (refreshed) return fetchMe(false)
       }
