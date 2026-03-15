@@ -4,7 +4,7 @@ export default function AdminTable({ data = [], columns = [], children, classNam
   if (!columns.length) {
     // Fallback to children-based usage
     return (
-      <div className={`overflow-hidden bg-white shadow ring-1 ring-black ring-opacity-5 rounded-lg ${className}`}>
+      <div className={`overflow-x-auto bg-white shadow ring-1 ring-black ring-opacity-5 rounded-lg ${className}`}>
         <table className="min-w-full divide-y divide-gray-300">
           {children}
         </table>
@@ -13,7 +13,7 @@ export default function AdminTable({ data = [], columns = [], children, classNam
   }
 
   return (
-    <div className={`overflow-hidden bg-white shadow ring-1 ring-black ring-opacity-5 rounded-lg ${className}`}>
+    <div className={`overflow-x-auto bg-white shadow ring-1 ring-black ring-opacity-5 rounded-lg ${className}`}>
       <table className="min-w-full divide-y divide-gray-300">
         <thead className="bg-gray-50">
           <tr>

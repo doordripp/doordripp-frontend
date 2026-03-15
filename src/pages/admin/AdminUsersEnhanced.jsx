@@ -176,7 +176,7 @@ export default function AdminUsersEnhanced() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
           {loading ? (
             <div className="p-8 text-center text-gray-500">Loading users...</div>
           ) : users.length === 0 ? (

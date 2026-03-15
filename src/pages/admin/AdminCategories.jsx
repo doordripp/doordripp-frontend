@@ -137,7 +137,7 @@ export default function AdminCategories() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
         <AdminTable data={categories} columns={columns} loading={loading} />
       </div>
 

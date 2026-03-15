@@ -157,7 +157,7 @@ export default function AdminAppBanners() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
         <AdminTable data={banners} columns={columns} loading={loading} />
       </div>
 

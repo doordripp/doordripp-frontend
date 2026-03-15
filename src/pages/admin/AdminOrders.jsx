@@ -871,7 +871,7 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery, i
           {/* Order Items */}
           <div className="space-y-4 md:col-span-2">
             <h3 className="text-lg font-semibold">Order Items</h3>
-            <div className="bg-gray-50 rounded-lg overflow-hidden">
+            <div className="bg-gray-50 rounded-lg overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-200">
                   <tr>
