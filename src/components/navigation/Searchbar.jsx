@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Search } from 'lucide-react'
-import { Input } from '../ui/Input'
+import { Input } from '../ui/input'
 
 export default function Searchbar({ 
   placeholder = 'Search for products...', 
