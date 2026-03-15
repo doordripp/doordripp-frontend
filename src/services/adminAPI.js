@@ -1,7 +1,7 @@
 // src/services/adminAPI.js
 import api from "./api";
-
-const adminAPI = {
+// testing purpose
+const adminAPI = { 
   // Dashboard
   getStats: async () => (await api.get("/admin/dashboard/stats")).data,
 
