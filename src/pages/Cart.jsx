@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { ShoppingCart, Minus, Plus, X, ArrowRight, Tag } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import ProductCard from '../features/catalog/ProductCard'
 import api from '../services/api'
 
 export default function Cart() {
+  const { user } = useAuth()
   const {
     items,
     cartTotals,
@@ -306,12 +308,22 @@ export default function Cart() {
               )}
             </div>
 
-            <Link
-              to="/checkout"
-              className="w-full flex justify-center items-center gap-2 bg-black text-white py-4 rounded-xl font-semibold"
-            >
-              Go to Checkout <ArrowRight />
-            </Link>
+            {user ? (
+              <Link
+                to="/checkout"
+                className="w-full flex justify-center items-center gap-2 bg-black text-white py-4 rounded-xl font-semibold"
+              >
+                Go to Checkout <ArrowRight />
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                state={{ returnTo: '/checkout' }}
+                className="w-full flex justify-center items-center gap-2 bg-black text-white py-4 rounded-xl font-semibold"
+              >
+                Login to Checkout <ArrowRight />
+              </Link>
+            )}
           </div>
         </div>
       </div>

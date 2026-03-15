@@ -2,8 +2,10 @@ import { Fragment, useState } from 'react'
 import { X, Minus, Plus, ShoppingBag, ArrowRight, Tag } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
+import { useAuth } from '../../context/AuthContext'
 
 export default function CartDrawer() {
+  const { user } = useAuth()
   const {
     items,
     cartTotals,
@@ -286,14 +288,26 @@ export default function CartDrawer() {
                   >
                     View Cart
                   </Link>
-                    <Link
-                      to="/checkout"
-                      onClick={() => toggleDrawer(false)}
-                      className="w-full inline-flex bg-black text-white py-3 px-4 rounded-xl font-medium hover:bg-gray-800 transition-colors duration-200 items-center justify-center gap-2 group"
-                    >
-                      Checkout
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
-                    </Link>
+                    {user ? (
+                      <Link
+                        to="/checkout"
+                        onClick={() => toggleDrawer(false)}
+                        className="w-full inline-flex bg-black text-white py-3 px-4 rounded-xl font-medium hover:bg-gray-800 transition-colors duration-200 items-center justify-center gap-2 group"
+                      >
+                        Checkout
+                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/login"
+                        state={{ returnTo: '/checkout' }}
+                        onClick={() => toggleDrawer(false)}
+                        className="w-full inline-flex bg-black text-white py-3 px-4 rounded-xl font-medium hover:bg-gray-800 transition-colors duration-200 items-center justify-center gap-2 group"
+                      >
+                        Login to Checkout
+                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                      </Link>
+                    )}
                 </div>
               </div>
             </Fragment>
