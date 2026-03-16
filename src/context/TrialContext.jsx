@@ -157,7 +157,7 @@ export function TrialProvider({ children }) {
 
   const createTrialOrder = useCallback(async () => {
     if (!user) throw new Error('Please login first');
-    if (state.items.length < 1) throw new Error('Add at least 1 item');
+    if (state.items.length < 2) throw new Error('Add at least 2 items to proceed with trial');
     if (!state.selectedPurchaseItemId) throw new Error('Select an item to purchase');
 
     dispatch({ type: ACTIONS.SET_LOADING, payload: true });

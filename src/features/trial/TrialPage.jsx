@@ -34,6 +34,10 @@ export default function TrialPage() {
   const [histLoading, setHistLoading] = useState(false);
   const [localError, setLocalError] = useState('');
   const [placing, setPlacing] = useState(false);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  const toggleOrderExpand = (id) =>
+    setExpandedOrderId((prev) => (prev === id ? null : id));
 
   const totals = calculateTotals();
 
@@ -208,7 +212,11 @@ export default function TrialPage() {
 
                 <p className="text-sm text-gray-500">
                   Select the item you want to <strong>purchase</strong>.
-                  {items.length < 3 && ` You can add ${3 - items.length} more item${3 - items.length > 1 ? 's' : ''}.`}
+                  {items.length < 2
+                    ? ` Add at least ${2 - items.length} more item${2 - items.length > 1 ? 's' : ''} to checkout.`
+                    : items.length < 3
+                      ? ` You can add ${3 - items.length} more item.`
+                      : null}
                 </p>
 
                 <div className="space-y-3">
@@ -298,7 +306,7 @@ export default function TrialPage() {
                   <button
                     type="button"
                     onClick={handlePay}
-                    disabled={!selectedPurchaseItemId || items.length === 0 || placing || loading}
+                    disabled={!selectedPurchaseItemId || items.length < 2 || placing || loading}
                     className="mt-5 w-full py-3 rounded-xl bg-black text-white font-bold text-sm hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed transition"
                   >
                     {placing || loading
@@ -341,68 +349,183 @@ export default function TrialPage() {
               <div className="space-y-4">
                 {history.map((order) => {
                   const statusColors = {
+                    trial_created: 'bg-blue-100 text-blue-800',
+                    trial_abandoned: 'bg-yellow-100 text-yellow-800',
+                    converted_to_order: 'bg-green-100 text-green-800',
+                    cancelled: 'bg-red-100 text-red-800',
+                    // legacy fallbacks
                     pending: 'bg-yellow-100 text-yellow-800',
                     confirmed: 'bg-blue-100 text-blue-800',
                     shipped: 'bg-indigo-100 text-indigo-800',
                     delivered: 'bg-green-100 text-green-800',
-                    cancelled: 'bg-red-100 text-red-800',
                     returned: 'bg-gray-200 text-gray-700',
                   };
+                  const statusLabels = {
+                    trial_created: 'Trial Created',
+                    trial_abandoned: 'Abandoned',
+                    converted_to_order: 'Order Placed',
+                    cancelled: 'Cancelled',
+                  };
                   const statusClass = statusColors[order.status] || 'bg-gray-100 text-gray-600';
+                  const statusLabel = statusLabels[order.status] || (order.status?.charAt(0).toUpperCase() + order.status?.slice(1));
 
                   return (
                     <div
                       key={order._id}
-                      className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-sm transition"
+                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">
-                            Trial #{order._id?.slice(-6).toUpperCase()}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </p>
-                        </div>
-                        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusClass}`}>
-                          {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
-                        </span>
-                      </div>
-
-                      <div className="flex gap-3 overflow-x-auto pb-2">
-                        {(order.trialItems || []).map((item, idx) => (
-                          <div
-                            key={idx}
-                            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${item.productId === order.purchasedItemId
-                                ? 'border-black'
-                                : 'border-gray-100'
-                              }`}
-                          >
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => { e.target.src = 'https://via.placeholder.com/64'; }}
-                            />
+                      {/* Clickable summary row */}
+                      <button
+                        type="button"
+                        onClick={() => toggleOrderExpand(order._id)}
+                        className="w-full text-left p-5"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">
+                              Trial #{order._id?.slice(-6).toUpperCase()}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </p>
                           </div>
-                        ))}
-                      </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusClass}`}>
+                              {statusLabel}
+                            </span>
+                            <span className="text-gray-400 text-xs">
+                              {expandedOrderId === order._id ? '▲' : '▼'}
+                            </span>
+                          </div>
+                        </div>
 
-                      <div className="mt-3 flex items-center justify-between text-sm">
-                        <span className="text-gray-500">{order.trialItems?.length} items tried</span>
-                        {(() => {
-                          const purchased = (order.trialItems || []).find(i => i.productId === order.purchasedItemId);
-                          return purchased ? (
-                            <span className="font-bold text-gray-900">Bought: ₹{purchased.price?.toLocaleString('en-IN')}</span>
-                          ) : (
-                            <span className="font-bold text-gray-900">₹{order.trialFee || '—'}</span>
-                          );
-                        })()}
-                      </div>
+                        <div className="flex gap-3 overflow-x-auto pb-2">
+                          {(order.trialItems || []).map((item, idx) => (
+                            <div
+                              key={idx}
+                              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
+                                String(item.productId) === String(order.purchasedItemId)
+                                  ? 'border-black'
+                                  : 'border-gray-100'
+                              }`}
+                            >
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => { e.target.src = 'https://via.placeholder.com/64'; }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between text-sm">
+                          <span className="text-gray-500">{order.trialItems?.length} items tried</span>
+                          <span className="font-bold text-gray-900">
+                            ₹{(order.finalTotal ?? order.trialFee ?? 119).toLocaleString('en-IN')} paid
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Expanded detail panel */}
+                      {expandedOrderId === order._id && (
+                        <div className="border-t border-gray-100 bg-gray-50 px-5 py-4 space-y-4">
+
+                          {/* Status + Dates */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white rounded-xl border border-gray-200 p-3">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Status</p>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusClass}`}>{statusLabel}</span>
+                            </div>
+                            <div className="bg-white rounded-xl border border-gray-200 p-3">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Placed On</p>
+                              <p className="text-xs font-semibold text-gray-800">
+                                {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                            </div>
+                            {order.updatedAt && order.updatedAt !== order.createdAt && (
+                              <div className="bg-white rounded-xl border border-gray-200 p-3 col-span-2">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Last Updated</p>
+                                <p className="text-xs font-semibold text-gray-800">
+                                  {new Date(order.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Converted to order banner */}
+                          {order.status === 'converted_to_order' && order.linkedOrderId && (
+                            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                              <span className="text-green-600 text-sm">✓</span>
+                              <div>
+                                <p className="text-xs font-semibold text-green-800">Converted to Order</p>
+                                <p className="text-[10px] text-green-600 font-mono">
+                                  #{String(order.linkedOrderId).slice(-8).toUpperCase()}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Items list */}
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Items in Trial ({order.trialItems?.length})</p>
+                            <div className="space-y-3">
+                              {(order.trialItems || []).map((item, idx) => {
+                                const isPurchased = String(item.productId) === String(order.purchasedItemId);
+                                return (
+                                  <div key={idx} className={`flex items-center gap-3 p-3 rounded-xl border ${
+                                    isPurchased ? 'border-black bg-white' : 'border-gray-200 bg-white'
+                                  }`}>
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-gray-100"
+                                      onError={(e) => { e.target.src = 'https://via.placeholder.com/48'; }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
+                                      <p className="text-xs text-gray-500">₹{item.price?.toLocaleString('en-IN')} · Qty {item.quantity ?? 1}</p>
+                                    </div>
+                                    {isPurchased ? (
+                                      <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full flex-shrink-0">Bought</span>
+                                    ) : (
+                                      <span className="text-xs text-gray-400 flex-shrink-0">Return</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Price breakdown */}
+                          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment Breakdown</p>
+                            {order.itemsTotal != null && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Item purchased</span>
+                                <span className="font-medium">₹{Number(order.itemsTotal).toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Trial service fee</span>
+                              <span className="font-medium">₹{Number(order.trialFee ?? 119).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between text-sm font-bold border-t border-gray-100 pt-2 mt-1">
+                              <span>Total Paid</span>
+                              <span>₹{Number(order.finalTotal ?? (order.itemsTotal ?? 0) + (order.trialFee ?? 119)).toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
+
+                          {/* Order ID */}
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-gray-400 font-mono">ID: {order._id}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
