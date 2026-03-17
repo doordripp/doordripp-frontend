@@ -39,6 +39,7 @@ const adminAPI = {
 
   // Reports (best sellers)
   getBestSellers: async (q = {}) => (await api.get("/admin/reports/best-sellers", { params: q })).data,
+  getReportStats: async () => (await api.get("/admin/reports/stats")).data,
 
   // Vouchers / Coupons
   getVouchers: async (q = {}) => (await api.get("/admin/vouchers", { params: q })).data,
