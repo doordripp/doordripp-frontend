@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Plus, Edit, Trash2, Search, Filter, RefreshCw } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, RefreshCw } from 'lucide-react'
 import { AdminButton, AdminTable } from '../../components/ui'
-import { ImageKitUploader } from '../../components/Admin'
+import { ImageKitUploader, ProductPricingModule } from '../../components/Admin'
 import { formatCurrency } from '../../utils/adminHelpers'
 import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
@@ -374,8 +374,6 @@ function ProductModal({ product, onSave, onClose, saving }) {
 
   const [formData, setFormData] = useState({
     name: product?.name || '',
-    price: product?.price || '',
-    originalPrice: product?.originalPrice || '',
     stock: product?.stock || '',
     category: product?.category || 'Men',
     subcategory: product?.subcategory || '',
@@ -389,6 +387,17 @@ function ProductModal({ product, onSave, onClose, saving }) {
     isNewArrival: product?.isNewArrival || false,
     isBestSeller: product?.isBestSeller || false,
     isFeatured: product?.isFeatured || false
+  })
+
+  // Pricing result from the pricing module
+  const [pricingResult, setPricingResult] = useState({
+    price: product?.price || '',
+    originalPrice: product?.originalPrice || '',
+    discount: product?.discount || '',
+    costPrice: product?.costPrice || '',
+    deliveryCost: product?.deliveryCost ?? 80,
+    pricingMode: product?.pricingMode || 'auto',
+    gstRate: product?.gstRate ?? 5,
   })
 
   // Build specifications text from existing product details or use defaults
@@ -424,13 +433,10 @@ function ProductModal({ product, onSave, onClose, saving }) {
       alert('Please upload at least one product image.')
       return
     }
-
-    // Calculate discount if original price is provided
-    const price = parseFloat(formData.price)
-    const originalPrice = formData.originalPrice ? parseFloat(formData.originalPrice) : null
-    const discount = originalPrice && originalPrice > price 
-      ? Math.round(((originalPrice - price) / originalPrice) * 100) 
-      : null
+    if (!pricingResult.price) {
+      alert('Please complete the pricing section.')
+      return
+    }
 
     // Parse specifications text (each line = "Key: Value")
     const detailsObject = specificationsText
@@ -453,9 +459,15 @@ function ProductModal({ product, onSave, onClose, saving }) {
 
     onSave({
       ...formData,
-      price: price,
-      originalPrice: originalPrice,
-      discount: discount,
+      // Pricing fields from the pricing module
+      price: pricingResult.price,
+      originalPrice: pricingResult.originalPrice,
+      discount: pricingResult.discount,
+      costPrice: pricingResult.costPrice,
+      deliveryCost: pricingResult.deliveryCost,
+      pricingMode: pricingResult.pricingMode,
+      gstRate: pricingResult.gstRate,
+      // Other fields
       stock: parseInt(formData.stock),
       image: formData.images[0] || '',
       rating: formData.rating,
@@ -581,34 +593,20 @@ function ProductModal({ product, onSave, onClose, saving }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price (₹) *
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.price}
-                onChange={(e) => setFormData({...formData, price: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 2499"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Original Price (₹) <span className="text-gray-500 text-xs">(optional - for discounts)</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.originalPrice}
-                onChange={(e) => setFormData({...formData, originalPrice: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 39.99"
-              />
-            </div>
+          {/* ── Pricing Module ── */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">💰 Pricing</h3>
+            <ProductPricingModule
+              initialValues={{
+                pricingMode: product?.pricingMode || 'auto',
+                costPrice: product?.costPrice,
+                price: product?.price,
+                originalPrice: product?.originalPrice,
+                deliveryCost: product?.deliveryCost,
+                gstRate: product?.gstRate,
+              }}
+              onChange={setPricingResult}
+            />
           </div>
 
           <div>
