@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext'
 import { hasDeliveryPartnerAccess } from '../../utils/roleUtils'
 import { usePanelBase } from '../../hooks/usePanelBase'
 import adminAPI from '../../services/adminAPI'
+import api from '../../services/api'
 
 export default function AdminProducts() {
   const { user } = useAuth()
@@ -193,9 +194,54 @@ export default function AdminProducts() {
     setShowAddModal(true)
   }
 
-  const handleEditProduct = (product) => {
-    setEditingProduct(product)
-    setShowAddModal(true)
+  const handleEditProduct = async (product) => {
+    try {
+      const productId = product?._id || product?.id
+      if (!productId) {
+        setEditingProduct(product)
+        setShowAddModal(true)
+        return
+      }
+
+      let fullProduct = null
+
+      try {
+        fullProduct = await adminAPI.getProduct(productId)
+      } catch {
+        // Ignore and try fallback endpoint below
+      }
+
+      const hasNonEmptyDetails = (() => {
+        if (!fullProduct?.details) return false
+        if (fullProduct.details instanceof Map) return fullProduct.details.size > 0
+        if (typeof fullProduct.details === 'object') return Object.keys(fullProduct.details).length > 0
+        return Boolean(fullProduct.details)
+      })()
+
+      const hasNonEmptyFeatures = (() => {
+        if (!fullProduct?.keyFeatures) return false
+        if (Array.isArray(fullProduct.keyFeatures)) return fullProduct.keyFeatures.length > 0
+        if (typeof fullProduct.keyFeatures === 'string') return fullProduct.keyFeatures.trim().length > 0
+        return false
+      })()
+
+      // Fallback for deployments where admin getProduct omits or empties these fields
+      if (!fullProduct || (!hasNonEmptyFeatures && !hasNonEmptyDetails)) {
+        try {
+          const fallbackResponse = await api.get(`/products/${productId}`)
+          fullProduct = fallbackResponse.data
+        } catch {
+          // Keep existing row payload if fallback fails
+        }
+      }
+
+      setEditingProduct(fullProduct || product)
+      setShowAddModal(true)
+    } catch (err) {
+      console.error('Failed to load full product for edit:', err)
+      setEditingProduct(product)
+      setShowAddModal(true)
+    }
   }
 
   const handleDeleteProduct = async (id) => {
@@ -354,12 +400,30 @@ function ProductModal({ product, onSave, onClose, saving }) {
   // Parse existing details
   const parseDetails = (details) => {
     if (!details) return {}
+    if (details instanceof Map) return Object.fromEntries(details)
     if (typeof details === 'object') return details
     try {
       return JSON.parse(details)
     } catch {
       return {}
     }
+  }
+
+  const normalizeKeyFeatures = (keyFeatures) => {
+    if (!keyFeatures) return []
+    if (Array.isArray(keyFeatures)) return keyFeatures
+    if (typeof keyFeatures === 'string') {
+      try {
+        const parsed = JSON.parse(keyFeatures)
+        if (Array.isArray(parsed)) return parsed
+      } catch {
+        return keyFeatures
+          .split('\n')
+          .map((feature) => feature.trim())
+          .filter(Boolean)
+      }
+    }
+    return []
   }
 
   // Convert object to array for editing
@@ -379,7 +443,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
     subcategory: product?.subcategory || '',
     dressStyle: product?.dressStyle || '',
     description: product?.description || '',
-    keyFeatures: (product?.keyFeatures || []).join('\n'),
+    keyFeatures: normalizeKeyFeatures(product?.keyFeatures).join('\n'),
     images: product?.images || [],
     colors: product?.colors || [],
     sizes: product?.sizes || [],
