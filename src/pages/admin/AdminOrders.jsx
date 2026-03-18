@@ -29,6 +29,18 @@ const LEGACY_TO_DELIVERY_STATUS = {
   delivered: 'Delivered'
 }
 
+export const statusOptions = [
+  { value: 'all', label: 'All Orders' },
+  { value: 'pending', label: 'Payment Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'accepted', label: 'Accepted' },
+  { value: 'picked_up', label: 'Picked Up' },
+  { value: 'out_for_delivery', label: 'Out For Delivery' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'failed', label: 'Payment Failed' },
+  { value: 'cancelled', label: 'Cancelled' }
+]
+
 const getDeliveryStatus = (order) => {
   if (order?.deliveryStatus && DELIVERY_STATUS_FLOW.includes(order.deliveryStatus)) {
     return order.deliveryStatus
@@ -104,16 +116,7 @@ export default function AdminOrders() {
     return parts.join(', ')
   }
 
-  const statusOptions = [
-    { value: 'all', label: 'All Orders' },
-    { value: 'confirmed', label: 'Confirmed' },
-    { value: 'accepted', label: 'Accepted' },
-    { value: 'picked_up', label: 'Picked Up' },
-    { value: 'out_for_delivery', label: 'Out For Delivery' },
-    { value: 'delivered', label: 'Delivered' },
-    { value: 'failed', label: 'Payment Failed' },
-    { value: 'cancelled', label: 'Cancelled' }
-  ]
+
 
   useEffect(() => {
     const load = async () => {
@@ -695,15 +698,11 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onAcceptDelivery, i
                     </>
                   ) : (
                     <>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="accepted">Accepted</option>
-                      <option value="picked_up">Picked Up</option>
-                      <option value="out_for_delivery">Out For Delivery</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="failed">Payment Failed</option>
-                      <option value="cancelled">Cancelled</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="cancelled">Cancelled</option>
+                      {statusOptions.filter(opt => opt.value !== 'all').map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </>
                   )}
                 </select>

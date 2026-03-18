@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -331,7 +331,8 @@ export default function Checkout() {
               }
             },
             modal: {
-              ondismiss: () => {
+              ondismiss: async () => {
+                try { await apiPost(`/orders/${order._id}/payment-failed`, { orderId: order._id }); } catch (e) {}
                 setError('Payment was cancelled.')
                 setPlacing(false)
 

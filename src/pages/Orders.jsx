@@ -136,6 +136,7 @@ export default function Orders() {
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
               <option value="all">All Orders</option>
+              <option value="pending">Payment Pending</option>
               <option value="confirmed">Confirmed</option>
               <option value="accepted">Accepted</option>
               <option value="picked_up">Picked Up</option>

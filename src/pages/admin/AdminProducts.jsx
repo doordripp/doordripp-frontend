@@ -14,7 +14,7 @@ export default function AdminProducts() {
   const { user } = useAuth()
   const base = usePanelBase()
   const isDeliveryPartner = hasDeliveryPartnerAccess(user)
-  
+
   if (isDeliveryPartner) {
     return <Navigate to={`${base}/orders`} replace />
   }
@@ -68,16 +68,16 @@ export default function AdminProducts() {
           <div className="flex -space-x-2 flex-shrink-0">
             {product.images && product.images.length > 0 ? (
               product.images.slice(0, 2).map((img, idx) => (
-                <img 
+                <img
                   key={idx}
-                  src={img || 'https://placeholder.com/40'} 
+                  src={img || 'https://placeholder.com/40'}
                   alt={product.name}
                   className="w-10 h-10 rounded-md object-cover border-2 border-white"
                 />
               ))
             ) : (
-              <img 
-                src="https://placeholder.com/40" 
+              <img
+                src="https://placeholder.com/40"
                 alt={product.name}
                 className="w-10 h-10 rounded-md object-cover"
               />
@@ -104,9 +104,8 @@ export default function AdminProducts() {
       header: 'Stock',
       accessor: 'stock',
       render: (product) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
           {product.stock}
         </span>
       )
@@ -138,9 +137,8 @@ export default function AdminProducts() {
       header: 'Status',
       accessor: 'status',
       render: (product) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          product.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-        }`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+          }`}>
           {product.status}
         </span>
       )
@@ -150,23 +148,22 @@ export default function AdminProducts() {
       accessor: 'actions',
       render: (product) => (
         <div className="flex space-x-2">
-          <button 
+          <button
             onClick={() => handleEditProduct(product)}
             className="text-blue-600 hover:text-blue-900"
             title="Edit Product"
           >
             <Edit size={16} />
           </button>
-          <button 
+          <button
             onClick={() => handleToggleStock(product)}
-            className={`${
-              product.stock > 0 ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'
-            }`}
+            className={`${product.stock > 0 ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'
+              }`}
             title={product.stock > 0 ? 'Mark Out of Stock' : 'Mark In Stock'}
           >
             {product.stock > 0 ? '📦' : '✅'}
           </button>
-          <button 
+          <button
             onClick={() => handleDeleteProduct(product._id || product.id)}
             className="text-red-600 hover:text-red-900"
             title="Delete Product"
@@ -181,11 +178,11 @@ export default function AdminProducts() {
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.category.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStock = stockFilter === 'all' || 
+
+    const matchesStock = stockFilter === 'all' ||
       (stockFilter === 'in-stock' && product.stock > 0) ||
       (stockFilter === 'out-of-stock' && product.stock === 0)
-    
+
     return matchesSearch && matchesStock
   })
 
@@ -263,7 +260,7 @@ export default function AdminProducts() {
     const productId = product._id || product.id
     const newStock = product.stock > 0 ? 0 : 100
     const action = newStock === 0 ? 'out of stock' : 'in stock'
-    
+
     if (window.confirm(`Mark "${product.name}" as ${action}?`)) {
       try {
         const updated = await adminAPI.updateProduct(productId, { stock: newStock })
@@ -322,7 +319,7 @@ export default function AdminProducts() {
           <p className="text-gray-600">Manage your product catalog</p>
         </div>
         <div className="flex space-x-3">
-          <button 
+          <button
             onClick={fetchProducts}
             className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
           >
@@ -377,7 +374,7 @@ export default function AdminProducts() {
       </div>
 
       {/* Products Table */}
-      <AdminTable 
+      <AdminTable
         data={filteredProducts}
         columns={columns}
       />
@@ -491,7 +488,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     // Validation
     if (formData.images.length === 0) {
       alert('Please upload at least one product image.')
@@ -540,7 +537,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
       dressStyle: formData.dressStyle || ''
     })
   }
-  
+
   const toggleSize = (size) => {
     setFormData(prev => ({
       ...prev,
@@ -551,7 +548,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
   }
 
 
-  
+
   const toggleColor = (colorHex) => {
     setFormData(prev => ({
       ...prev,
@@ -567,7 +564,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
         <h2 className="text-xl font-bold mb-4">
           {product ? 'Edit Product' : 'Add New Product'}
         </h2>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -578,7 +575,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 placeholder="e.g., Cotton T-Shirt"
               />
@@ -590,7 +587,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
               <select
                 required
                 value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 {categories.map(cat => (
@@ -609,7 +606,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
                 type="text"
                 list="subcategories-list"
                 value={formData.subcategory}
-                onChange={(e) => setFormData({...formData, subcategory: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
                 placeholder="Select or type custom subcategory"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
@@ -626,7 +623,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
               <input
                 type="text"
                 value={formData.dressStyle}
-                onChange={(e) => setFormData({...formData, dressStyle: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, dressStyle: e.target.value })}
                 placeholder="e.g., A-line, Maxi, Bodycon"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
@@ -640,13 +637,13 @@ function ProductModal({ product, onSave, onClose, saving }) {
                   type="number"
                   required
                   value={formData.stock}
-                  onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                   className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   placeholder="e.g., 100"
                 />
                 <select
                   value={formData.stock > 0 ? 'in-stock' : 'out-of-stock'}
-                  onChange={(e) => setFormData({...formData, stock: e.target.value === 'out-of-stock' ? 0 : 100})}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value === 'out-of-stock' ? 0 : 100 })}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   title="Quick stock status"
                 >
@@ -659,7 +656,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
 
           {/* ── Pricing Module ── */}
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">💰 Pricing</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Pricing</h3>
             <ProductPricingModule
               initialValues={{
                 pricingMode: product?.pricingMode || 'auto',
@@ -683,11 +680,10 @@ function ProductModal({ product, onSave, onClose, saving }) {
                   key={size}
                   type="button"
                   onClick={() => toggleSize(size)}
-                  className={`px-4 py-2 rounded-md border-2 transition-colors ${
-                    formData.sizes.includes(size)
+                  className={`px-4 py-2 rounded-md border-2 transition-colors ${formData.sizes.includes(size)
                       ? 'bg-black text-white border-black'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                  }`}
+                    }`}
                 >
                   {size}
                 </button>
@@ -704,7 +700,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
                 <input
                   type="checkbox"
                   checked={formData.isNewArrival}
-                  onChange={(e) => setFormData({...formData, isNewArrival: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, isNewArrival: e.target.checked })}
                   className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <div className="flex-1">
@@ -715,12 +711,12 @@ function ProductModal({ product, onSave, onClose, saving }) {
                   <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">Active</span>
                 )}
               </label>
-              
+
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.isBestSeller}
-                  onChange={(e) => setFormData({...formData, isBestSeller: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, isBestSeller: e.target.checked })}
                   className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <div className="flex-1">
@@ -731,12 +727,12 @@ function ProductModal({ product, onSave, onClose, saving }) {
                   <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Active</span>
                 )}
               </label>
-              
+
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.isFeatured}
-                  onChange={(e) => setFormData({...formData, isFeatured: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
                   className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <div className="flex-1">
@@ -757,7 +753,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
             <textarea
               rows={3}
               value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               placeholder="Product description..."
             />
@@ -771,7 +767,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
             <textarea
               rows={5}
               value={formData.keyFeatures}
-              onChange={(e) => setFormData({...formData, keyFeatures: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, keyFeatures: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               placeholder={"Premium textured fabric\nElegant tailored fit\nClassic black color\nClean back panel design\nDurable stitching and structured build\nSuitable for formal and semi-formal occasions"}
             />
@@ -799,7 +795,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
             </label>
             <ImageKitUploader
               existingImages={formData.images}
-              onUploadComplete={(images) => setFormData({...formData, images})}
+              onUploadComplete={(images) => setFormData({ ...formData, images })}
             />
             {formData.images.length === 0 && (
               <p className="mt-1 text-xs text-red-500 font-medium">Please upload at least one image</p>

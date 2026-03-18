@@ -16,15 +16,12 @@ function roundUpTo49or99(value) {
   return base + 149
 }
 
-/** Round to the nearest number ending in 99 */
-function roundToNearest99(value) {
-  const base = Math.round(value / 100) * 100
-  // Try base-1 (i.e., x99) and base+99
-  const lower = base - 1
-  const upper = base + 99
-  const lowerDiff = Math.abs(value - lower)
-  const upperDiff = Math.abs(value - upper)
-  return lowerDiff <= upperDiff ? lower : upper
+/** Round UP to the nearest number ending in 99 */
+function roundUpTo99(value) {
+  const base = Math.floor(value / 100) * 100
+  const candidate = base + 99
+  if (value <= candidate) return candidate
+  return base + 199
 }
 
 // ─── Calculation engines ──────────────────────────────────────────────────────
@@ -44,10 +41,14 @@ function calcAuto({ costPrice, profitPct, gstPct, deliveryCost, compareAtInput }
   const customerPrice = finalMRP + dc
 
   let compareAt
+  let isCompareAtLow = false
   if (compareAtInput && parseFloat(compareAtInput) > 0) {
     compareAt = parseFloat(compareAtInput)
+    if (compareAt < finalMRP) {
+      isCompareAtLow = true
+    }
   } else {
-    compareAt = roundToNearest99(finalMRP * 1.5)
+    compareAt = roundUpTo99(finalMRP * 1.5)
   }
 
   return {
@@ -63,6 +64,7 @@ function calcAuto({ costPrice, profitPct, gstPct, deliveryCost, compareAtInput }
     compareAt,
     isLoss: profit < 0,
     isLowProfit: pp > 0 && pp < 10,
+    isCompareAtLow
   }
 }
 
@@ -80,10 +82,14 @@ function calcManual({ costPrice, finalMRP, gstPct, deliveryCost, compareAtInput 
   const customerPrice = mrp + dc
 
   let compareAt
+  let isCompareAtLow = false
   if (compareAtInput && parseFloat(compareAtInput) > 0) {
     compareAt = parseFloat(compareAtInput)
+    if (compareAt < mrp) {
+      isCompareAtLow = true
+    }
   } else {
-    compareAt = roundToNearest99(mrp * 1.5)
+    compareAt = roundUpTo99(mrp * 1.5)
   }
 
   return {
@@ -98,6 +104,7 @@ function calcManual({ costPrice, finalMRP, gstPct, deliveryCost, compareAtInput 
     compareAt,
     isLoss: profit < 0,
     isLowProfit: profit >= 0 && profitPct < 10,
+    isCompareAtLow
   }
 }
 
@@ -160,9 +167,24 @@ export default function ProductPricingModule({ initialValues = {}, onChange }) {
   const [deliveryCost, setDeliveryCost] = useState(
     initialValues.deliveryCost !== undefined ? String(initialValues.deliveryCost) : '80'
   )
-  const [compareAtInput, setCompareAtInput] = useState(
-    initialValues.originalPrice ? String(initialValues.originalPrice) : ''
-  )
+  const [compareAtInput, setCompareAtInput] = useState(() => {
+    if (!initialValues.originalPrice) return ''
+    const defaultAuto = roundUpTo99(initialValues.price * 1.5)
+    
+    // Check old roundToNearest99 logic values as well
+    const base = Math.round((initialValues.price * 1.5) / 100) * 100
+    const oldAuto1 = base - 1
+    const oldAuto2 = base + 99
+
+    if (
+      initialValues.originalPrice === defaultAuto ||
+      initialValues.originalPrice === oldAuto1 ||
+      initialValues.originalPrice === oldAuto2
+    ) {
+      return '' // Treat as auto-generated if it matches previous defaults
+    }
+    return String(initialValues.originalPrice)
+  })
 
   // Manual mode extra input
   const [finalMRP, setFinalMRP] = useState(initialValues.price ? String(initialValues.price) : '')
@@ -315,14 +337,25 @@ export default function ProductPricingModule({ initialValues = {}, onChange }) {
       {result ? (
         <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
           {/* Warnings */}
-          {(result.isLoss || result.isLowProfit) && (
-            <div className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${
-              result.isLoss ? 'bg-red-50 text-red-700 border-b border-red-100' : 'bg-amber-50 text-amber-700 border-b border-amber-100'
+          {(result.isLoss || result.isLowProfit || result.isCompareAtLow) && (
+            <div className={`flex flex-col gap-1 px-4 py-2 text-sm font-medium border-b ${
+              result.isLoss || result.isCompareAtLow ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'
             }`}>
-              <AlertTriangle size={15} />
-              {result.isLoss
-                ? '🔴 Loss! Your cost price exceeds selling price.'
-                : '⚠️ Low profit margin (below 10%). Consider adjusting pricing.'}
+              {result.isLoss && (
+                <div className="flex items-center gap-2 text-red-700">
+                  <AlertTriangle size={15} /> 🔴 Loss! Your cost price exceeds selling price.
+                </div>
+              )}
+              {result.isLowProfit && !result.isLoss && (
+                <div className="flex items-center gap-2 text-amber-700">
+                  <AlertTriangle size={15} /> ⚠️ Low profit margin (below 10%). Consider adjusting pricing.
+                </div>
+              )}
+              {result.isCompareAtLow && (
+                <div className="flex items-center gap-2 text-red-700">
+                  <AlertTriangle size={15} /> 🔴 Warning: Compare At price is less than Final MRP!
+                </div>
+              )}
             </div>
           )}
 
