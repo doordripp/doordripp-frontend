@@ -1,5 +1,7 @@
 import './App.css'
-import { useEffect, useRef, useLayoutEffect } from 'react'
+import { useEffect, useRef, useLayoutEffect, useState } from 'react'
+import DrippyLogo from './components/DrippyLogo'
+import DrippyWidget from './components/DrippyWidget'
 import { useLocation } from 'react-router-dom'
 import { Navbar } from './components/navigation'
 import { Footer, Newsletter } from './layout'
@@ -219,15 +221,18 @@ function ScrollRestoration() {
 }
 
 function App() {
-  return (
-    <AuthProvider>
-      <AdminProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <TrialProvider>
-              <ScrollRestoration />
-              <WishlistSyncHandler />
-              <Routes>
+  const [drippyOpen, setDrippyOpen] = useState(false)
+
+  // Sub-component to access router context for conditional widget rendering
+  const AppContent = () => {
+    const location = useLocation()
+    const isSupportPage = location.pathname === '/support'
+
+    return (
+      <>
+        <ScrollRestoration />
+        <WishlistSyncHandler />
+        <Routes>
                 {/* Admin Routes — admin only */}
                 <Route path="/admin" element={
                   <RoleBasedRoute requiredRole={[ROLES.ADMIN]}>
@@ -326,9 +331,51 @@ function App() {
                     {/* Global Trial Modal - Available on all pages */}
                     <TrialModal />
                     <TrialFloatingButton />
+
+                    {/* Floating Drippy Support Widget — Hide on /support page */}
+                    {!isSupportPage && (
+                      <>
+                        <DrippyWidget isOpen={drippyOpen} onClose={() => setDrippyOpen(false)} />
+
+                        <button
+                          onClick={() => setDrippyOpen(prev => !prev)}
+                          aria-label="Chat with Drippy"
+                          className="fixed bottom-6 right-6 z-50 group"
+                        >
+                          {/* Hover label */}
+                          {!drippyOpen && (
+                            <div
+                              className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap bg-[#6E6E6E] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none"
+                              style={{ borderRadius: 0 }}
+                            >
+                              Chat with Drippy
+                            </div>
+                          )}
+
+                          {/* Drippy mascot */}
+                          <div
+                            className="transition-transform duration-300 group-hover:scale-110"
+                            style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.25))' }}
+                          >
+                            <DrippyLogo size={44} />
+                          </div>
+                        </button>
+                      </>
+                    )}
                   </div>
                 } />
               </Routes>
+      </>
+    )
+  }
+
+  return (
+    <AuthProvider>
+      <AdminProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <TrialProvider>
+              <AppContent />
             </TrialProvider>
           </WishlistProvider>
         </CartProvider>

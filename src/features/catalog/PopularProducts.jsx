@@ -2,84 +2,73 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProductCard from './ProductCard'
 import { apiGet } from '../../services/apiClient'
+import useScrollReveal from '../../hooks/useScrollReveal'
 
 export default function PopularProducts() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const headerRef = useScrollReveal({ self: true })
 
   useEffect(() => {
     let mounted = true
-    
     apiGet('/products?page=1&limit=100')
       .then(res => {
         if (!mounted) return
         const apiProducts = res.data || []
-        
-        // Filter featured products
         const featured = apiProducts.filter(p => p.isFeatured === true)
-        
-        // Sort by creation date (newest first)
-        featured.sort((a, b) => {
-          const dateA = new Date(a.createdAt || 0)
-          const dateB = new Date(b.createdAt || 0)
-          return dateB - dateA
-        })
-        
+        featured.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
         setProducts(featured.slice(0, 8))
       })
-      .catch(err => {
-        console.error('Failed to fetch featured products:', err)
-        if (mounted) setProducts([])
-      })
+      .catch(err => { console.error('Failed to fetch featured products:', err); if (mounted) setProducts([]) })
       .finally(() => mounted && setLoading(false))
-    
     return () => { mounted = false }
   }, [])
 
-  const displayProducts = products
-
   return (
-    <section id="popular-products" className="w-full bg-gray-200 py-12 lg:py-14">
+    <section id="popular-products" className="w-full bg-white py-16 lg:py-20">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        {/* Section Header - Centered with View All */}
-        <div className="mb-14 text-center relative">
-          <h2 className="text-4xl font-bold text-black md:text-5xl lg:text-6xl tracking-tight">
-            FEATURED PRODUCTS
-          </h2>
-          <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2">
-            <Link 
-              to="/products" 
-              className="inline-flex items-center justify-center rounded-full border-2 border-gray-300 bg-white px-10 py-3.5 text-base font-semibold text-black shadow-md transition-all duration-300 hover:bg-black hover:text-white hover:border-black hover:shadow-xl hover:scale-105 active:scale-95"
-            >
-              View All
-            </Link>
+        {/* Section Header */}
+        <div className="mb-12 flex items-end justify-between reveal" ref={headerRef}>
+          <div>
+            <h2 className="text-3xl font-black uppercase tracking-tight text-black md:text-4xl lg:text-5xl">
+              Featured Products
+            </h2>
+            <div className="mt-3 w-12 h-0.5 bg-black" />
           </div>
+          <Link
+            to="/products"
+            className="hidden md:inline-flex items-center border-b-2 border-black pb-0.5 text-xs font-black uppercase tracking-widest text-black hover:opacity-60 transition-opacity duration-200"
+          >
+            View All →
+          </Link>
         </div>
 
-        {/* Products Grid - 6 Products */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading featured products...</p>
+          <div className="grid gap-1 grid-cols-2 md:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-[520px] bg-neutral-100 animate-pulse" />
+            ))}
           </div>
         ) : (
-          <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 max-w-[1400px] mx-auto items-stretch auto-rows-[520px]">
-            {displayProducts.map((product) => (
-              <ProductCard 
-                key={product._id || product.id} 
-                product={product}
-                className="mx-auto w-full"
-              />
+          <div className="grid gap-1 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 items-stretch auto-rows-[520px]">
+            {products.map((product, i) => (
+              <div
+                key={product._id || product.id}
+                className="animate-fade-in-up"
+                style={{ animationDelay: `${i * 60}ms`, animationFillMode: 'both' }}
+              >
+                <ProductCard product={product} className="mx-auto w-full" />
+              </div>
             ))}
           </div>
         )}
 
-        {/* View All Button for Mobile */}
-        <div className="mt-14 text-center md:hidden">
-          <Link 
-            to="/products" 
-            className="inline-flex items-center justify-center rounded-full border-2 border-gray-300 bg-white px-10 py-3.5 text-base font-semibold text-black shadow-md transition-all duration-300 hover:bg-black hover:text-white hover:border-black active:scale-95"
+        <div className="mt-10 text-center md:hidden">
+          <Link
+            to="/products"
+            className="inline-flex items-center border-b-2 border-black pb-0.5 text-xs font-black uppercase tracking-widest text-black"
           >
-            View All
+            View All →
           </Link>
         </div>
       </div>
