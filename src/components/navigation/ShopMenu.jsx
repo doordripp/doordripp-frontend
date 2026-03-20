@@ -89,14 +89,14 @@ const ShopMenu = forwardRef(({ isOpen, onOpenChange, onClose, onMouseEnter, onMo
       onMouseLeave={onMouseLeave}
       onKeyDown={onKeyDown}
     >
-      <button
-        type="button"
+      <Link
+        to="/products"
         className="inline-flex items-center gap-1 hover:text-black/80 transition-colors duration-200 font-medium"
         aria-haspopup="menu"
         aria-expanded={open}
       >
         Shop <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
+      </Link>
 
       <div
         className={`absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-gray-200 bg-white shadow-lg transition-all duration-200 ${

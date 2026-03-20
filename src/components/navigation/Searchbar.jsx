@@ -23,15 +23,21 @@ export default function Searchbar({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`relative ${className}`}>
-      <Search className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-7 w-7 text-gray-400 z-10" />
+    <form onSubmit={handleSubmit} className={`relative flex items-center ${className}`}>
       <Input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="pl-10 pr-4 py-3 bg-gray-100 border-0 focus-visible:ring-0 focus-visible:border-0 transition-all duration-200 rounded-full text-gray-600 placeholder:text-gray-400 h-11 w-full"
+        className="pl-5 pr-12 py-3 bg-gray-100 border-0 focus-visible:ring-0 focus-visible:border-0 transition-all duration-200 rounded-full text-gray-600 placeholder:text-gray-400 h-11 w-full"
       />
+      <button
+        type="submit"
+        aria-label="Submit Search"
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-black transition-colors z-10"
+      >
+        <Search className="h-5 w-5" />
+      </button>
     </form>
   )
 }
