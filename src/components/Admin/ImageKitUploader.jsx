@@ -3,7 +3,7 @@ import { IKContext, IKUpload, IKImage } from 'imagekitio-react';
 import { imagekitConfig, isImageKitConfigured } from '../../config/imagekit';
 import { X, Upload, AlertCircle } from 'lucide-react';
 
-const ImageKitUploader = ({ onUploadComplete, existingImages = [] }) => {
+const ImageKitUploader = ({ onUploadComplete, onUploadStateChange, existingImages = [] }) => {
   const [uploadedImages, setUploadedImages] = useState(existingImages);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -14,6 +14,7 @@ const ImageKitUploader = ({ onUploadComplete, existingImages = [] }) => {
     setUploadedImages(newImages);
     setUploading(false);
     setError(null);
+    if (onUploadStateChange) onUploadStateChange(false);
     
     if (onUploadComplete) {
       onUploadComplete(newImages);
@@ -24,11 +25,13 @@ const ImageKitUploader = ({ onUploadComplete, existingImages = [] }) => {
     console.error('Upload error:', err);
     setError(err.message || 'Upload failed. Please try again.');
     setUploading(false);
+    if (onUploadStateChange) onUploadStateChange(false);
   };
 
   const handleUploadStart = () => {
     setUploading(true);
     setError(null);
+    if (onUploadStateChange) onUploadStateChange(true);
   };
 
   const removeImage = (indexToRemove) => {

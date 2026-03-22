@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import adminAPI from "../../../services/adminAPI";
-import ImageUploader from "../../../components/Admin/ImageUploader";
+import ImageKitUploader from "../../../components/Admin/ImageKitUploader";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { hasDeliveryPartnerAccess } from "../../../utils/roleUtils";
@@ -23,6 +23,7 @@ export default function AddProduct() {
 
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // 12 default specification parameters
   const defaultSpecs = [
@@ -60,43 +61,43 @@ export default function AddProduct() {
       return;
     }
 
-    const fd = new FormData();
-    fd.append("name", vals.name);
-    fd.append("description", vals.description || "");
-    fd.append("category", vals.category || "");
-    fd.append("subcategory", vals.subcategory || "");
-    // Optional dress style (not mandatory)
-    fd.append("dressStyle", vals.dressStyle || "");
-    fd.append("price", vals.price);
-    fd.append("stock", vals.stock || 0);
-    // sizes: optional comma-separated input (convert to array)
-    const sizesArr = vals.sizes ? vals.sizes.split(',').map(s=>s.trim()).filter(Boolean) : []
-    fd.append('sizes', JSON.stringify(sizesArr))
-    
-    // Collection flags
-    fd.append("isNewArrival", vals.isNewArrival || false);
-    fd.append("isBestSeller", vals.isBestSeller || false);
-    fd.append("isFeatured", vals.isFeatured || false);
-
-    // Key Features (each line = one bullet point)
-    const keyFeaturesRaw = vals.keyFeatures || "";
-    const keyFeaturesArr = keyFeaturesRaw.split("\n").map(l => l.replace(/^[\s•\-*]+/, '').trim()).filter(Boolean);
-    fd.append("keyFeatures", JSON.stringify(keyFeaturesArr));
-
-    // Dynamic Specifications
-    const details = {};
-    specs.forEach((s) => {
-      if (s.key.trim() && s.value.trim()) {
-        details[s.key.trim()] = s.value.trim();
-      }
-    });
-    fd.append("details", JSON.stringify(details));
-
-    images.forEach((file) => fd.append("images", file));
-
     try {
       setLoading(true);
-      await adminAPI.createProduct(fd);
+
+      // sizes: optional comma-separated input (convert to array)
+      const sizesArr = vals.sizes ? vals.sizes.split(',').map(s => s.trim()).filter(Boolean) : []
+
+      // Key Features (each line = one bullet point)
+      const keyFeaturesRaw = vals.keyFeatures || "";
+      const keyFeaturesArr = keyFeaturesRaw.split("\n").map(l => l.replace(/^[\s•\-*]+/, '').trim()).filter(Boolean);
+
+      // Dynamic Specifications
+      const details = {};
+      specs.forEach((s) => {
+        if (s.key.trim() && s.value.trim()) {
+          details[s.key.trim()] = s.value.trim();
+        }
+      });
+      
+      const productData = {
+        name: vals.name,
+        description: vals.description || "",
+        category: vals.category || "",
+        subcategory: vals.subcategory || "",
+        dressStyle: vals.dressStyle || "",
+        price: parseFloat(vals.price),
+        stock: parseInt(vals.stock) || 0,
+        sizes: sizesArr,
+        isNewArrival: vals.isNewArrival || false,
+        isBestSeller: vals.isBestSeller || false,
+        isFeatured: vals.isFeatured || false,
+        keyFeatures: keyFeaturesArr,
+        details: details,
+        images: images,
+        image: images[0] || ""
+      };
+
+      await adminAPI.createProduct(productData);
 
       // Optional: toast.success("Product created")
       reset();
@@ -105,7 +106,7 @@ export default function AddProduct() {
 
     } catch (err) {
       console.error(err);
-      alert("Create failed. Please try again.");
+      alert(`Create failed: ${err.message || "Please try again."}`);
     } finally {
       setLoading(false);
     }
@@ -326,20 +327,23 @@ export default function AddProduct() {
       </div>
 
       <div>
-        <label className="block text-sm">Images</label>
-        <ImageUploader onChange={setImages} />
+        <label className="block text-sm font-medium mb-1">Images *</label>
+        <ImageKitUploader 
+          onUploadComplete={setImages} 
+          onUploadStateChange={setIsUploading}
+        />
         {images.length === 0 && (
           <p className="text-gray-500 text-sm">Upload at least 1 image.</p>
         )}
       </div>
 
       <button
-        disabled={loading}
+        disabled={loading || isUploading}
         className={`px-4 py-2 rounded text-white ${
-          loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600"
+          (loading || isUploading) ? "bg-gray-400 cursor-not-allowed" : "bg-green-600"
         }`}
       >
-        {loading ? "Creating..." : "Create Product"}
+        {loading ? "Creating..." : isUploading ? "Uploading Images..." : "Create Product"}
       </button>
     </form>
   );

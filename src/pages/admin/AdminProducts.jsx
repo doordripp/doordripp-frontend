@@ -449,6 +449,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
     isBestSeller: product?.isBestSeller || false,
     isFeatured: product?.isFeatured || false
   })
+  const [isUploading, setIsUploading] = useState(false)
 
   // Pricing result from the pricing module
   const [pricingResult, setPricingResult] = useState({
@@ -796,6 +797,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
             <ImageKitUploader
               existingImages={formData.images}
               onUploadComplete={(images) => setFormData({ ...formData, images })}
+              onUploadStateChange={setIsUploading}
             />
             {formData.images.length === 0 && (
               <p className="mt-1 text-xs text-red-500 font-medium">Please upload at least one image</p>
@@ -813,7 +815,7 @@ function ProductModal({ product, onSave, onClose, saving }) {
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || isUploading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
             >
               {saving && <RefreshCw size={16} className="animate-spin" />}
